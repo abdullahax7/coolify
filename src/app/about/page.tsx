@@ -32,7 +32,7 @@ export default function AboutPage() {
                 </p>
                 <p>
                   Our platform combines cutting-edge technology with the personal touch 
-                  of industry veterans. We don't just manage buildings; we manage futures.
+                  of industry veterans. We don&apos;t just manage buildings; we manage futures.
                 </p>
                 <div className={styles.stats}>
                   <div className={styles.stat}>
@@ -90,7 +90,7 @@ export default function AboutPage() {
                 { quote: "Made finding my new home an absolute breeze. Highly recommend their professional services.", author: "Michael Chen", role: "Tenant" }
               ].map((t, i) => (
                 <div key={i} className={styles.testimonialCard}>
-                  <div className={styles.quoteIcon}>"</div>
+                  <div className={styles.quoteIcon}>&quot;</div>
                   <p>{t.quote}</p>
                   <div className={styles.author}>
                     <strong>{t.author}</strong>

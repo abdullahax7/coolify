@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import styles from './Calculators.module.css';
 
 export const MortgageCalculator: React.FC = () => {
@@ -8,24 +8,18 @@ export const MortgageCalculator: React.FC = () => {
   const [deposit, setDeposit] = useState(50000);
   const [interest, setInterest] = useState(4.5);
   const [term, setTerm] = useState(25);
-  const [monthlyRepayment, setMonthlyRepayment] = useState(0);
+  const principal = price - deposit;
+  const monthlyRate = interest / 100 / 12;
+  const numberOfPayments = term * 12;
 
-  useEffect(() => {
-    const principal = price - deposit;
-    const monthlyRate = interest / 100 / 12;
-    const numberOfPayments = term * 12;
-
-    if (monthlyRate === 0) {
-      setMonthlyRepayment(principal / numberOfPayments);
-      return;
-    }
-
-    const repayment = 
+  let monthlyRepayment = 0;
+  if (monthlyRate === 0) {
+    monthlyRepayment = principal / numberOfPayments;
+  } else {
+    monthlyRepayment = 
       (principal * monthlyRate * Math.pow(1 + monthlyRate, numberOfPayments)) / 
       (Math.pow(1 + monthlyRate, numberOfPayments) - 1);
-
-    setMonthlyRepayment(repayment);
-  }, [price, deposit, interest, term]);
+  }
 
   return (
     <div className={styles.grid}>

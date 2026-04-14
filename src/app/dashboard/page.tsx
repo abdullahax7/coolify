@@ -45,9 +45,11 @@ export default function DashboardPage() {
   useEffect(() => {
     const u = getUser();
     if (!u) { router.replace('/login'); return; }
-    setUser(u);
-    setOrders(getOrders());
-    setSubmissions(getSubmissions());
+    requestAnimationFrame(() => {
+      setUser(u);
+      setOrders(getOrders());
+      setSubmissions(getSubmissions());
+    });
   }, [router]);
 
   const handleLogout = () => { clearUser(); router.push('/'); };
@@ -451,7 +453,7 @@ function SubmitPropertyForm({
         <div className={styles.successIcon}>✓</div>
         <h2>Property Submitted!</h2>
         <p>Your property details have been received. Our team will review your submission and get in touch within 24–48 hours.</p>
-        <p className={styles.successSub}>To maximise your property's reach, choose a listing plan to publish it on our site.</p>
+        <p className={styles.successSub}>To maximise your property&apos;s reach, choose a listing plan to publish it on our site.</p>
         <div className={styles.successActions}>
           <Link href="/pricing" className={styles.primaryAction}>Choose a Listing Plan</Link>
           <button className={styles.secondaryAction} onClick={resetForm}>Submit Another</button>

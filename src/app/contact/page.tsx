@@ -110,7 +110,7 @@ export default function ContactPage() {
                   <div className={styles.successState}>
                     <div className={styles.successIcon}>✓</div>
                     <h3>Message Sent!</h3>
-                    <p>Thank you for reaching out. We'll get back to you within 1 business day.</p>
+                    <p>Thank you for reaching out. We&apos;ll get back to you within 1 business day.</p>
                     <button className={styles.resetBtn} onClick={() => setStatus('idle')}>
                       Send another message
                     </button>

@@ -16,7 +16,7 @@ const ToolsContent = () => {
   useEffect(() => {
     const tab = searchParams.get('tab');
     if (tab && ['mortgage', 'stamp-duty', 'yield'].includes(tab)) {
-      setActiveTab(tab);
+      requestAnimationFrame(() => setActiveTab(tab));
     }
   }, [searchParams]);
 

@@ -21,7 +21,10 @@ export const Header: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    setUser(getUser());
+    const currentUser = getUser();
+    if (currentUser) {
+      requestAnimationFrame(() => setUser(currentUser));
+    }
     const onStorage = () => setUser(getUser());
     window.addEventListener('storage', onStorage);
     return () => window.removeEventListener('storage', onStorage);

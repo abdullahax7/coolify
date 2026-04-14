@@ -28,7 +28,7 @@ export const ImpactStats: React.FC = () => {
       </div>
       
       <div className={styles.container} style={{ marginTop: '80px', textAlign: 'center' }}>
-         <h2 style={{ color: 'white', fontSize: '2rem', fontWeight: 800 }}>Trusted by the World's Most <span>Prestigious</span> Asset Managers.</h2>
+         <h2 style={{ color: 'white', fontSize: '2rem', fontWeight: 800 }}>Trusted by the World&apos;s Most <span>Prestigious</span> Asset Managers.</h2>
          <p style={{ opacity: 0.7, maxWidth: '800px', margin: '16px auto' }}>
             We provide a level of oversight and reporting that traditional agencies simply cannot match. 
             Our platform is built for the owners who demand precision.

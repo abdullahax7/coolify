@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import Image from 'next/image';
 import styles from './HomeSections.module.css';
 
 const TESTIMONIALS = [
@@ -44,9 +45,9 @@ export const Testimonials: React.FC = () => {
       <div className={styles.track}>
         {scrollList.map((t, idx) => (
           <div key={idx} className={styles.card}>
-            <p className={styles.quote}>"{t.quote}"</p>
+            <p className={styles.quote}>&quot;{t.quote}&quot;</p>
             <div className={styles.author}>
-              <img src={t.image} alt={t.author} className={styles.authorImg} />
+              <Image src={t.image} alt={t.author} className={styles.authorImg} width={48} height={48} />
               <div className={styles.authorInfo}>
                 <h4>{t.author}</h4>
                 <p>{t.role}</p>

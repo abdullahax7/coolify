@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { PropertyCard } from '@/components/home/PropertyCard';
-import { PROPERTIES as allProperties } from '@/data/properties';
+import { PROPERTIES as allProperties, type Property } from '@/data/properties';
 import styles from './properties.module.css';
 
 type ListingType = 'All' | 'Sale' | 'Rent';
@@ -19,16 +19,16 @@ export default function PropertiesPage() {
 
   const filteredProperties = useMemo(() => {
     return properties
-      .filter((prop: any) => {
+      .filter((prop: Property) => {
         const matchesType =
           listingType === 'All' ||
-          (prop.listing_type ?? prop.listingType ?? '').toLowerCase() === listingType.toLowerCase();
+          (prop.listingType ?? '').toLowerCase() === listingType.toLowerCase();
         const matchesSector =
           sector === 'All' ||
           (prop.sector ?? '').toLowerCase() === sector.toLowerCase();
         return matchesType && matchesSector;
       })
-      .sort((a: any, b: any) => {
+      .sort((a: Property, b: Property) => {
         const priceA = parseInt(String(a.price ?? '0').replace(/[^0-9]/g, '')) || 0;
         const priceB = parseInt(String(b.price ?? '0').replace(/[^0-9]/g, '')) || 0;
         if (sortBy === 'Price: High to Low') return priceB - priceA;
@@ -96,22 +96,22 @@ export default function PropertiesPage() {
                 </div>
               ) : (
                 <div className={styles.grid}>
-                  {filteredProperties.map((prop: any) => (
+                  {filteredProperties.map((prop: Property) => (
                     <PropertyCard
                       key={prop.id}
                       id={prop.id}
                       image={
-                        Array.isArray(prop.images) && prop.images.length > 0
-                          ? prop.images[0]
+                        Array.isArray(prop.gallery) && prop.gallery.length > 0
+                          ? prop.gallery[0]
                           : prop.image ?? '/placeholder-property.jpg'
                       }
                       title={prop.title ?? ''}
                       location={prop.location ?? ''}
                       price={prop.price ?? ''}
-                      beds={prop.beds ?? prop.bedrooms ?? 0}
-                      baths={prop.baths ?? prop.bathrooms ?? 0}
+                      beds={prop.beds ?? 0}
+                      baths={prop.baths ?? 0}
                       sqft={prop.sqft ?? 0}
-                      type={prop.type ?? prop.property_type ?? ''}
+                      type={prop.type ?? ''}
                     />
                   ))}
                 </div>

@@ -20,7 +20,6 @@ function CheckoutContent() {
   const price = params.get('price') || '';     // service price
 
   const isListing = !!plan;
-  const isService = !!service;
 
   // Derive display info
   const orderName = isListing
@@ -33,7 +32,7 @@ function CheckoutContent() {
 
   useEffect(() => {
     const u = getUser();
-    if (u) setUser(u);
+    if (u) requestAnimationFrame(() => setUser(u));
   }, []);
 
   const handleConfirm = () => {

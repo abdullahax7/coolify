@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
+import Image from 'next/image';
 import { Button } from '../common/Button';
 import styles from './Hero.module.css';
 
@@ -25,10 +26,12 @@ export const Hero: React.FC = () => {
     <section className={styles.hero}>
       <div className={styles.backgroundWrapper}>
         <div className={styles.overlay} />
-        <img 
-          src="/images/hero_luxury.png" 
-          alt="Luxury Property Portfolio" 
+        <Image
+          src="/images/hero_luxury.png"
+          alt="Luxury Property Portfolio"
           className={styles.bgImage}
+          fill
+          priority
         />
       </div>
 
@@ -39,7 +42,7 @@ export const Hero: React.FC = () => {
           <span>LUXURY MANAGEMENT REDEFINED.</span>
         </h1>
         <p className={styles.subtitle}>
-          Stop settling for average. We provide elite property management for the world's most 
+          Stop settling for average. We provide elite property management for the world&apos;s most
           exclusive residences and the owners who demand excellence.
         </p>
 
@@ -54,8 +57,8 @@ export const Hero: React.FC = () => {
             <div className={styles.field}>
               <label>Service</label>
               <div className={styles.customSelectWrapper} ref={dropdownRef}>
-                <div 
-                  className={styles.customSelect} 
+                <div
+                  className={styles.customSelect}
                   onClick={() => setIsOpen(!isOpen)}
                 >
                   {service}
@@ -64,8 +67,8 @@ export const Hero: React.FC = () => {
                 {isOpen && (
                   <div className={styles.dropdownMenu}>
                     {options.map((opt) => (
-                      <div 
-                        key={opt} 
+                      <div
+                        key={opt}
                         className={`${styles.dropdownOption} ${service === opt ? styles.activeOption : ''}`}
                         onClick={() => {
                           setService(opt);
@@ -89,10 +92,10 @@ export const Hero: React.FC = () => {
         </div>
 
         <div className={styles.heroSecondaryActions}>
-          <Button 
-            variant="outline" 
-            size="md" 
-            onClick={() => window.location.href='/pricing'}
+          <Button
+            variant="outline"
+            size="md"
+            onClick={() => window.location.href = '/pricing'}
             className={styles.pricingBtn}
           >
             Pricing & Packages

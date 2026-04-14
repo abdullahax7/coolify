@@ -51,7 +51,7 @@ export default function LoginPage() {
       <div className={styles.right}>
         <div className={styles.formCard}>
           <h2>Sign In</h2>
-          <p className={styles.sub}>Don't have an account? <Link href="/register">Create one free</Link></p>
+          <p className={styles.sub}>Don&apos;t have an account? <Link href="/register">Create one free</Link></p>
 
           <form onSubmit={handleSubmit} className={styles.form} noValidate>
             <div className={styles.field}>

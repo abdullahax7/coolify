@@ -12,7 +12,7 @@ export default function CashBuyPage() {
         {/* Hero Section */}
         <section className={styles.hero}>
           <div className={styles.container}>
-            <div className={styles.heroBadge}>UK's Trusted Cash Buyer</div>
+            <div className={styles.heroBadge}>UK&apos;s Trusted Cash Buyer</div>
             <h1 className={styles.heroTitle}>Sell Your House Fast <span>For Cash</span></h1>
             <p className={styles.heroSubtitle}>
               Get a guaranteed offer in 24 hours. No fees, no viewings, and total peace of mind.
@@ -41,17 +41,17 @@ export default function CashBuyPage() {
               <div className={styles.processStep}>
                 <div className={styles.stepNumber}>01</div>
                 <h3>Request Offer</h3>
-                <p>Call or email us with your property details. We'll research your area and value your property instantly.</p>
+                <p>Call or email us with your property details. We&apos;ll research your area and value your property instantly.</p>
               </div>
               <div className={styles.processStep}>
                 <div className={styles.stepNumber}>02</div>
                 <h3>Receive Offer</h3>
-                <p>We'll provide a formal cash offer within 24 hours. There's no obligation to accept.</p>
+                <p>We&apos;ll provide a formal cash offer within 24 hours. There&apos;s no obligation to accept.</p>
               </div>
               <div className={styles.processStep}>
                 <div className={styles.stepNumber}>03</div>
                 <h3>Cash In Bank</h3>
-                <p>If you accept, we'll instruct lawyers and complete the sale in as little as 7-14 days.</p>
+                <p>If you accept, we&apos;ll instruct lawyers and complete the sale in as little as 7-14 days.</p>
               </div>
             </div>
           </div>

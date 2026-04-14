@@ -1,12 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import styles from './Calculators.module.css';
 
 export const StampDutyCalculator: React.FC = () => {
   const [price, setPrice] = useState(500000);
   const [buyerType, setBuyerType] = useState<'standard' | 'first-time' | 'additional'>('standard');
-  const [tax, setTax] = useState(0);
 
   const calculateSDLT = (val: number, type: 'standard' | 'first-time' | 'additional') => {
     let taxAmount = 0;
@@ -39,9 +38,7 @@ export const StampDutyCalculator: React.FC = () => {
     return taxAmount;
   };
 
-  useEffect(() => {
-    setTax(calculateSDLT(price, buyerType));
-  }, [price, buyerType]);
+  const tax = calculateSDLT(price, buyerType);
 
   return (
     <div className={styles.grid}>
@@ -59,7 +56,7 @@ export const StampDutyCalculator: React.FC = () => {
           <label>Buyer Status</label>
           <select 
             value={buyerType} 
-            onChange={(e) => setBuyerType(e.target.value as any)}
+            onChange={(e) => setBuyerType(e.target.value as 'standard' | 'first-time' | 'additional')}
           >
             <option value="standard">Moving Main Residence</option>
             <option value="first-time">First-time Buyer</option>

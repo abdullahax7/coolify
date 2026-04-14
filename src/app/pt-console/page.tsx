@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { PROPERTIES, type Property } from '@/data/properties';
 import styles from './admin.module.css';
 
@@ -85,8 +86,10 @@ export default function AdminPanel() {
 
   useEffect(() => {
     const s = ls<AdminSession | null>(SESSION_KEY, null);
-    if (s?.loggedIn) setAuthed(true);
-    setReady(true);
+    requestAnimationFrame(() => {
+      if (s?.loggedIn) setAuthed(true);
+      setReady(true);
+    });
   }, []);
 
   if (!ready) return null;
@@ -160,13 +163,15 @@ function Shell({ tab, setTab, onLogout }: { tab: Tab; setTab: (t: Tab) => void; 
   const [viewingPropId, setViewingPropId] = useState<string | null>(null);
 
   useEffect(() => {
-    setOrders(ls('pt_orders', []));
-    setSubs(ls('pt_submissions', []));
-    setMessages(ls('pt_messages', []));
-    setOverrides(ls('pt_prop_overrides', {}));
-    setCustomProps(ls('pt_custom_props', []));
-    setDocuments(ls('pt_documents', []));
-    setTenancies(ls('pt_tenancies', []));
+    requestAnimationFrame(() => {
+      setOrders(ls('pt_orders', []));
+      setSubs(ls('pt_submissions', []));
+      setMessages(ls('pt_messages', []));
+      setOverrides(ls('pt_prop_overrides', {}));
+      setCustomProps(ls('pt_custom_props', []));
+      setDocuments(ls('pt_documents', []));
+      setTenancies(ls('pt_tenancies', []));
+    });
   }, []);
 
   /* Orders CRUD */
@@ -280,7 +285,7 @@ function Shell({ tab, setTab, onLogout }: { tab: Tab; setTab: (t: Tab) => void; 
             />
           ) : (
             <>
-              {tab === 'overview'      && <Overview orders={orders} submissions={submissions} messages={messages} listingOrders={listingOrders} serviceOrders={serviceOrders} setTab={setTab} documents={documents} tenancies={tenancies} />}
+              {tab === 'overview'      && <Overview orders={orders} submissions={submissions} messages={messages} setTab={setTab} documents={documents} tenancies={tenancies} />}
               {tab === 'properties'    && <PropertiesTab overrides={overrides} onOverride={saveOverride} customProps={customProps} onCreate={createCustom} onUpdate={updateCustom} onDelete={deleteCustom} onAddTenancy={(id) => { setInitTenancy(id); setTab('tenants'); }} onAddDoc={setInitDocPropId} onViewCompliance={(id) => setInitDocPropId(id)} onViewDetails={(id) => setViewingPropId(id)} />}
               {tab === 'submissions'   && <SubmissionsTab submissions={submissions} onCreate={createSub} onUpdate={updateSub} onDelete={deleteSub} />}
               {tab === 'listing-plans' && <OrdersTab type="listing" orders={listingOrders} onCreate={createOrder} onUpdate={updateOrder} onDelete={deleteOrder} />}
@@ -330,9 +335,9 @@ function ConfirmModal({ title, body, confirmLabel = 'Delete', onConfirm, onCance
   );
 }
 
-function Overview({ orders, submissions, messages, listingOrders, serviceOrders, setTab, documents, tenancies }: {
+function Overview({ orders, submissions, messages, setTab, documents, tenancies }: {
   orders: Order[]; submissions: Submission[]; messages: Message[];
-  listingOrders: Order[]; serviceOrders: Order[]; setTab: (t: Tab) => void;
+  setTab: (t: Tab) => void;
   documents: PropertyDocument[]; tenancies: Tenancy[];
 }) {
   const revenue = orders.reduce((s, o) => { const n = parseFloat(o.price.replace(/[^0-9.]/g, '')); return s + (isNaN(n) ? 0 : n); }, 0);
@@ -434,7 +439,7 @@ function Overview({ orders, submissions, messages, listingOrders, serviceOrders,
 }
 
 /* ═══════════════════════════════ PROPERTIES ═══════════════════════════════ */
-function PropertyListItem({ id, title, location, image, sector, isCustom, onEdit, onDelete, onAddTenancy, onAddDoc, onViewCompliance, onToggleVisibility, isHidden, onViewDetails }: {
+function PropertyListItem({ title, image, sector, isCustom, onEdit, onDelete, onAddTenancy, onAddDoc, onViewCompliance, isHidden, onViewDetails, onToggleVisibility }: {
   id: string; title: string; location: string; image?: string; sector: string; isCustom: boolean;
   onEdit: () => void; onDelete: () => void; onAddTenancy: () => void; onAddDoc: () => void;
   onViewCompliance: () => void; onViewDetails: () => void; onToggleVisibility?: () => void; isHidden?: boolean;
@@ -444,7 +449,7 @@ function PropertyListItem({ id, title, location, image, sector, isCustom, onEdit
   return (
     <div className={styles.propCard}>
       <div className={styles.propCardImgWrap}>
-        {image ? <img src={image} alt={title} className={styles.propCardImg} /> : <div className={styles.customThumb}>🏠</div>}
+        {image ? <Image src={image} alt={title} className={styles.propCardImg} width={120} height={80} /> : <div className={styles.customThumb}>🏠</div>}
       </div>
       <div className={styles.propCardInfo}>
         <div className={styles.propCardTitle}>{title}</div>
@@ -493,7 +498,7 @@ function PropertiesTab({ overrides, onOverride, customProps, onCreate, onUpdate,
   const [search, setSearch]       = useState('');
   const [ft, setFt]               = useState('All');
   const [fs, setFs]               = useState('All');
-  const [showHidden, setShowHidden] = useState(false);
+  const [showHidden]              = useState(false);
   const [editStatic, setEditStatic] = useState<Property | null>(null);
   const [editCustom, setEditCustom] = useState<CustomProp | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
@@ -715,7 +720,7 @@ function PropForm({ draft, onChange }: {
         {/* Main image */}
         <div className={styles.photoBlock}>
           <div className={styles.photoBlockLabel}>Main Photo</div>
-          {draft.image && <img src={draft.image} alt="main" className={styles.photoPreviewMain} />}
+          {draft.image && <Image src={draft.image} alt="main" className={styles.photoPreviewMain} width={200} height={150} unoptimized />}
           <label className={styles.uploadBtn}>
             📷 {draft.image ? 'Replace Main Photo' : 'Upload Main Photo'}
             <input type="file" accept="image/*" style={{ display: 'none' }}
@@ -733,7 +738,7 @@ function PropForm({ draft, onChange }: {
             <div className={styles.galleryThumbs}>
               {galleryList.map((src, i) => (
                 <div key={i} className={styles.galleryThumbWrap}>
-                  <img src={src} alt={`gallery-${i}`} className={styles.galleryThumb} />
+                  <Image src={src} alt={`gallery-${i}`} className={styles.galleryThumb} width={80} height={60} unoptimized />
                   <button type="button" className={styles.galleryRemoveBtn}
                     onClick={() => onChange('gallery', galleryList.filter((_, j) => j !== i).join(','))}>✕</button>
                 </div>
@@ -1478,7 +1483,8 @@ function DocModal({ properties, initialPropertyId, existingDoc, onClose, onSave 
           const d = parts[0].padStart(2, '0');
           const m = months[parts[1]];
           const y = parts[2];
-          setExpiry(`${y}-${m}-${d}`);
+          const dateStr = `${y}-${m}-${d}`;
+          requestAnimationFrame(() => setExpiry(dateStr));
         }
       } catch (e) { console.error("Date conversion failed", e); }
     }
@@ -1594,7 +1600,7 @@ function TenantsTab({ tenancies, onCreate, onUpdate, onDelete, customProps, init
 
   useEffect(() => {
     if (initialPropertyId) {
-      setCreateOpen(true);
+      requestAnimationFrame(() => setCreateOpen(true));
     }
   }, [initialPropertyId]);
 
@@ -1736,7 +1742,7 @@ function TenancyModal({ properties, existing, initialPropertyId, onClose, onSave
       startDate,
       endDate,
       rentAmount,
-      rentFrequency: rentFrequency as any,
+      rentFrequency: rentFrequency as 'Monthly' | 'Weekly' | 'Quarterly',
       rentDay,
       depositAmount,
       tenantName,
@@ -1789,7 +1795,7 @@ function TenancyModal({ properties, existing, initialPropertyId, onClose, onSave
             </div>
             <div className={styles.editField}>
               <label>Collection frequency</label>
-              <select className={styles.filterSelect} value={rentFrequency} onChange={e => setRentFrequency(e.target.value as any)}>
+              <select className={styles.filterSelect} value={rentFrequency} onChange={(e) => setRentFrequency(e.target.value as 'Monthly' | 'Weekly' | 'Quarterly')}>
                 <option>Monthly</option>
                 <option>Weekly</option>
                 <option>Quarterly</option>
@@ -1919,9 +1925,9 @@ function PropertyDetailView({ id, onBack, customProps, documents, tenancies, ove
         <div className={styles.detailCard}>
           <div className={styles.detailCardBody} style={{ display: 'flex', gap: '24px' }}>
             {prop.image ? (
-              <img src={prop.image} alt={prop.title} style={{ width: 280, height: 180, borderRadius: 12, objectFit: 'cover' }} />
+              <Image src={prop.image} alt={prop.title} width={280} height={180} style={{ borderRadius: 12, objectFit: 'cover' }} />
             ) : (
-              <div style={{ width: 280, height: 180, borderRadius: 12, background: '#f8fafc', display: 'flex', alignItems: 'center', justifyCenter: 'center', fontSize: '3rem' }}>🏠</div>
+              <div style={{ width: 280, height: 180, borderRadius: 12, background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '3rem' }}>🏠</div>
             )}
             <div style={{ flex: 1 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>

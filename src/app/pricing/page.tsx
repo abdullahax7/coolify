@@ -19,7 +19,7 @@ export default function PricingPage() {
           <div className={styles.container}>
             <h1 className={styles.title}>Simple, Transparent <span>Pricing</span></h1>
             <p className={styles.subtitle}>
-              Maximize your property's exposure with our curated advertising packages. 
+              Maximize your property&apos;s exposure with our curated advertising packages. 
               No hidden fees, just results.
             </p>
           </div>
@@ -42,7 +42,7 @@ export default function PricingPage() {
                 <p>Yes, you can upgrade your package at any time from your dashboard to increase exposure or add professional services like floor plans.</p>
               </div>
               <div className={styles.faqItem}>
-                <h3>What is the "No Sale No Fee" package?</h3>
+                <h3>What is the &quot;No Sale No Fee&quot; package?</h3>
                 <p>Our Ultimate package means you pay nothing upfront. We only take a 1% fee once your property is successfully sold and completion has taken place.</p>
               </div>
               <div className={styles.faqItem}>

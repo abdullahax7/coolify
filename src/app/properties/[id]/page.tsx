@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
 import { useParams, notFound } from 'next/navigation';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
@@ -89,7 +91,10 @@ export default function PropertyDetailPage() {
   const onTouchEnd = (e: React.TouchEvent) => {
     if (touchStartX.current === null) return;
     const diff = touchStartX.current - e.changedTouches[0].clientX;
-    if (Math.abs(diff) > 40) diff > 0 ? next() : prev();
+    if (Math.abs(diff) > 40) {
+      if (diff > 0) next();
+      else prev();
+    }
     touchStartX.current = null;
   };
 
@@ -100,18 +105,21 @@ export default function PropertyDetailPage() {
       <main className={styles.main}>
         <div className={styles.container}>
           <div className={styles.breadcrumb}>
-            <a href="/properties">Properties</a> / <span>{property.title}</span>
+            <Link href="/properties">Properties</Link> / <span>{property.title}</span>
           </div>
 
           {/* ── IMAGE SLIDER ── */}
           <section className={styles.gallery}>
             <div className={styles.sliderTrack} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
               <div className={styles.mainSlide} onClick={() => { setLightboxIndex(current); setLightboxOpen(true); }}>
-                <img
+                <Image
                   key={current}
                   src={images[current]}
                   alt={`${property.title} – photo ${current + 1}`}
                   className={`${styles.slideImg} ${isAnimating ? styles.fadeIn : ''}`}
+                  width={1200}
+                  height={800}
+                  priority
                 />
                 <div className={styles.counter}>{current + 1} / {total}</div>
               </div>
@@ -126,7 +134,7 @@ export default function PropertyDetailPage() {
               <div className={styles.thumbStrip} ref={thumbsRef}>
                 {images.map((img, i) => (
                   <button key={i} className={`${styles.thumb} ${i === current ? styles.thumbActive : ''}`} onClick={() => goTo(i)} aria-label={`Go to image ${i + 1}`}>
-                    <img src={img} alt={`Thumbnail ${i + 1}`} />
+                    <Image src={img} alt={`Thumbnail ${i + 1}`} width={100} height={100} />
                   </button>
                 ))}
               </div>
@@ -179,7 +187,7 @@ export default function PropertyDetailPage() {
                 <div className={styles.agentCard}>
                   <h3>Listing Agent</h3>
                   <div className={styles.agentInfo}>
-                    <img src={agent.image} alt={agent.name} className={styles.agentImg} />
+                    <Image src={agent.image} alt={agent.name} className={styles.agentImg} width={64} height={64} />
                     <div>
                       <div className={styles.agentName}>{agent.name}</div>
                       <div className={styles.agentRole}>{agent.role}</div>
@@ -224,7 +232,7 @@ export default function PropertyDetailPage() {
             <button className={`${styles.lbArrow} ${styles.lbArrowLeft}`} onClick={() => setLightboxIndex(i => (i - 1 + total) % total)} aria-label="Previous">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
             </button>
-            <img src={images[lightboxIndex]} alt={`View ${lightboxIndex + 1}`} className={styles.lightboxImage} />
+            <Image src={images[lightboxIndex]} alt={`View ${lightboxIndex + 1}`} className={styles.lightboxImage} width={1600} height={1000} unoptimized />
             <button className={`${styles.lbArrow} ${styles.lbArrowRight}`} onClick={() => setLightboxIndex(i => (i + 1) % total)} aria-label="Next">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
             </button>
@@ -232,7 +240,7 @@ export default function PropertyDetailPage() {
             <div className={styles.lbThumbs}>
               {images.map((img, i) => (
                 <button key={i} className={`${styles.lbThumb} ${i === lightboxIndex ? styles.lbThumbActive : ''}`} onClick={() => setLightboxIndex(i)}>
-                  <img src={img} alt={`Thumbnail ${i + 1}`} />
+                  <Image src={img} alt={`Thumbnail ${i + 1}`} width={100} height={100} />
                 </button>
               ))}
             </div>

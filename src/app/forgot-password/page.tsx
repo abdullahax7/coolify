@@ -29,7 +29,7 @@ export default function ForgotPasswordPage() {
           <Link href="/" className={styles.backLink}>← Back to site</Link>
           <div className={styles.logo}>PROPERTY <span>TRADER</span></div>
           <h1>Reset your <span>password.</span></h1>
-          <p>Enter your registered email address and we'll send you instructions to reset your password.</p>
+          <p>Enter your registered email address and we&apos;ll send you instructions to reset your password.</p>
           <div className={styles.trustItems}>
             <div className={styles.trustItem}><span>📧</span> Check your inbox after submitting</div>
             <div className={styles.trustItem}><span>⏱️</span> Link expires after 24 hours</div>
@@ -45,7 +45,7 @@ export default function ForgotPasswordPage() {
               <div className={styles.successIcon}>✓</div>
               <h2>Check your email</h2>
               <p>
-                If <strong>{email}</strong> is registered with us, you'll receive password reset instructions shortly. Check your spam folder if you don't see it within a few minutes.
+                If <strong>{email}</strong> is registered with us, you&apos;ll receive password reset instructions shortly. Check your spam folder if you don&apos;t see it within a few minutes.
               </p>
               <Link href="/login" className={styles.backToLogin}>← Back to Sign In</Link>
             </div>

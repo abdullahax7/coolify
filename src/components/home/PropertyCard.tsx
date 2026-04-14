@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import styles from './PropertyCard.module.css';
 
 interface PropertyCardProps {
@@ -28,7 +29,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
     <Link href={`/properties/${id}`} className={styles.card}>
       <div className={styles.imageWrapper}>
         <div className={styles.badge}>{type}</div>
-        <img src={image} alt={title} className={styles.image} />
+        <Image src={image} alt={title} className={styles.image} width={400} height={300} />
       </div>
       <div className={styles.content}>
         <div className={styles.header}>
