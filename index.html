@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Postcode Location Finder (Gemini)</title>
+    <style>
+        body {
+            font-family: Arial;
+            background: #0f172a;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .box {
+            width: 420px;
+            background: #1e293b;
+            padding: 20px;
+            border-radius: 12px;
+        }
+
+        input,
+        button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 10px;
+            border-radius: 8px;
+            border: none;
+            outline: none;
+        }
+
+        button {
+            background: #3b82f6;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #2563eb;
+        }
+
+        pre {
+            margin-top: 15px;
+            background: #0b1220;
+            padding: 10px;
+            border-radius: 8px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="box">
+        <h2>Postcode Finder</h2>
+
+        <input id="postcode" placeholder="Enter postcode" />
+        <button onclick="getLocation()">Search</button>
+
+        <pre id="result">Waiting...</pre>
+    </div>
+
+    <script>
+        const API_KEY = "AIzaSyBY3kYJcTsgy3nPtVbNDuN2ToeYHljK-YQ";
+
+        async function getLocation() {
+            const postcode = document.getElementById("postcode").value;
+            const result = document.getElementById("result");
+
+            if (!postcode) {
+                result.textContent = "Enter a postcode first.";
+                return;
+            }
+
+            result.textContent = "Loading...";
+
+            const prompt = `
+You are a location intelligence system.
+
+Given postcode: "${postcode}"
+
+Return ONLY JSON:
+{
+  "postcode": "",
+  "city": "",
+  "state_or_region": "",
+  "country": "",
+  "area_or_district": "",
+  "notes": ""
+}
+
+If unknown, use "unknown".
+`;
+
+            try {
+                const res = await fetch(
+                    `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${API_KEY}`,
+                    {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: prompt }] }]
+                        })
+                    }
+                );
+
+                const data = await res.json();
+
+                const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                if (!text) {
+                    result.textContent = "No response from API.";
+                    return;
+                }
+
+                try {
+                    result.textContent = JSON.stringify(JSON.parse(text), null, 2);
+                } catch {
+                    result.textContent = text;
+                }
+
+            } catch (err) {
+                result.textContent = "Error: " + err.message;
+            }
+        }
+    </script>
+
+</body>
+
+</html>

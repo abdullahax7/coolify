@@ -1,0 +1,77 @@
+.logoWrapper {
+  display: flex;
+  flex-direction: column;
+  text-decoration: none;
+  cursor: pointer;
+  width: fit-content;
+}
+
+.topRow {
+  display: flex;
+  align-items: center;
+}
+
+.logoImage {
+  position: relative;
+  /* overflow: hidden; Removed to prevent cropping */
+  display: flex;
+  align-items: center;
+}
+
+.header .logoImage {
+  height: 50px;
+  width: auto;
+}
+
+.footer .logoImage {
+  height: 60px;
+  width: auto;
+  filter: brightness(0) invert(1); /* Ensure logos are white in the dark footer */
+}
+
+.img {
+  height: 100%;
+  width: auto;
+  object-fit: contain;
+}
+
+.phone {
+  margin-top: -4px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #1e3a8a; /* Blue */
+  letter-spacing: 0.05em;
+  text-decoration: none;
+  padding-left: 0;
+}
+
+.phone:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+  .header .logoImage {
+    height: 36px;
+  }
+  .footer .logoImage {
+    height: 48px;
+  }
+  .phone {
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .header .logoImage {
+    height: 28px;
+  }
+}
+
+@media (max-width: 360px) {
+  .header .logoImage {
+    height: 24px;
+  }
+  .phone {
+    font-size: 0.65rem;
+  }
+}

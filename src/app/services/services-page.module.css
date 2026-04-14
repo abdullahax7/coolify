@@ -1,0 +1,256 @@
+.page {
+  padding-top: 120px;
+  min-height: 100vh;
+  background: var(--background);
+}
+
+.main {
+  padding-bottom: 100px;
+}
+
+/* Hero */
+.hero {
+  background: linear-gradient(135deg, var(--navy) 0%, #1e293b 100%);
+  padding: 120px 0 80px;
+  color: white;
+  text-align: center;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.title {
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-weight: 800;
+  margin-bottom: 24px;
+}
+
+.title span {
+  background: linear-gradient(135deg, var(--primary), #fb7185);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.subtitle {
+  font-size: 1.25rem;
+  max-width: 800px;
+  margin: 0 auto;
+  opacity: 0.8;
+  line-height: 1.6;
+}
+
+/* Sections */
+.section {
+  padding: 100px 0;
+}
+
+.section:nth-child(even) {
+  background: white;
+}
+
+.sectionHeader {
+  text-align: center;
+  margin-bottom: 60px;
+}
+
+.sectionTitle {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: var(--secondary);
+  margin-bottom: 12px;
+}
+
+.sectionTitle span {
+  color: var(--primary);
+}
+
+.sectionSubtitle {
+  color: var(--text-muted);
+  font-size: 1.1rem;
+}
+
+/* Catalog Layout */
+.catalogLayout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 60px;
+  align-items: start;
+}
+
+.catalogNav {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: sticky;
+  top: 100px;
+}
+
+.navItem {
+  text-align: left;
+  padding: 16px 24px;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--accent-cream);
+  transition: all 0.2s ease;
+}
+
+.navItem:hover {
+  background: white;
+  color: var(--primary);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.navActive {
+  background: var(--primary) !important;
+  color: white !important;
+  box-shadow: 0 10px 20px rgba(225, 29, 72, 0.2);
+}
+
+.catalogGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+}
+
+.catalogCard {
+  background: white;
+  padding: 32px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-light);
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s ease;
+}
+
+.catalogCard:hover {
+  transform: translateY(-5px);
+  border-color: var(--primary-light);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.05);
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+  gap: 16px;
+}
+
+.cardHeader h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--secondary);
+}
+
+.price {
+  font-weight: 800;
+  color: var(--primary);
+  font-size: 1.25rem;
+  white-space: nowrap;
+}
+
+.catalogCard p {
+  color: var(--text-muted);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  margin-bottom: 24px;
+  flex: 1;
+}
+
+.selectBtn {
+  width: 100%;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  background: var(--secondary);
+  color: white;
+  font-weight: 700;
+  font-size: 0.8125rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: all 0.2s ease;
+}
+
+.selectBtn:hover {
+  background: var(--primary);
+}
+
+/* CTA Section */
+.ctaSection {
+  background: var(--accent-cream);
+  padding: 80px 0;
+}
+
+.ctaCard {
+  background: white;
+  padding: 60px;
+  border-radius: var(--radius-lg);
+  text-align: center;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border-light);
+}
+
+.ctaCard h2 {
+  font-size: 2.5rem;
+  margin-bottom: 16px;
+}
+
+.ctaCard p {
+  font-size: 1.125rem;
+  color: var(--text-muted);
+  margin-bottom: 32px;
+}
+
+.ctaCard button {
+  background: var(--primary);
+  color: white;
+  padding: 16px 40px;
+  border-radius: var(--radius-md);
+  font-weight: 700;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+}
+
+.ctaCard button:hover {
+  background: var(--primary-dark);
+  transform: scale(1.05);
+}
+
+@media (max-width: 1024px) {
+  .catalogLayout {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+  
+  .catalogNav {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
+    position: static;
+  }
+  
+  .navItem {
+    flex: 1 1 auto;
+    text-align: center;
+    padding: 12px 16px;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .catalogGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .hero {
+    padding: 100px 0 60px;
+  }
+  
+  .sectionTitle {
+    font-size: 2rem;
+  }
+}

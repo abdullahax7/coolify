@@ -1,0 +1,248 @@
+.page {
+  padding-top: 120px;
+  min-height: 100vh;
+  background: var(--background);
+}
+
+.main {
+  padding-bottom: 100px;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* Hero */
+.hero {
+  background: linear-gradient(135deg, var(--navy) 0%, #1e293b 100%);
+  padding: 120px 0 100px;
+  color: white;
+  text-align: center;
+}
+
+.heroBadge {
+  display: inline-block;
+  background: var(--primary);
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  margin-bottom: 24px;
+  letter-spacing: 0.05em;
+}
+
+.heroTitle {
+  font-size: clamp(2.5rem, 5vw, 4.5rem);
+  font-weight: 800;
+  line-height: 1.1;
+  margin-bottom: 24px;
+}
+
+.heroTitle span {
+  color: var(--primary);
+}
+
+.heroSubtitle {
+  font-size: 1.25rem;
+  max-width: 800px;
+  margin: 0 auto;
+  opacity: 0.8;
+  line-height: 1.6;
+}
+
+/* Form Section */
+.formSection {
+  margin-top: -60px;
+  position: relative;
+  z-index: 10;
+}
+
+.formCard {
+  background: white;
+  padding: 60px;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 40px 100px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border-light);
+}
+
+.formHeader {
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+.formHeader h2 {
+  font-size: 2.25rem;
+  margin-bottom: 12px;
+}
+
+.formHeader p {
+  color: var(--text-muted);
+  font-size: 1.1rem;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.inputGroup {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.field label {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--secondary);
+}
+
+.field input, .field select {
+  padding: 14px 20px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
+  font-size: 1rem;
+}
+
+.field input:focus, .field select:focus {
+  border-color: var(--primary);
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(225, 29, 72, 0.05);
+}
+
+.submitBtn {
+  margin-top: 12px;
+  padding: 18px !important;
+  font-weight: 800 !important;
+}
+
+.formNote {
+  margin-top: 24px;
+  text-align: center;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Process Section */
+.processSection {
+  padding: 100px 0;
+}
+
+.sectionHeader {
+  text-align: center;
+  margin-bottom: 60px;
+}
+
+.sectionHeader h2 {
+  font-size: 2.5rem;
+  margin-bottom: 12px;
+}
+
+.sectionHeader h2 span {
+  color: var(--primary);
+}
+
+.processGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 40px;
+}
+
+.processStep {
+  background: white;
+  padding: 40px;
+  border-radius: var(--radius-md);
+  text-align: center;
+  border: 1px solid var(--border-light);
+}
+
+.stepNumber {
+  width: 60px;
+  height: 60px;
+  background: var(--accent-cream);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin: 0 auto 24px;
+}
+
+.processStep h3 {
+  font-size: 1.5rem;
+  margin-bottom: 16px;
+}
+
+.processStep p {
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+/* Benefits Section */
+.benefitsSection {
+  background: var(--secondary);
+  padding: 80px 0;
+  color: white;
+}
+
+.benefitsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+}
+
+.benefitCard {
+  text-align: center;
+  padding: 32px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-md);
+}
+
+.benefitIcon {
+  font-size: 2.5rem;
+  margin-bottom: 20px;
+}
+
+.benefitCard h3 {
+  font-size: 1.25rem;
+  margin-bottom: 12px;
+}
+
+.benefitCard p {
+  opacity: 0.7;
+  font-size: 0.9375rem;
+}
+
+@media (max-width: 1024px) {
+  .processGrid, .benefitsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .heroTitle {
+    font-size: 2.5rem;
+  }
+  
+  .formCard {
+    padding: 32px 20px;
+  }
+  
+  .inputGroup {
+    grid-template-columns: 1fr;
+  }
+}

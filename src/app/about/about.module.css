@@ -1,0 +1,281 @@
+.page {
+  padding-top: 120px;
+  background: white;
+  min-height: 100vh;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 40px;
+}
+
+.main {
+  padding-top: 80px;
+}
+
+.hero {
+  padding: 120px 0 80px;
+  text-align: center;
+  background: #f8fafc;
+}
+
+.badge {
+  display: inline-block;
+  background: rgba(225, 29, 72, 0.1);
+  color: var(--primary);
+  padding: 8px 20px;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 24px;
+}
+
+.hero h1 {
+  font-size: 4rem;
+  font-weight: 900;
+  color: var(--navy);
+  margin-bottom: 24px;
+}
+
+.hero h1 span {
+  color: var(--primary);
+}
+
+.subtitle {
+  font-size: 1.25rem;
+  color: #64748b;
+  max-width: 700px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+.content {
+  padding: 100px 0;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px;
+  align-items: center;
+}
+
+.textContent h2 {
+  font-size: 2.5rem;
+  color: var(--navy);
+  margin-bottom: 24px;
+  line-height: 1.2;
+}
+
+.textContent h2 span {
+  color: var(--primary);
+}
+
+.textContent p {
+  font-size: 1.125rem;
+  color: #475569;
+  line-height: 1.8;
+  margin-bottom: 24px;
+}
+
+.stats {
+  display: flex;
+  gap: 40px;
+  margin-top: 40px;
+  padding-top: 40px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat strong {
+  font-size: 2rem;
+  color: var(--primary);
+  font-weight: 900;
+}
+
+.stat span {
+  font-size: 0.875rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+}
+
+.imagePlaceholder {
+  height: 600px;
+  background: #f1f5f9;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  position: relative;
+}
+
+.glassImg {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  padding: 40px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-md);
+  color: var(--navy);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+.values {
+  padding: 100px 0;
+  background: #f8fafc;
+}
+
+.sectionTitle {
+  text-align: center;
+  font-size: 3rem;
+  margin-bottom: 60px;
+  color: var(--navy);
+}
+
+.sectionTitle span {
+  color: var(--primary);
+}
+
+.valuesGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 40px;
+}
+
+.valueCard {
+  background: white;
+  padding: 40px;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+}
+
+.valueCard:hover {
+  transform: translateY(-5px);
+}
+
+.valueCard h3 {
+  font-size: 1.5rem;
+  color: var(--navy);
+  margin-bottom: 16px;
+  font-weight: 800;
+}
+
+.valueCard p {
+  color: #64748b;
+  line-height: 1.6;
+}
+
+.team, .testimonials {
+  padding: 100px 0;
+  background: white;
+}
+
+.testimonials {
+  background: #f8fafc;
+}
+
+.teamGrid, .testimonialGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 40px;
+}
+
+.teamCard {
+  background: #f8fafc;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: transform 0.3s ease;
+}
+
+.teamCard:hover {
+  transform: translateY(-5px);
+}
+
+.teamImg {
+  height: 350px;
+  background-size: cover;
+  background-position: center;
+}
+
+.teamInfo {
+  padding: 24px;
+}
+
+.teamInfo h3 {
+  font-size: 1.25rem;
+  color: var(--navy);
+  margin-bottom: 4px;
+  font-weight: 800;
+}
+
+.teamInfo p {
+  color: var(--primary);
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.testimonialCard {
+  background: white;
+  padding: 40px;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+  position: relative;
+}
+
+.quoteIcon {
+  font-family: serif;
+  font-size: 4rem;
+  color: var(--primary);
+  opacity: 0.2;
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  line-height: 1;
+}
+
+.testimonialCard p {
+  font-size: 1.125rem;
+  color: #475569;
+  line-height: 1.7;
+  margin-bottom: 24px;
+  position: relative;
+  z-index: 1;
+}
+
+.author {
+  display: flex;
+  flex-direction: column;
+}
+
+.author strong {
+  color: var(--navy);
+  font-size: 1rem;
+}
+
+.author span {
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+@media (max-width: 1024px) {
+  .row { grid-template-columns: 1fr; gap: 40px; }
+  .imagePlaceholder { height: 400px; }
+  .teamGrid, .testimonialGrid { grid-template-columns: 1fr; }
+  .hero h1 { font-size: 2.5rem; }
+}

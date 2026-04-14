@@ -1,0 +1,101 @@
+.page {
+  padding-top: 120px;
+  min-height: 100vh;
+  background: var(--background);
+}
+
+.main {
+  padding-bottom: 80px;
+}
+
+.hero {
+  background: linear-gradient(135deg, var(--navy) 0%, #1e293b 100%);
+  padding: 100px 0 80px;
+  color: white;
+  text-align: center;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.title {
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-weight: 800;
+  margin-bottom: 24px;
+  line-height: 1.1;
+}
+
+.title span {
+  background: linear-gradient(135deg, var(--primary), #fb7185);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.subtitle {
+  font-size: 1.25rem;
+  max-width: 700px;
+  margin: 0 auto;
+  opacity: 0.8;
+  line-height: 1.6;
+}
+
+.pricingSection {
+  margin-top: -60px;
+  position: relative;
+  z-index: 10;
+}
+
+/* FAQ Section */
+.faqSection {
+  padding: 100px 0;
+  background: var(--accent-cream);
+}
+
+.faqTitle {
+  text-align: center;
+  margin-bottom: 60px;
+  font-size: 2.5rem;
+  font-weight: 800;
+}
+
+.faqTitle span {
+  color: var(--primary);
+}
+
+.faqGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 40px;
+}
+
+.faqItem h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: var(--secondary);
+}
+
+.faqItem p {
+  color: var(--text-muted);
+  line-height: 1.7;
+}
+
+@media (max-width: 768px) {
+  .hero {
+    padding: 80px 0 60px;
+  }
+  
+  .faqGrid {
+    grid-template-columns: 1fr;
+    gap: 30px;
+  }
+  
+  .faqTitle {
+    font-size: 2rem;
+    margin-bottom: 40px;
+  }
+}

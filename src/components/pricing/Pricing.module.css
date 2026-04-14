@@ -1,0 +1,421 @@
+/* ===== Container ===== */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 60px 20px 40px;
+}
+
+.title {
+  text-align: center;
+  margin-bottom: 32px;
+  font-size: clamp(1.75rem, 4vw, 3rem);
+  font-weight: 800;
+  color: var(--secondary);
+}
+
+.subtitle {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 1.125rem;
+  margin-bottom: 48px;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.title span {
+  color: var(--primary);
+}
+
+/* ===== Visibility Helpers ===== */
+.desktopOnly {
+  display: block;
+}
+
+.mobileOnly {
+  display: none;
+}
+
+/* ===== Toggle Selector ===== */
+.toggleWrapper {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.toggleContainer {
+  position: relative;
+  display: flex;
+  background: #f1f5f9;
+  padding: 6px;
+  border-radius: var(--radius-full);
+  min-width: 320px;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.06);
+}
+
+@media (max-width: 480px) {
+  .toggleContainer {
+    min-width: 280px;
+  }
+}
+
+.toggleBtn {
+  flex: 1;
+  position: relative;
+  z-index: 2;
+  border: none;
+  background: transparent;
+  padding: 12px 24px;
+  font-size: 0.8125rem;
+  font-weight: 800;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.toggleActive {
+  color: var(--secondary);
+}
+
+.toggleSlider {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  width: calc(50% - 6px);
+  height: calc(100% - 12px);
+  background: white;
+  border-radius: var(--radius-full);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sliderLet {
+  transform: translateX(100%);
+}
+
+/* ===== Desktop Table ===== */
+.tableWrapper {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(16px);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 40px 100px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  border: 1px solid var(--border-light);
+}
+
+.table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.table th, .table td {
+  padding: 20px 24px;
+  text-align: center;
+  border-bottom: 1px solid var(--border-light);
+  transition: var(--transition-fast);
+}
+
+.table th:first-child, .table td:first-child {
+  text-align: left;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: white;
+  width: 320px;
+}
+
+.featureName {
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+/* Popular Tier Highlighting */
+.popularColumn {
+  position: relative;
+  background: rgba(225, 29, 72, 0.02) !important;
+}
+
+.popularColumn::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--primary);
+}
+
+.badge {
+  background: var(--primary);
+  color: white;
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  font-weight: 800;
+  display: inline-block;
+  margin-bottom: 8px;
+}
+
+/* Header Cells */
+.headerRow th {
+  padding: 40px 24px;
+  vertical-align: bottom;
+  background: white;
+}
+
+.tierInfo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.tierName {
+  font-size: 1.125rem;
+  font-weight: 800;
+  color: var(--secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.tierPrice {
+  font-size: 2rem;
+  font-weight: 900;
+  color: var(--secondary);
+  line-height: 1;
+  margin: 10px 0;
+}
+
+.tierSubtitle {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+/* Feature Rows */
+.featureRow:hover td {
+  background: rgba(248, 250, 252, 0.8);
+}
+
+.checkIcon {
+  color: #10b981;
+  width: 22px;
+  height: 22px;
+  margin: 0 auto;
+  display: block;
+}
+
+.crossIcon {
+  color: #94a3b8;
+  width: 18px;
+  height: 18px;
+  margin: 0 auto;
+  display: block;
+  opacity: 0.6;
+}
+
+.textValue {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--secondary);
+}
+
+.footerRow td {
+  padding: 36px 24px;
+  border-bottom: none;
+  background: white;
+}
+
+.selectBtn {
+  width: 100%;
+  padding: 13px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  font-weight: 700;
+  font-size: 0.875rem;
+  cursor: pointer;
+  background: white;
+  color: var(--secondary);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+}
+
+.selectBtn:hover {
+  background: var(--secondary);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(30, 58, 138, 0.2);
+}
+
+.popularBtn {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.popularBtn:hover {
+  background: var(--primary-dark);
+}
+
+.bespokeCall {
+  margin-top: 28px;
+  text-align: right;
+  font-size: 0.9375rem;
+  color: var(--text-muted);
+}
+
+.bespokeCall strong {
+  color: var(--secondary);
+  font-size: 1.125rem;
+}
+
+/* ===== Mobile Card Layout ===== */
+.mobileWrapper {
+  width: 100%;
+}
+
+/* Tier tab selector */
+.mobileTabs {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-bottom: 20px;
+  background: #f1f5f9;
+  padding: 6px;
+  border-radius: var(--radius-md);
+}
+
+.mobileTab {
+  padding: 10px 4px;
+  border: none;
+  border-radius: calc(var(--radius-md) - 3px);
+  background: transparent;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.mobileTab:hover {
+  background: white;
+  color: var(--secondary);
+}
+
+.mobileTabActive {
+  background: white;
+  color: var(--secondary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.mobileTabPopular.mobileTabActive {
+  color: var(--primary);
+}
+
+/* Card */
+.mobileCard {
+  background: white;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-light);
+  padding: 28px 24px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+}
+
+.mobileCardHidden {
+  display: none;
+}
+
+.mobileCardPopular {
+  border-color: var(--primary);
+  box-shadow: 0 8px 40px rgba(225, 29, 72, 0.12);
+}
+
+.mobilePriceRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.mobilePriceRow .tierName {
+  font-size: 1.25rem;
+}
+
+.mobilePriceRow .tierPrice {
+  font-size: 2rem;
+  margin: 0;
+}
+
+/* Feature list */
+.mobileFeatureList {
+  list-style: none;
+  padding: 0;
+  margin: 20px 0 24px;
+  border-top: 1px solid var(--border-light);
+  padding-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.mobileFeatureItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.9375rem;
+  color: var(--secondary);
+}
+
+.mobileFeatureDisabled {
+  opacity: 0.4;
+}
+
+.mobileFeatureIcon {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mobileFeatureName {
+  flex: 1;
+}
+
+.mobileFeatureValue {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--primary);
+  background: rgba(225, 29, 72, 0.08);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+}
+
+.mobileSelectBtn {
+  margin-top: 4px;
+}
+
+/* ===== Breakpoints ===== */
+@media (max-width: 900px) {
+  .desktopOnly { display: none; }
+  .mobileOnly  { display: block; }
+}
+
+@media (max-width: 480px) {
+  .mobileTab {
+    font-size: 0.6875rem;
+    padding: 9px 2px;
+  }
+
+  .mobileCard {
+    padding: 22px 18px;
+  }
+}
