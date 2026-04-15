@@ -33,7 +33,12 @@ export default function PDFPreview({ pdfUrl }: Props) {
         canvas.height = viewport.height;
 
         const context = canvas.getContext('2d')!;
-        const task = page.render({ canvasContext: context, viewport });
+        const renderContext = {
+          canvasContext: context,
+          viewport: viewport,
+          canvas: canvas,
+        };
+        const task = page.render(renderContext);
         renderTask = task;
         await task.promise;
         if (!cancelled) setLoading(false);

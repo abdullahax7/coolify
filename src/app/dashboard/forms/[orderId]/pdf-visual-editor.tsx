@@ -58,6 +58,7 @@ export default function PDFVisualEditor({ pdfUrl, formType, initialData, onDataC
         const renderContext = {
           canvasContext: context,
           viewport: viewport,
+          canvas: canvas,
         };
         
         currentRenderTask = page.render(renderContext);
