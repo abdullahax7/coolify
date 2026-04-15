@@ -4,6 +4,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { PROPERTIES, type Property } from '@/data/properties';
+import { fillAndDownloadPDF } from '@/lib/pdf-service';
+import { FORM_SCHEMAS } from '@/data/form_schemas';
 import styles from './admin.module.css';
 
 /* ═══════════════════════════════ TYPES ═══════════════════════════════ */
@@ -12,6 +14,8 @@ interface Order {
   id: string; type: 'listing' | 'service'; name: string;
   price: string; detail: string; date: string; status: string;
   customerName: string; customerEmail: string; customerPhone: string;
+  formData?: Record<string, string>;
+  formType?: string;
 }
 interface Submission {
   id: string; address: string; postcode: string; type: string;
@@ -60,12 +64,32 @@ interface Tenancy {
   status: 'Active' | 'Pending' | 'Ended';
   createdAt: string;
 }
+interface Appointment {
+  id: string;
+  name: string;
+  number: string;
+  timing: string;
+  day: string;
+  description?: string;
+  createdAt: string;
+}
+interface CashInquiry {
+  id: string;
+  name: string;
+  phone: string;
+  email: string;
+  price: string;
+  address: string;
+  postcode: string;
+  date: string;
+  status: 'new' | 'viewed' | 'contacted' | 'rejected' | 'accepted';
+}
 
 const ADMIN_EMAIL = 'admin@propertytrader1.co.uk';
 const ADMIN_PASS  = 'PTAdmin2024';
 const SESSION_KEY = 'pt_adm_sess';
 
-type Tab = 'overview' | 'properties' | 'submissions' | 'listing-plans' | 'services' | 'messages' | 'documents' | 'tenants';
+type Tab = 'overview' | 'properties' | 'submissions' | 'listing-plans' | 'services' | 'messages' | 'documents' | 'tenants' | 'appointments' | 'forms' | 'cash-buyers';
 
 /* ═══════════════════════════════ LS HELPERS ═══════════════════════════════ */
 function ls<T>(key: string, fb: T): T {
@@ -161,6 +185,9 @@ function Shell({ tab, setTab, onLogout }: { tab: Tab; setTab: (t: Tab) => void; 
   const [initTenancy, setInitTenancy] = useState<string | null>(null);
   const [initDocPropId, setInitDocPropId] = useState<string | null>(null);
   const [viewingPropId, setViewingPropId] = useState<string | null>(null);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [cashInquiries, setCashInquiries] = useState<CashInquiry[]>([]);
+  const [menuOpen, setMenuOpen]   = useState(false);
 
   useEffect(() => {
     requestAnimationFrame(() => {
@@ -171,6 +198,8 @@ function Shell({ tab, setTab, onLogout }: { tab: Tab; setTab: (t: Tab) => void; 
       setCustomProps(ls('pt_custom_props', []));
       setDocuments(ls('pt_documents', []));
       setTenancies(ls('pt_tenancies', []));
+      setAppointments(ls('pt_appointments', []));
+      setCashInquiries(ls('pt_cash_inquiries', []));
     });
   }, []);
 
@@ -220,6 +249,25 @@ function Shell({ tab, setTab, onLogout }: { tab: Tab; setTab: (t: Tab) => void; 
   const updateTenancy = (upd: Tenancy) => saveTenancies(tenancies.map(t => t.id === upd.id ? upd : t));
   const deleteTenancy = (id: string) => saveTenancies(tenancies.filter(t => t.id !== id));
 
+  /* Appointments CRUD */
+  const saveAppointments = (next: Appointment[]) => { lsSet('pt_appointments', next); setAppointments(next); };
+  const createAppointment = (a: Omit<Appointment, 'id' | 'createdAt'>) =>
+    saveAppointments([{ ...a, id: `APT-${uid()}`, createdAt: today() }, ...appointments]);
+  const updateAppointment = (upd: Appointment) => saveAppointments(appointments.map(a => a.id === upd.id ? upd : a));
+  const deleteAppointment = (id: string) => saveAppointments(appointments.filter(a => a.id !== id));
+
+  /* Cash Inquiries CRUD */
+  const updateCashInquiry = (inc: CashInquiry) => {
+    const next = cashInquiries.map(i => i.id === inc.id ? inc : i);
+    setCashInquiries(next);
+    lsSet('pt_cash_inquiries', next);
+  };
+  const deleteCashInquiry = (id: string) => {
+    const next = cashInquiries.filter(i => i.id !== id);
+    setCashInquiries(next);
+    lsSet('pt_cash_inquiries', next);
+  };
+
   const unread       = messages.filter(m => !m.read).length;
   const listingOrders = orders.filter(o => o.type === 'listing');
   const serviceOrders = orders.filter(o => o.type === 'service');
@@ -234,11 +282,17 @@ function Shell({ tab, setTab, onLogout }: { tab: Tab; setTab: (t: Tab) => void; 
     { id: 'documents',      label: 'Documents',      icon: '📂', badge: documents.filter(d => d.status === 'Expiring' || d.status === 'Expired').length || undefined },
     { id: 'tenants',        label: 'Tenants',        icon: '👥', badge: tenancies.filter(t => t.status === 'Active').length || undefined },
     { id: 'messages',       label: 'Messages',       icon: '✉️', badge: unread || undefined },
+    { id: 'appointments',   label: 'Appointments',   icon: '📅' },
+    { id: 'cash-buyers',    label: 'Cash Buyers',    icon: '💰' },
+    { id: 'forms',          label: 'Wales Forms',     icon: '🏴󠁧󠁢󠁷󠁬󠁳󠁿' },
   ];
 
   return (
-    <div className={styles.shell}>
-      <aside className={styles.sidebar}>
+    <div className={`${styles.shell} ${menuOpen ? styles.menuOpen : ''}`}>
+      {/* Sidebar Overlay for mobile */}
+      {menuOpen && <div className={styles.sidebarOverlay} onClick={() => setMenuOpen(false)} />}
+      
+      <aside className={`${styles.sidebar} ${menuOpen ? styles.sidebarOpen : ''}`}>
         <div className={styles.sidebarTop}>
           <div className={styles.brand}>
             <div className={styles.brandName}>PROPERTY <span>TRADER</span></div>
@@ -246,7 +300,7 @@ function Shell({ tab, setTab, onLogout }: { tab: Tab; setTab: (t: Tab) => void; 
           </div>
           <nav className={styles.nav}>
             {nav.map(n => (
-              <button key={n.id} onClick={() => { setTab(n.id); setViewingPropId(null); }}
+              <button key={n.id} onClick={() => { setTab(n.id); setViewingPropId(null); setMenuOpen(false); }}
                 className={`${styles.navItem} ${tab === n.id ? styles.navActive : ''}`}>
                 <span className={styles.navIcon}>{n.icon}</span>
                 <span className={styles.navLabel}>{n.label}</span>
@@ -263,7 +317,12 @@ function Shell({ tab, setTab, onLogout }: { tab: Tab; setTab: (t: Tab) => void; 
 
       <div className={styles.main}>
         <header className={styles.topBar}>
-          <h1 className={styles.pageTitle}>{nav.find(n => n.id === tab)?.icon} {nav.find(n => n.id === tab)?.label}</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <button className={styles.mobToggle} onClick={() => setMenuOpen(!menuOpen)}>
+              {menuOpen ? '✕' : '☰'}
+            </button>
+            <h1 className={styles.pageTitle}>{nav.find(n => n.id === tab)?.label}</h1>
+          </div>
           <div className={styles.topRight}>
             <span className={styles.adminBadge}>Admin</span>
             <span className={styles.adminEmail}>{ADMIN_EMAIL}</span>
@@ -293,6 +352,9 @@ function Shell({ tab, setTab, onLogout }: { tab: Tab; setTab: (t: Tab) => void; 
               {tab === 'messages'      && <MessagesTab messages={messages} onMarkRead={markRead} onMarkAllRead={markAllRead} onDelete={deleteMsg} />}
               {tab === 'documents'     && <DocumentsTab documents={documents} onCreate={createDoc} onUpdate={updateDoc} onDelete={deleteDoc} customProps={customProps} />}
               {tab === 'tenants'       && <TenantsTab tenancies={tenancies} onCreate={createTenancy} onUpdate={updateTenancy} onDelete={deleteTenancy} customProps={customProps} initialPropertyId={initTenancy} onModalClose={() => setInitTenancy(null)} />}
+              {tab === 'appointments' && <AppointmentsTab appointments={appointments} onCreate={createAppointment} onUpdate={updateAppointment} onDelete={deleteAppointment} />}
+              {tab === 'cash-buyers'  && <CashBuyersTab inquiries={cashInquiries} onUpdate={updateCashInquiry} onDelete={deleteCashInquiry} />}
+              {tab === 'forms'         && <FormsTab orders={orders} onUpdateOrder={updateOrder} onCreateOrder={createOrder} onDeleteOrder={deleteOrder} />}
             </>
           )}
         </div>
@@ -2062,6 +2124,481 @@ function PropertyDetailView({ id, onBack, customProps, documents, tenancies, ove
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════ WALES FORMS ═══════════════════════════════ */
+const WALES_FORMS = [
+  'Form RHW1', 'Form RHW2', 'Form RHW3', 'Form RHW4', 'Form RHW6', 'Form RHW7', 
+  'Form RHW8', 'Form RHW12', 'Form RHW15', 'Form RHW16', 'Form RHW17', 'Form RHW18',
+  'Form RHW19', 'Form RHW20', 'Form RHW21', 'Form RHW22', 'Form RHW23', 'Form RHW24',
+  'Form RHW25', 'Form RHW26', 'Form RHW27', 'Form RHW28', 'Form RHW29', 'Form RHW30',
+  'Form RHW32', 'Form RHW33', 'Form RHW34', 'Form RHW35', 'Form RHW36', 'Form RHW37', 'Form RHW38'
+];
+
+function FormsTab({ orders, onUpdateOrder, onCreateOrder, onDeleteOrder }: {
+  orders: Order[];
+  onUpdateOrder: (o: Order) => void;
+  onCreateOrder: (o: Omit<Order, 'id' | 'date'>) => void;
+  onDeleteOrder: (id: string) => void;
+}) {
+  const [selected, setSelected] = useState<Order | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState<Record<string, string>>({});
+  const [createOpen, setCreateOpen] = useState(false);
+  const [newFormType, setNewFormType] = useState(WALES_FORMS[0]);
+  const [customerInfo, setCustomerInfo] = useState({ name: '', email: '' });
+  const [search, setSearch] = useState('');
+
+  const formOrders = orders.filter(o => !!o.formType && (!search || o.formType.toLowerCase().includes(search.toLowerCase()) || o.customerName.toLowerCase().includes(search.toLowerCase())));
+
+  const saveEdit = () => {
+    if (selected) {
+      onUpdateOrder({ ...selected, formData: draft });
+      setSelected({ ...selected, formData: draft });
+      setEditing(false);
+    }
+  };
+
+  const generateFreeForm = () => {
+    onCreateOrder({
+      type: 'service',
+      name: newFormType,
+      price: '£0.00 (Admin)',
+      detail: 'Admin generated Wales Form',
+      status: 'completed',
+      customerName: customerInfo.name || 'Admin',
+      customerEmail: customerInfo.email || 'admin@propertytrader1.co.uk',
+      customerPhone: '',
+      formType: newFormType,
+      formData: {}
+    });
+    setCreateOpen(false);
+  };
+
+  const handleDownload = async (order: Order) => {
+    const formNum = order.formType?.match(/\d+/)?.[0] || '';
+    const padNum = formNum.padStart(2, '0');
+    const filename = `form-RHW${padNum}.pdf`;
+    const pdfUrl = `/forms/${filename}`;
+    
+    await fillAndDownloadPDF(pdfUrl, order.formData || {}, `${order.formType}.pdf`);
+  };
+
+  return (
+    <div>
+      <div className={styles.toolbar}>
+        <input className={styles.searchInput} placeholder="Search forms or customers..." value={search} onChange={e => setSearch(e.target.value)} />
+        <div className={styles.toolbarCount}>{formOrders.length} form orders</div>
+        <button className={styles.createBtn} onClick={() => setCreateOpen(true)}>+ Generate Free Form</button>
+      </div>
+
+      <div className={styles.splitView}>
+        <div className={styles.splitLeft}>
+          {formOrders.length === 0 ? (
+            <div className={styles.emptyState}><span>🏴󠁧󠁢󠁷󠁬󠁳󠁿</span><p>No Wales Form orders found.</p></div>
+          ) : (
+            <div className={styles.submissionCards}>
+              {formOrders.map(o => (
+                <div key={o.id}
+                  className={`${styles.submissionCard} ${selected?.id === o.id ? styles.submissionCardActive : ''}`}
+                  onClick={() => { setSelected(o); setDraft(o.formData || {}); setEditing(false); }}>
+                  <div className={styles.submissionCardTop}>
+                    <div>
+                      <div className={styles.submissionAddr}>{o.formType}</div>
+                      <div className={styles.submissionMeta}>{o.customerName}</div>
+                    </div>
+                    <span className={styles.miniPrice}>{o.price}</span>
+                  </div>
+                  <div className={styles.submissionDate}>{o.date}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className={styles.splitRight}>
+          {!selected ? (
+            <div className={styles.emptyState}><span>👈</span><p>Select a form to manage.</p></div>
+          ) : (
+            <div className={styles.detailPanel}>
+              <div className={styles.detailHeader}>
+                <h2>{selected.formType}</h2>
+                <div className={styles.actions}>
+                   <button className={styles.btnInfo} onClick={() => handleDownload(selected)}>📥 Download PDF</button>
+                   <button className={styles.btnInfo} onClick={() => alert('Emailing to ' + selected.customerEmail)}>✉️ Email to Client</button>
+                </div>
+              </div>
+
+              <div className={styles.contactBlock}>
+                <h4>Client: {selected.customerName} ({selected.customerEmail})</h4>
+              </div>
+
+              <div className={styles.formEditorBox}>
+                <div className={styles.sectionHeader}>
+                  <h3>Form Data</h3>
+                  {!editing ? (
+                    <button className={styles.btnEdit} onClick={() => setEditing(true)}>✏️ Edit Details</button>
+                  ) : (
+                    <div className={styles.actionGroup}>
+                      <button className={styles.btnSuccess} onClick={saveEdit}>💾 Save</button>
+                      <button className={styles.btnSecondary} onClick={() => setEditing(false)}>Cancel</button>
+                    </div>
+                  )}
+                </div>
+
+                {(() => {
+                  const schema = (selected.formType && FORM_SCHEMAS[selected.formType]) || FORM_SCHEMAS['default'];
+                  return (
+                    <div className={styles.editGrid} style={{ marginTop: 20 }}>
+                      {schema.fields.map(field => (
+                        <div
+                          key={field.key}
+                          className={`${styles.editField} ${field.type === 'textarea' ? styles.editSpan2 : ''}`}
+                        >
+                          <label>{field.label}</label>
+                          {field.type === 'textarea' ? (
+                            <textarea
+                              disabled={!editing}
+                              rows={3}
+                              value={draft[field.key] || ''}
+                              onChange={e => setDraft({ ...draft, [field.key]: e.target.value })}
+                              placeholder={field.placeholder || field.label}
+                            />
+                          ) : field.type === 'select' ? (
+                            <select
+                              disabled={!editing}
+                              className={styles.filterSelect}
+                              style={{ width: '100%' }}
+                              value={draft[field.key] || ''}
+                              onChange={e => setDraft({ ...draft, [field.key]: e.target.value })}
+                            >
+                              <option value="">Select…</option>
+                              {field.options?.map(opt => (
+                                <option key={opt} value={opt}>{opt}</option>
+                              ))}
+                            </select>
+                          ) : (
+                            <input
+                              type={field.type}
+                              disabled={!editing}
+                              value={draft[field.key] || ''}
+                              onChange={e => setDraft({ ...draft, [field.key]: e.target.value })}
+                              placeholder={field.placeholder || field.label}
+                            />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
+              
+              <div className={styles.crudBar} style={{ marginTop: 30 }}>
+                <button className={styles.btnDanger} onClick={() => { if(confirm('Delete this form?')) onDeleteOrder(selected.id); setSelected(null); }}>🗑️ Delete Order</button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {createOpen && (
+        <div className={styles.modalBackdrop} onClick={() => setCreateOpen(false)}>
+          <div className={styles.modal} style={{ maxWidth: 500 }} onClick={e => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h2>Generate Free Form</h2>
+              <button className={styles.modalClose} onClick={() => setCreateOpen(false)}>✕</button>
+            </div>
+            <div className={styles.modalBody}>
+              <div className={styles.editField} style={{ marginBottom: 15 }}>
+                <label>Select Wales Form</label>
+                <select className={styles.filterSelect} style={{ width: '100%' }} value={newFormType} onChange={e => setNewFormType(e.target.value)}>
+                  {WALES_FORMS.map(f => <option key={f} value={f}>{f}</option>)}
+                </select>
+              </div>
+              <div className={styles.editField} style={{ marginBottom: 15 }}>
+                <label>Client Name (Optional)</label>
+                <input value={customerInfo.name} onChange={e => setCustomerInfo({...customerInfo, name: e.target.value})} placeholder="e.g. John Doe" />
+              </div>
+              <div className={styles.editField}>
+                <label>Client Email (Optional)</label>
+                <input value={customerInfo.email} onChange={e => setCustomerInfo({...customerInfo, email: e.target.value})} placeholder="e.g. john@example.com" />
+              </div>
+            </div>
+            <div className={styles.modalFooter}>
+              <button className={styles.modalCancel} onClick={() => setCreateOpen(false)}>Cancel</button>
+              <button className={styles.modalSave} onClick={generateFreeForm}>Generate Form</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════ APPOINTMENTS ═══════════════════════════════ */
+function AppointmentsTab({ appointments, onCreate, onUpdate, onDelete }: {
+  appointments: Appointment[];
+  onCreate: (a: Omit<Appointment, 'id' | 'createdAt'>) => void;
+  onUpdate: (a: Appointment) => void;
+  onDelete: (id: string) => void;
+}) {
+  const [search, setSearch] = useState('');
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState<Appointment | null>(null);
+  const [warn, setWarn] = useState<Appointment | null>(null);
+
+  const filtered = appointments.filter(a => 
+    !search || 
+    a.name.toLowerCase().includes(search.toLowerCase()) || 
+    a.number.toLowerCase().includes(search.toLowerCase()) ||
+    a.description?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <div>
+      <div className={styles.toolbar}>
+        <input className={styles.searchInput} placeholder="Search appointments…" value={search} onChange={e => setSearch(e.target.value)} />
+        <div className={styles.toolbarCount}>{filtered.length} total</div>
+        <button className={styles.createBtn} style={{ marginLeft: 'auto' }} onClick={() => { setEditing(null); setModalOpen(true); }}>Add Appointment</button>
+      </div>
+
+      <div className={styles.tableWrap}>
+        <table className={styles.table}>
+          <thead>
+            <tr>
+              <th>Client Name</th>
+              <th>Phone Number</th>
+              <th>Timing</th>
+              <th>Day</th>
+              <th>Description</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.length === 0 ? (
+              <tr><td colSpan={6} style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>No appointments found.</td></tr>
+            ) : (
+              filtered.map(a => (
+                <tr key={a.id}>
+                  <td style={{ fontWeight: 800, color: '#e11d48' }}>{a.name}</td>
+                  <td style={{ fontWeight: 600 }}>{a.number}</td>
+                  <td><span className={styles.pillBlue} style={{ padding: '4px 10px', borderRadius: '6px' }}>{a.timing}</span></td>
+                  <td>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <span className={styles.pillGray} style={{ padding: '4px 10px', borderRadius: '6px', alignSelf: 'flex-start' }}>{a.day}</span>
+                      {a.day && <span style={{ fontSize: '0.7rem', color: '#94a3b8', marginTop: '2px', fontWeight: 600 }}>{new Date(a.day).toLocaleDateString('en-GB', { weekday: 'short' })}</span>}
+                    </div>
+                  </td>
+                  <td style={{ maxWidth: 250, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.description || '—'}</td>
+                  <td>
+                    <div className={styles.actionGroup}>
+                      <button className={`${styles.actionBtn} ${styles.actionEdit}`} onClick={() => { setEditing(a); setModalOpen(true); }}>Edit</button>
+                      <button className={`${styles.actionBtn} ${styles.actionHide}`} onClick={() => setWarn(a)}>Delete</button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {modalOpen && (
+        <AppointmentModal
+          existing={editing}
+          onClose={() => setModalOpen(false)}
+          onSave={(data) => {
+            if (editing) onUpdate({ ...editing, ...data });
+            else onCreate(data);
+            setModalOpen(false);
+          }}
+        />
+      )}
+
+      {warn && (
+        <ConfirmModal
+          title="Delete Appointment?"
+          body={`Are you sure you want to remove the appointment for "${warn.name}"?`}
+          confirmLabel="Delete"
+          onConfirm={() => { onDelete(warn.id); setWarn(null); }}
+          onCancel={() => setWarn(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+function AppointmentModal({ existing, onClose, onSave }: {
+  existing: Appointment | null;
+  onClose: () => void;
+  onSave: (data: Omit<Appointment, 'id' | 'createdAt'>) => void;
+}) {
+  const [form, setForm] = useState({
+    name: existing?.name || '',
+    number: existing?.number || '',
+    timing: existing?.timing || '',
+    day: existing?.day || '',
+    description: existing?.description || '',
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.name || !form.number || !form.timing || !form.day) return;
+    onSave(form);
+  };
+
+  return (
+    <div className={styles.modalBackdrop} onClick={onClose}>
+      <div className={styles.modal} style={{ maxWidth: 500 }} onClick={e => e.stopPropagation()}>
+        <div className={styles.modalHeader}>
+          <h2>{existing ? 'Edit Appointment' : 'Add Appointment'}</h2>
+          <button className={styles.modalClose} onClick={onClose}>✕</button>
+        </div>
+        <form onSubmit={handleSubmit}>
+          <div className={styles.modalBody}>
+            <div className={styles.editGrid}>
+              <div className={`${styles.editField} ${styles.editSpan2}`}>
+                <label>Client Name</label>
+                <input required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Full Name" />
+              </div>
+              <div className={styles.editField}>
+                <label>Phone Number</label>
+                <input required value={form.number} onChange={e => setForm({ ...form, number: e.target.value })} placeholder="07xxx xxxxxx" />
+              </div>
+              
+              <div className={`${styles.editField} ${styles.editSpan2}`}>
+                <label style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  Appointment Schedule
+                  <span style={{ fontSize: '0.75rem', color: '#e11d48', fontWeight: 600 }}>
+                    {form.day ? new Date(form.day).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }) : 'Select a date'}
+                  </span>
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                  <input required type="date" className={styles.filterSelect} style={{ width: '100%' }} value={form.day} onChange={e => setForm({ ...form, day: e.target.value })} />
+                  <input required type="time" className={styles.filterSelect} style={{ width: '100%' }} value={form.timing} onChange={e => setForm({ ...form, timing: e.target.value })} />
+                </div>
+              </div>
+
+              <div className={`${styles.editField} ${styles.editSpan2}`}>
+                <label>Description (Optional)</label>
+                <textarea rows={3} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Small details about the appointment…" />
+              </div>
+            </div>
+          </div>
+          <div className={styles.modalFooter}>
+            <button type="button" className={styles.modalCancel} onClick={onClose}>Cancel</button>
+            <button type="submit" className={styles.modalSave}>{existing ? 'Update Appointment' : 'Add Appointment'}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════ CASH BUYERS ═══════════════════════════════ */
+function CashBuyersTab({ inquiries, onUpdate, onDelete }: {
+  inquiries: CashInquiry[];
+  onUpdate: (inc: CashInquiry) => void;
+  onDelete: (id: string) => void;
+}) {
+  const [search, setSearch] = useState('');
+  const [selected, setSelected] = useState<CashInquiry | null>(null);
+  const [warn, setWarn] = useState<CashInquiry | null>(null);
+
+  const filtered = inquiries.filter(i => 
+    !search || 
+    i.name.toLowerCase().includes(search.toLowerCase()) || 
+    i.address.toLowerCase().includes(search.toLowerCase()) ||
+    i.email.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <div>
+      <div className={styles.toolbar}>
+        <input className={styles.searchInput} placeholder="Search cash inquiries…" value={search} onChange={e => setSearch(e.target.value)} />
+        <div className={styles.toolbarCount}>{filtered.length} inquiries</div>
+      </div>
+
+      <div className={styles.splitView}>
+        <div className={styles.splitLeft}>
+          {filtered.length === 0 ? (
+            <div className={styles.emptyState}><span>💰</span><p>No cash inquiries found.</p></div>
+          ) : (
+            <div className={styles.submissionCards}>
+              {filtered.map(i => (
+                <div key={i.id}
+                  className={`${styles.submissionCard} ${selected?.id === i.id ? styles.submissionCardActive : ''} ${i.status === 'new' ? styles.unreadCard : ''}`}
+                  onClick={() => { setSelected(i); if (i.status === 'new') onUpdate({ ...i, status: 'viewed' }); }}>
+                  <div className={styles.submissionCardTop}>
+                    <div>
+                      <div className={styles.submissionAddr}>{i.status === 'new' && <span className={styles.unreadDot} />} {i.address}</div>
+                      <div className={styles.submissionMeta}>{i.name} · {i.price}</div>
+                    </div>
+                    <span className={`${styles.pill} ${i.status === 'rejected' ? styles.pillRed : i.status === 'accepted' ? styles.pillGreen : styles.pillGray}`}>{i.status.toUpperCase()}</span>
+                  </div>
+                  <div className={styles.submissionDate}>{i.date} · {i.postcode}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className={styles.splitRight}>
+          {!selected ? (
+            <div className={styles.emptyState}><span>👈</span><p>Select an inquiry to view details.</p></div>
+          ) : (
+            <div className={styles.detailPanel}>
+              <div className={styles.detailHeader}>
+                <h2>{selected.address}</h2>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <select value={selected.status} className={styles.filterSelect} style={{ width: 140 }}
+                    onChange={e => { const upd = { ...selected, status: e.target.value as CashInquiry['status'] }; onUpdate(upd); setSelected(upd); }}>
+                    <option value="new">New</option>
+                    <option value="viewed">Viewed</option>
+                    <option value="contacted">Contacted</option>
+                    <option value="accepted">Accepted</option>
+                    <option value="rejected">Rejected</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className={styles.contactBlock}>
+                <h4>Client Details</h4>
+                <div className={styles.contactGrid}>
+                  <ContactItem icon="👤" label="Name"  value={selected.name} />
+                  <ContactItem icon="✉️" label="Email" value={selected.email} href={`mailto:${selected.email}`} />
+                  <ContactItem icon="📞" label="Phone" value={selected.phone} href={`tel:${selected.phone}`} />
+                  <ContactItem icon="📅" label="Date"  value={selected.date} />
+                </div>
+              </div>
+
+              <div className={styles.detailGrid}>
+                <DetailRow label="Asking Price" value={selected.price} />
+                <DetailRow label="Postcode"     value={selected.postcode} />
+                <DetailRow label="Address"      value={selected.address} />
+                <DetailRow label="Inquiry ID"   value={selected.id} />
+              </div>
+
+              <div className={styles.crudBar} style={{ marginTop: 'auto' }}>
+                <a href={`mailto:${selected.email}?subject=Property Inquiry: ${selected.address}`} className={`${styles.btn} ${styles.btnInfo}`}>✉️ Reply</a>
+                <button className={`${styles.btn} ${styles.btnDanger}`} onClick={() => setWarn(selected)}>🗑️ Delete</button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {warn && (
+        <ConfirmModal
+          title="Delete Inquiry?"
+          body={`Delete inquiry from "${warn.name}" for ${warn.address}? This cannot be undone.`}
+          confirmLabel="Delete"
+          onConfirm={() => { onDelete(warn.id); setSelected(null); setWarn(null); }}
+          onCancel={() => setWarn(null)}
+        />
+      )}
     </div>
   );
 }

@@ -1,0 +1,125 @@
+.editorContainer {
+  position: relative;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: auto;
+  background: #525659; /* Standard PDF viewer gray */
+  padding: 40px 0;
+  border-radius: 12px;
+  min-height: 800px;
+  box-shadow: inset 0 2px 10px rgba(0,0,0,0.2);
+}
+
+.loading {
+  color: white;
+  padding: 100px;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.viewport {
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+
+.pdfWrapper {
+  position: relative;
+  background: white;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+}
+
+.pdfWrapper canvas {
+  display: block;
+}
+
+.overlayLayer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.inputWrap {
+  pointer-events: auto;
+  z-index: 5;
+}
+
+.pdfInput {
+  width: 100%;
+  height: 100%;
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid rgba(99, 102, 241, 0.4);
+  padding: 4px 8px;
+  font-family: inherit;
+  font-size: 13px;
+  color: #1e293b;
+  outline: none;
+  resize: none;
+  transition: all 0.2s;
+  overflow: hidden;
+  border-radius: 2px;
+}
+
+.pdfInput:focus {
+  background: rgba(255, 255, 255, 1);
+  border: 2px solid #6366f1;
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+  z-index: 20;
+}
+
+.unmappedField {
+  position: absolute;
+  left: 5%;
+  width: 90%;
+  background: white;
+  padding: 8px 15px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 10;
+  pointer-events: auto;
+  border: 1px solid #e2e8f0;
+}
+
+.unmappedField label {
+  font-weight: 600;
+  font-size: 12px;
+  white-space: nowrap;
+  color: #64748b;
+}
+
+.unmappedField input {
+  flex: 1;
+  border: none;
+  background: #f8fafc;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.pdfInput:hover {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: #6366f1;
+}
+
+/* Scrollbar styling */
+.editorContainer::-webkit-scrollbar {
+  width: 10px;
+}
+.editorContainer::-webkit-scrollbar-track {
+  background: #404446;
+}
+.editorContainer::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 5px;
+}
+.editorContainer::-webkit-scrollbar-thumb:hover {
+  background: #aaa;
+}

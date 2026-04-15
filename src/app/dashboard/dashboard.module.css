@@ -674,7 +674,7 @@
 
 @media (max-width: 768px) {
   .page { grid-template-columns: 1fr; }
-  .sidebar { display: none; }
+/* Sidebar shows as overlay, handled in base styles */
   .main { padding: 24px 16px; }
   .statsRow { grid-template-columns: repeat(2, 1fr); gap: 12px; }
   .orderRow { flex-direction: column; align-items: flex-start; }
@@ -683,4 +683,158 @@
   .submitCard { padding: 24px 20px; }
   .reviewGrid { grid-template-columns: 1fr; }
   .steps span { display: none; }
+}
+
+.orderActions {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.editFormBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background-color: #6366f1;
+  color: white;
+  text-decoration: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: background-color 0.2s;
+}
+
+.editFormBtn:hover {
+  background-color: #4f46e5;
+}
+
+/* ═══════════════════════════════════════
+   RESPONSIVENESS (MOBILE)
+   ═══════════════════════════════════════ */
+
+.mobToggle {
+  display: none;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--navy);
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+@media (max-width: 1024px) {
+  .page {
+    grid-template-columns: 1fr;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  .sidebar {
+    position: fixed;
+    left: -280px;
+    width: 280px;
+    z-index: 1000;
+    transition: left 0.3s ease;
+    box-shadow: 20px 0 50px rgba(0,0,0,0.15);
+  }
+
+  .sidebarOpen {
+    left: 0 !important;
+  }
+
+  .sidebarOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(4px);
+    z-index: 999;
+    animation: fadeIn 0.2s ease;
+  }
+
+  .main {
+    padding: 24px 20px;
+  }
+
+  .topBar {
+    margin-bottom: 24px;
+  }
+
+  .mobToggle {
+    display: block;
+  }
+
+  .pageTitle {
+    font-size: 1.25rem;
+  }
+
+  .backSite {
+    display: none;
+  }
+
+  .statsRow {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .statCard {
+    padding: 20px;
+  }
+
+  .planCards {
+    grid-template-columns: 1fr;
+  }
+
+  .orderRow,
+  .submissionRow {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 16px;
+  }
+
+  .orderInfo {
+    width: 100%;
+  }
+
+  .orderMeta {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #f1f5f9;
+  }
+
+  .submitCard {
+    padding: 24px 20px;
+  }
+
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .span2 {
+    grid-column: span 1;
+  }
+
+  .steps span {
+    display: none;
+  }
+
+  .reviewGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .statsRow {
+    grid-template-columns: 1fr;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }

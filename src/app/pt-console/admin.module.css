@@ -132,6 +132,8 @@
   background: #f8fafc;
 }
 
+.menuOpen {} /* Placeholder for export */
+
 /* ── Sidebar ── */
 .sidebar {
   background: #0f172a;
@@ -832,7 +834,8 @@
 .editField { display: flex; flex-direction: column; gap: 5px; }
 .editField label { font-size: 0.75rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; }
 .editField input,
-.editField textarea {
+.editField textarea,
+.editField select {
   padding: 9px 12px;
   border: 1.5px solid #e2e8f0;
   border-radius: 7px;
@@ -842,9 +845,15 @@
   outline: none;
   resize: vertical;
   transition: border-color 0.2s;
+  width: 100%;
+  background: white;
 }
 .editField input:focus,
-.editField textarea:focus { border-color: #e11d48; }
+.editField textarea:focus,
+.editField select:focus { border-color: #e11d48; }
+.editField input:disabled,
+.editField textarea:disabled,
+.editField select:disabled { background: #f8fafc; color: #64748b; cursor: default; }
 .editActions { display: flex; gap: 10px; }
 .saveEditBtn {
   padding: 11px 24px;
@@ -1757,5 +1766,167 @@
   font-size: 0.875rem;
   color: #64748b;
   margin-bottom: 16px;
+}
+
+/* Wales Forms Specific */
+.formEditorBox {
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.sectionHeader h3 {
+  font-size: 0.9375rem;
+  font-weight: 800;
+  color: #0f172a;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.actionGroup {
+  display: flex;
+  gap: 8px;
+}
+
+.miniPrice {
+  font-weight: 800;
+  color: #16a34a;
+  font-size: 0.875rem;
+}
+
+/* ═══════════════════════════════════════
+   RESPONSIVENESS (MOBILE)
+   ═══════════════════════════════════════ */
+
+.mobToggle {
+  display: none;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #0f172a;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+@media (max-width: 1024px) {
+  .shell {
+    grid-template-columns: 1fr;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  .menuOpen {
+    overflow: hidden;
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: -280px;
+    width: 280px;
+    z-index: 10000;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 20px 0 50px rgba(0,0,0,0.3);
+    display: flex !important;
+  }
+
+  .sidebarOpen {
+    left: 0 !important;
+  }
+
+  /* Same logic as dashboard: using a wrapper class if needed */
+  .menuOpen .sidebar {
+    left: 0 !important;
+  }
+
+  .sidebarOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(4px);
+    z-index: 999;
+    animation: fadeIn 0.2s ease;
+  }
+
+  .topBar {
+    padding: 16px 20px;
+    justify-content: space-between;
+  }
+
+  .mobToggle {
+    display: block;
+  }
+
+  .content {
+    padding: 24px 20px;
+  }
+
+  .statsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .overviewGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .propCard {
+    grid-template-columns: 1fr;
+    padding: 16px;
+    gap: 16px;
+  }
+
+  .propCardImgWrap {
+    height: 200px;
+  }
+
+  .propCardActions {
+    width: 100%;
+  }
+
+  .splitView {
+    grid-template-columns: 1fr;
+  }
+
+  .splitRight {
+    position: static;
+    margin-top: 24px;
+  }
+
+  .pageTitle {
+    font-size: 1.1rem;
+    max-width: 180px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .adminEmail {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .statsGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .topRight {
+    gap: 8px;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 

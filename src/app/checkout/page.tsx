@@ -39,12 +39,15 @@ function CheckoutContent() {
     if (!getUser()) { router.push(`/login`); return; }
     setLoading(true);
     setTimeout(() => {
+      const isWalesForm = orderName.startsWith('Form RHW');
       addOrder({
         type: isListing ? 'listing' : 'service',
         name: orderName,
         price: orderPrice,
         detail: orderDetail,
         status: 'active',
+        formType: isWalesForm ? orderName : undefined,
+        formData: isWalesForm ? {} : undefined,
       });
       setLoading(false);
       setDone(true);

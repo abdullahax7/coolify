@@ -13,6 +13,8 @@ export interface Order {
   detail: string;
   date: string;
   status: 'active' | 'pending' | 'completed';
+  formData?: Record<string, string>;
+  formType?: string;
 }
 
 const USER_KEY = 'pt_user';
@@ -51,4 +53,10 @@ export function addOrder(order: Omit<Order, 'id' | 'date'>) {
   };
   localStorage.setItem(ORDERS_KEY, JSON.stringify([newOrder, ...orders]));
   return newOrder;
+}
+
+export function updateOrder(id: string, updates: Partial<Order>) {
+  const orders = getOrders();
+  const next = orders.map(o => o.id === id ? { ...o, ...updates } : o);
+  localStorage.setItem(ORDERS_KEY, JSON.stringify(next));
 }

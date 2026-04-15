@@ -33,7 +33,7 @@ function saveSubmission(s: PropertySubmission) {
   localStorage.setItem('pt_submissions', JSON.stringify([s, ...all]));
 }
 
-type Tab = 'overview' | 'list-property' | 'plans' | 'services';
+type Tab = 'overview' | 'list-property' | 'services';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -41,6 +41,7 @@ export default function DashboardPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [submissions, setSubmissions] = useState<PropertySubmission[]>([]);
   const [tab, setTab] = useState<Tab>('overview');
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     const u = getUser();
@@ -63,14 +64,15 @@ export default function DashboardPage() {
   const pageTitles: Record<Tab, string> = {
     'overview': 'Dashboard',
     'list-property': 'List a Property',
-    'plans': 'My Listing Plans',
     'services': 'My Services',
   };
 
   return (
-    <div className={styles.page}>
-      {/* Sidebar */}
-      <aside className={styles.sidebar}>
+    <div className={`${styles.page} ${menuOpen ? styles.menuOpen : ''}`}>
+      {/* Sidebar Overlay for mobile */}
+      {menuOpen && <div className={styles.sidebarOverlay} onClick={() => setMenuOpen(false)} />}
+      
+      <aside className={`${styles.sidebar} ${menuOpen ? styles.sidebarOpen : ''}`}>
         <Link href="/" className={styles.logoLink}>
           <div className={styles.logo}>PROPERTY <span>TRADER</span></div>
         </Link>
@@ -86,30 +88,24 @@ export default function DashboardPage() {
         <nav className={styles.nav}>
           <button
             className={`${styles.navItem} ${tab === 'overview' ? styles.navActive : ''}`}
-            onClick={() => setTab('overview')}
+            onClick={() => { setTab('overview'); setMenuOpen(false); }}
           >
             <span>📊</span> Overview
           </button>
 
           <button
             className={`${styles.navItem} ${tab === 'list-property' ? styles.navActive : ''}`}
-            onClick={() => setTab('list-property')}
+            onClick={() => { setTab('list-property'); setMenuOpen(false); }}
           >
-            <span>🏡</span> List a Property
-            {submissions.length > 0 && <span className={styles.badge}>{submissions.length}</span>}
-          </button>
-
-          <button
-            className={`${styles.navItem} ${tab === 'plans' ? styles.navActive : ''}`}
-            onClick={() => setTab('plans')}
-          >
-            <span>📋</span> My Listing Plans
-            {listingOrders.length > 0 && <span className={styles.badge}>{listingOrders.length}</span>}
+            <span>🏡</span> List Property
+            {(submissions.length > 0 || listingOrders.length > 0) && (
+              <span className={styles.badge}>{submissions.length + listingOrders.length}</span>
+            )}
           </button>
 
           <button
             className={`${styles.navItem} ${tab === 'services' ? styles.navActive : ''}`}
-            onClick={() => setTab('services')}
+            onClick={() => { setTab('services'); setMenuOpen(false); }}
           >
             <span>🛠️</span> My Services
             {serviceOrders.length > 0 && <span className={styles.badge}>{serviceOrders.length}</span>}
@@ -126,9 +122,14 @@ export default function DashboardPage() {
       {/* Main content */}
       <main className={styles.main}>
         <div className={styles.topBar}>
-          <div>
-            <h1 className={styles.pageTitle}>{pageTitles[tab]}</h1>
-            <p className={styles.pageSub}>Member since {memberSince}</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+            <button className={styles.mobToggle} onClick={() => setMenuOpen(!menuOpen)}>
+              {menuOpen ? '✕' : '☰'}
+            </button>
+            <div>
+              <h1 className={styles.pageTitle}>{pageTitles[tab]}</h1>
+              <p className={styles.pageSub}>Member since {memberSince}</p>
+            </div>
           </div>
           <Link href="/" className={styles.backSite}>← Back to site</Link>
         </div>
@@ -148,14 +149,9 @@ export default function DashboardPage() {
                 <div className={styles.statLabel}>Listing Plans</div>
               </div>
               <div className={styles.statCard}>
-                <div className={styles.statIcon}>🛠️</div>
-                <div className={styles.statNum}>{serviceOrders.length}</div>
-                <div className={styles.statLabel}>Services Booked</div>
-              </div>
-              <div className={styles.statCard}>
                 <div className={styles.statIcon}>✅</div>
                 <div className={styles.statNum}>{orders.filter(o => o.status === 'active').length}</div>
-                <div className={styles.statLabel}>Active</div>
+                <div className={styles.statLabel}>Active Items</div>
               </div>
             </div>
 
@@ -201,43 +197,46 @@ export default function DashboardPage() {
                   </>
                 )}
 
-                {serviceOrders.length > 0 && (
-                  <>
-                    <h2 className={styles.sectionTitle} style={{ marginTop: '40px' }}>Services</h2>
-                    <div className={styles.orderList}>
-                      {serviceOrders.slice(0, 3).map(order => <OrderRow key={order.id} order={order} />)}
-                    </div>
-                  </>
-                )}
               </>
             )}
           </div>
         )}
 
-        {/* ── LIST A PROPERTY ── */}
+        {/* ── LIST A PROPERTY AND PLANS ── */}
         {tab === 'list-property' && (
           <div className={styles.listPropertyPage}>
-            {/* No plan gate */}
-            {listingOrders.length === 0 && (
-              <div className={styles.noPlanGate}>
-                <div className={styles.noPlanGateIcon}>🔒</div>
-                <h3>A Listing Plan is Required</h3>
-                <p>You need an active listing plan before you can submit a property. Choose a plan to unlock the form and get your property in front of thousands of buyers and tenants.</p>
-                <Link href="/pricing" className={styles.primaryAction}>View Listing Plans →</Link>
+            {/* Listing Plans Section */}
+            <div style={{ marginBottom: '48px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <h2 className={styles.sectionTitle} style={{ margin: 0 }}>My Listing Plans</h2>
+                <Link href="/pricing" className={styles.plansBannerLink}>+ Get New Plan</Link>
               </div>
-            )}
+              
+              {listingOrders.length === 0 ? (
+                <div className={styles.emptyState} style={{ padding: '40px', background: 'rgba(255,255,255,0.5)' }}>
+                  <div className={styles.emptyIcon} style={{ fontSize: '2rem' }}>📋</div>
+                  <h3>No active listing plans</h3>
+                  <p>You need a plan to list your property on our marketplace.</p>
+                  <Link href="/pricing" className={styles.primaryAction} style={{ marginTop: '16px' }}>View Plans</Link>
+                </div>
+              ) : (
+                <div className={styles.planCards} style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
+                  {listingOrders.map(order => <PlanCard key={order.id} order={order} />)}
+                </div>
+              )}
+            </div>
 
             {/* Submitted properties */}
             {submissions.length > 0 && (
-              <div style={{ marginBottom: '40px' }}>
-                <h2 className={styles.sectionTitle}>Submitted Properties</h2>
+              <div style={{ marginBottom: '48px' }}>
+                <h2 className={styles.sectionTitle}>My Submitted Properties</h2>
                 <div className={styles.submissionList}>
                   {submissions.map(s => (
                     <div key={s.id} className={styles.submissionRow}>
                       <div className={styles.submissionIcon}>🏠</div>
                       <div className={styles.orderInfo}>
                         <div className={styles.orderName}>{s.address}{s.postcode ? `, ${s.postcode}` : ''}</div>
-                        <div className={styles.orderDetail}>{s.type} · {s.beds} beds · {s.baths} baths · {s.price}</div>
+                        <div className={styles.orderDetail}>{s.type} · {s.beds} beds · {s.price}</div>
                       </div>
                       <div className={styles.orderMeta}>
                         <span className={`${styles.statusBadge} ${styles[`status_${s.status}`]}`}>{s.status.replace('-', ' ')}</span>
@@ -249,12 +248,12 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {/* Form — blurred/disabled overlay when no plan */}
+            {/* Form */}
             <div className={`${styles.formSection} ${listingOrders.length === 0 ? styles.formLocked : ''}`}>
               {listingOrders.length === 0 && (
                 <div className={styles.formLockOverlay}>
                   <span>🔒</span>
-                  <p>Get a listing plan to unlock this form</p>
+                  <p>Purchase a listing plan to unlock this form</p>
                   <Link href="/pricing" className={styles.primaryAction}>Choose a Plan</Link>
                 </div>
               )}
@@ -267,32 +266,6 @@ export default function DashboardPage() {
                 disabled={listingOrders.length === 0}
               />
             </div>
-          </div>
-        )}
-
-        {/* ── MY LISTING PLANS ── */}
-        {tab === 'plans' && (
-          <div>
-            {listingOrders.length === 0 ? (
-              <div className={styles.emptyState}>
-                <div className={styles.emptyIcon}>📋</div>
-                <h3>No listing plans yet</h3>
-                <p>Choose a plan to get your property listed in front of thousands of buyers and tenants.</p>
-                <div className={styles.emptyActions}>
-                  <Link href="/pricing" className={styles.primaryAction}>Browse Plans</Link>
-                </div>
-              </div>
-            ) : (
-              <>
-                <div className={styles.planCards}>
-                  {listingOrders.map(order => <PlanCard key={order.id} order={order} />)}
-                </div>
-                <div className={styles.plansCtaBanner}>
-                  <span>Need more visibility?</span>
-                  <Link href="/pricing" className={styles.plansBannerLink}>Upgrade your plan →</Link>
-                </div>
-              </>
-            )}
           </div>
         )}
 
@@ -334,6 +307,13 @@ function OrderRow({ order }: { order: Order }) {
         <span className={styles.orderDate}>{order.date}</span>
         <span className={styles.orderPrice}>{order.price}</span>
       </div>
+      {order.formType && (
+        <div className={styles.orderActions}>
+          <Link href={`/dashboard/forms/${order.id}`} className={styles.editFormBtn}>
+            ✏️ Edit Document
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

@@ -133,5 +133,41 @@ export const SERVICE_CATALOG: CatalogCategory[] = [
     items: [
       { name: '🔥 Infered Panel Heater', price: '£55.00', desc: 'Efficient heating solution for properties.' }
     ]
+  },
+  {
+    category: '🏴󠁧󠁢󠁷󠁬󠁳󠁿 Renting Homes Wales Forms',
+    items: [
+      { name: 'Form RHW1', price: '£10.00', desc: 'Notice of standard contract.' },
+      { name: 'Form RHW2', price: '£10.00', desc: 'Notice of landlord’s address.' },
+      { name: 'Form RHW3', price: '£10.00', desc: 'Notice of change of landlord’s address.' },
+      { name: 'Form RHW4', price: '£10.00', desc: 'Notice of landlord’s intention to provide a written statement.' },
+      { name: 'Form RHW6', price: '£10.00', desc: 'Notice of variation of contract.' },
+      { name: 'Form RHW7', price: '£10.00', desc: 'Notice of variation of rent.' },
+      { name: 'Form RHW8', price: '£10.00', desc: 'Notice of variation of other contract terms.' },
+      { name: 'Form RHW12', price: '£10.00', desc: 'Notice of landlord’s intention to end a contract.' },
+      { name: 'Form RHW15', price: '£10.00', desc: 'Information about a new contract-holder.' },
+      { name: 'Form RHW16', price: '£10.00', desc: 'Landlord’s notice of termination.' },
+      { name: 'Form RHW17', price: '£10.00', desc: 'Landlord’s notice: breach of contract.' },
+      { name: 'Form RHW18', price: '£10.00', desc: 'Landlord’s notice: estate management grounds.' },
+      { name: 'Form RHW19', price: '£10.00', desc: 'Notice of landlord’s intention to end a fixed-term contract.' },
+      { name: 'Form RHW20', price: '£10.00', desc: 'Notice of landlord’s intention to end a periodic contract.' },
+      { name: 'Form RHW21', price: '£10.00', desc: 'Notice of landlord’s intention to end a contract (no fault).' },
+      { name: 'Form RHW22', price: '£10.00', desc: 'Notice of intention to end a fixed-term standard contract.' },
+      { name: 'Form RHW23', price: '£10.00', desc: 'Notice of intention to end a periodic standard contract.' },
+      { name: 'Form RHW24', price: '£10.00', desc: 'Notice of landlord’s intention to end a contract (serious rent arrears).' },
+      { name: 'Form RHW25', price: '£10.00', desc: 'Notice of landlord’s intention to end a contract (standard).' },
+      { name: 'Form RHW26', price: '£10.00', desc: 'Notice of landlord’s intention to end a contract (secure).' },
+      { name: 'Form RHW27', price: '£10.00', desc: 'Landlord’s notice: serious rent arrears.' },
+      { name: 'Form RHW28', price: '£10.00', desc: 'Landlord’s notice: serious rent arrears (fixed term).' },
+      { name: 'Form RHW29', price: '£10.00', desc: 'Notice of landlord’s intention to end a fixed-term contract (no fault).' },
+      { name: 'Form RHW30', price: '£10.00', desc: 'Notice of landlord’s intention to end a periodic contract (no fault).' },
+      { name: 'Form RHW32', price: '£10.00', desc: 'Notice of variation of fixed-term standard contract.' },
+      { name: 'Form RHW33', price: '£10.00', desc: 'Notice of variation of periodic standard contract.' },
+      { name: 'Form RHW34', price: '£10.00', desc: 'Notice of variation of secure contract.' },
+      { name: 'Form RHW35', price: '£10.00', desc: 'Notice of change of landlord.' },
+      { name: 'Form RHW36', price: '£10.00', desc: 'Notice of change of contract-holder.' },
+      { name: 'Form RHW37', price: '£10.00', desc: 'Landlord’s notice: serious rent arrears (periodic).' },
+      { name: 'Form RHW38', price: '£10.00', desc: 'Termination of converted contract.' }
+    ]
   }
 ];
