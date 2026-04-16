@@ -57,8 +57,8 @@ export const CashBuy: React.FC = () => {
                   textDecoration: 'none', 
                   display: 'block', 
                   background: 'transparent', 
-                  border: '2px solid var(--primary)',
-                  color: 'var(--primary)'
+                  border: '2px solid #000',
+                  color: '#000'
                 }}>
                   LEARN MORE →
                 </Link>
