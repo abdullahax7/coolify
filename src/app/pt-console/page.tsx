@@ -4,8 +4,6 @@ import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { PROPERTIES, type Property } from '@/data/properties';
-import { fillAndDownloadPDF } from '@/lib/pdf-service';
-import { FORM_SCHEMAS } from '@/data/form_schemas';
 import styles from './admin.module.css';
 
 /* ═══════════════════════════════ TYPES ═══════════════════════════════ */
@@ -89,7 +87,26 @@ const ADMIN_EMAIL = 'admin@propertytrader1.co.uk';
 const ADMIN_PASS  = 'PTAdmin2024';
 const SESSION_KEY = 'pt_adm_sess';
 
-type Tab = 'overview' | 'properties' | 'submissions' | 'listing-plans' | 'services' | 'messages' | 'documents' | 'tenants' | 'appointments' | 'forms' | 'cash-buyers';
+type Tab = 'overview' | 'properties' | 'submissions' | 'listing-plans' | 'services' | 'messages' | 'documents' | 'tenants' | 'appointments' | 'forms' | 'cash-buyers' | 'tenancy-form';
+
+interface TenancyFormRecord {
+  id: string;
+  tenantName: string;
+  landlordName: string;
+  propertyAddress: string;
+  contractStartDate: string;
+  contractEndDate: string;
+  monthlyRent: string;
+  depositAmount: string;
+  tenantEmail: string;
+  tenantPhone: string;
+  landlordEmail: string;
+  landlordPhone: string;
+  additionalNotes: string;
+  uploadedContract?: { name: string; base64: string };
+  createdAt: string;
+  status: 'draft' | 'active' | 'ended';
+}
 
 /* ═══════════════════════════════ LS HELPERS ═══════════════════════════════ */
 function ls<T>(key: string, fb: T): T {
@@ -187,6 +204,7 @@ function Shell({ tab, setTab, onLogout }: { tab: Tab; setTab: (t: Tab) => void; 
   const [viewingPropId, setViewingPropId] = useState<string | null>(null);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [cashInquiries, setCashInquiries] = useState<CashInquiry[]>([]);
+  const [tenancyForms, setTenancyForms] = useState<TenancyFormRecord[]>([]);
   const [menuOpen, setMenuOpen]   = useState(false);
 
   useEffect(() => {
@@ -200,6 +218,7 @@ function Shell({ tab, setTab, onLogout }: { tab: Tab; setTab: (t: Tab) => void; 
       setTenancies(ls('pt_tenancies', []));
       setAppointments(ls('pt_appointments', []));
       setCashInquiries(ls('pt_cash_inquiries', []));
+      setTenancyForms(ls('pt_tenancy_forms', []));
     });
   }, []);
 
@@ -268,6 +287,13 @@ function Shell({ tab, setTab, onLogout }: { tab: Tab; setTab: (t: Tab) => void; 
     lsSet('pt_cash_inquiries', next);
   };
 
+  /* Tenancy Forms CRUD */
+  const saveTenancyForms = (next: TenancyFormRecord[]) => { lsSet('pt_tenancy_forms', next); setTenancyForms(next); };
+  const createTenancyForm = (f: Omit<TenancyFormRecord, 'id' | 'createdAt'>) =>
+    saveTenancyForms([{ ...f, id: `TF-${uid()}`, createdAt: today() }, ...tenancyForms]);
+  const updateTenancyForm = (upd: TenancyFormRecord) => saveTenancyForms(tenancyForms.map(f => f.id === upd.id ? upd : f));
+  const deleteTenancyForm = (id: string) => saveTenancyForms(tenancyForms.filter(f => f.id !== id));
+
   const unread       = messages.filter(m => !m.read).length;
   const listingOrders = orders.filter(o => o.type === 'listing');
   const serviceOrders = orders.filter(o => o.type === 'service');
@@ -284,7 +310,8 @@ function Shell({ tab, setTab, onLogout }: { tab: Tab; setTab: (t: Tab) => void; 
     { id: 'messages',       label: 'Messages',       icon: '✉️', badge: unread || undefined },
     { id: 'appointments',   label: 'Appointments',   icon: '📅' },
     { id: 'cash-buyers',    label: 'Cash Buyers',    icon: '💰' },
-    { id: 'forms',          label: 'Wales Forms',     icon: '🏴󠁧󠁢󠁷󠁬󠁳󠁿' },
+    { id: 'forms',          label: 'Wales Forms',     icon: '🏴󠁧󠁢󠁷󠁬󠁳󠁿', badge: orders.filter(o => !!o.formType && !o.formData?.pdfBase64).length || undefined },
+    { id: 'tenancy-form',   label: 'Tenancy Form',    icon: '📄', badge: tenancyForms.filter(f => f.status === 'active').length || undefined },
   ];
 
   return (
@@ -355,6 +382,7 @@ function Shell({ tab, setTab, onLogout }: { tab: Tab; setTab: (t: Tab) => void; 
               {tab === 'appointments' && <AppointmentsTab appointments={appointments} onCreate={createAppointment} onUpdate={updateAppointment} onDelete={deleteAppointment} />}
               {tab === 'cash-buyers'  && <CashBuyersTab inquiries={cashInquiries} onUpdate={updateCashInquiry} onDelete={deleteCashInquiry} />}
               {tab === 'forms'         && <FormsTab orders={orders} onUpdateOrder={updateOrder} onCreateOrder={createOrder} onDeleteOrder={deleteOrder} />}
+              {tab === 'tenancy-form'  && <TenancyFormTab forms={tenancyForms} onCreate={createTenancyForm} onUpdate={updateTenancyForm} onDelete={deleteTenancyForm} />}
             </>
           )}
         </div>
@@ -2143,73 +2171,105 @@ function FormsTab({ orders, onUpdateOrder, onCreateOrder, onDeleteOrder }: {
   onCreateOrder: (o: Omit<Order, 'id' | 'date'>) => void;
   onDeleteOrder: (id: string) => void;
 }) {
-  const [selected, setSelected] = useState<Order | null>(null);
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState<Record<string, string>>({});
-  const [createOpen, setCreateOpen] = useState(false);
-  const [newFormType, setNewFormType] = useState(WALES_FORMS[0]);
-  const [customerInfo, setCustomerInfo] = useState({ name: '', email: '' });
-  const [search, setSearch] = useState('');
+  const [selected,    setSelected]    = useState<Order | null>(null);
+  const [createOpen,  setCreateOpen]  = useState(false);
+  const [editOpen,    setEditOpen]    = useState(false);
+  const [warnDelete,  setWarnDelete]  = useState<Order | null>(null);
+  const [search,      setSearch]      = useState('');
 
-  const formOrders = orders.filter(o => !!o.formType && (!search || o.formType.toLowerCase().includes(search.toLowerCase()) || o.customerName.toLowerCase().includes(search.toLowerCase())));
+  const formOrders = orders.filter(o =>
+    !!o.formType &&
+    (!search ||
+      o.formType.toLowerCase().includes(search.toLowerCase()) ||
+      o.customerName.toLowerCase().includes(search.toLowerCase()))
+  );
 
-  const saveEdit = () => {
-    if (selected) {
-      onUpdateOrder({ ...selected, formData: draft });
-      setSelected({ ...selected, formData: draft });
-      setEditing(false);
-    }
+  const downloadPDF = (order: Order) => {
+    const b64  = order.formData?.pdfBase64;
+    const name = order.formData?.pdfName || `${order.formType}.pdf`;
+    if (!b64) { alert('No PDF uploaded for this record.'); return; }
+    const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+    const blob  = new Blob([bytes], { type: 'application/pdf' });
+    const url   = URL.createObjectURL(blob);
+    const a     = Object.assign(document.createElement('a'), { href: url, download: name });
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a); URL.revokeObjectURL(url);
   };
 
-  const generateFreeForm = () => {
+  const handleSaveNew = (data: {
+    formType: string; clientName: string; clientEmail: string;
+    clientPhone: string; notes: string; pdfBase64: string; pdfName: string;
+  }) => {
     onCreateOrder({
       type: 'service',
-      name: newFormType,
+      name: data.formType,
       price: '£0.00 (Admin)',
-      detail: 'Admin generated Wales Form',
+      detail: data.notes || 'Admin uploaded Wales Form',
       status: 'completed',
-      customerName: customerInfo.name || 'Admin',
-      customerEmail: customerInfo.email || 'admin@propertytrader1.co.uk',
-      customerPhone: '',
-      formType: newFormType,
-      formData: {}
+      customerName:  data.clientName  || 'Admin',
+      customerEmail: data.clientEmail || ADMIN_EMAIL,
+      customerPhone: data.clientPhone,
+      formType: data.formType,
+      formData: { pdfBase64: data.pdfBase64, pdfName: data.pdfName, notes: data.notes },
     });
     setCreateOpen(false);
   };
 
-  const handleDownload = async (order: Order) => {
-    const formNum = order.formType?.match(/\d+/)?.[0] || '';
-    const padNum = formNum.padStart(2, '0');
-    const filename = `form-RHW${padNum}.pdf`;
-    const pdfUrl = `/forms/${filename}`;
-    
-    await fillAndDownloadPDF(pdfUrl, order.formData || {}, `${order.formType}.pdf`);
+  const handleSaveEdit = (data: {
+    formType: string; clientName: string; clientEmail: string;
+    clientPhone: string; notes: string; pdfBase64: string; pdfName: string;
+  }) => {
+    if (!selected) return;
+    const updated: Order = {
+      ...selected,
+      name:          data.formType,
+      customerName:  data.clientName  || selected.customerName,
+      customerEmail: data.clientEmail || selected.customerEmail,
+      customerPhone: data.clientPhone,
+      detail:        data.notes || selected.detail,
+      formType:      data.formType,
+      formData: {
+        pdfBase64: data.pdfBase64 || selected.formData?.pdfBase64 || '',
+        pdfName:   data.pdfName   || selected.formData?.pdfName   || '',
+        notes:     data.notes,
+      },
+    };
+    onUpdateOrder(updated);
+    setSelected(updated);
+    setEditOpen(false);
   };
 
   return (
     <div>
       <div className={styles.toolbar}>
-        <input className={styles.searchInput} placeholder="Search forms or customers..." value={search} onChange={e => setSearch(e.target.value)} />
-        <div className={styles.toolbarCount}>{formOrders.length} form orders</div>
-        <button className={styles.createBtn} onClick={() => setCreateOpen(true)}>+ Generate Free Form</button>
+        <input className={styles.searchInput} placeholder="Search form type or client…" value={search} onChange={e => setSearch(e.target.value)} />
+        <div className={styles.toolbarCount}>{formOrders.length} records</div>
+        <button className={styles.createBtn} onClick={() => setCreateOpen(true)}>+ Add Form Record</button>
       </div>
 
       <div className={styles.splitView}>
+        {/* ── Left: list ── */}
         <div className={styles.splitLeft}>
           {formOrders.length === 0 ? (
-            <div className={styles.emptyState}><span>🏴󠁧󠁢󠁷󠁬󠁳󠁿</span><p>No Wales Form orders found.</p></div>
+            <div className={styles.emptyState}><span>🏴󠁧󠁢󠁷󠁬󠁳󠁿</span><p>No Wales Form records yet.</p></div>
           ) : (
             <div className={styles.submissionCards}>
               {formOrders.map(o => (
                 <div key={o.id}
                   className={`${styles.submissionCard} ${selected?.id === o.id ? styles.submissionCardActive : ''}`}
-                  onClick={() => { setSelected(o); setDraft(o.formData || {}); setEditing(false); }}>
+                  onClick={() => setSelected(o)}>
                   <div className={styles.submissionCardTop}>
                     <div>
                       <div className={styles.submissionAddr}>{o.formType}</div>
                       <div className={styles.submissionMeta}>{o.customerName}</div>
                     </div>
-                    <span className={styles.miniPrice}>{o.price}</span>
+                    <span style={{
+                      fontSize: '0.7rem', padding: '3px 8px', borderRadius: 6,
+                      background: o.formData?.pdfBase64 ? '#dcfce7' : '#fef9c3',
+                      color: o.formData?.pdfBase64 ? '#166534' : '#854d0e', fontWeight: 700,
+                    }}>
+                      {o.formData?.pdfBase64 ? '📄 PDF' : '⚠ No PDF'}
+                    </span>
                   </div>
                   <div className={styles.submissionDate}>{o.date}</div>
                 </div>
@@ -2218,121 +2278,224 @@ function FormsTab({ orders, onUpdateOrder, onCreateOrder, onDeleteOrder }: {
           )}
         </div>
 
+        {/* ── Right: detail ── */}
         <div className={styles.splitRight}>
           {!selected ? (
-            <div className={styles.emptyState}><span>👈</span><p>Select a form to manage.</p></div>
+            <div className={styles.emptyState}><span>👈</span><p>Select a record to view.</p></div>
           ) : (
             <div className={styles.detailPanel}>
               <div className={styles.detailHeader}>
                 <h2>{selected.formType}</h2>
                 <div className={styles.actions}>
-                   <button className={styles.btnInfo} onClick={() => handleDownload(selected)}>📥 Download PDF</button>
-                   <button className={styles.btnInfo} onClick={() => alert('Emailing to ' + selected.customerEmail)}>✉️ Email to Client</button>
+                  <button className={styles.btnEdit}   onClick={() => setEditOpen(true)}>✏️ Edit</button>
+                  <button className={styles.btnInfo}   onClick={() => downloadPDF(selected)} disabled={!selected.formData?.pdfBase64}>📥 Download PDF</button>
+                  <button className={styles.btnDanger} onClick={() => setWarnDelete(selected)}>🗑️</button>
                 </div>
               </div>
 
-              <div className={styles.contactBlock}>
-                <h4>Client: {selected.customerName} ({selected.customerEmail})</h4>
-              </div>
-
-              <div className={styles.formEditorBox}>
-                <div className={styles.sectionHeader}>
-                  <h3>Form Data</h3>
-                  {!editing ? (
-                    <button className={styles.btnEdit} onClick={() => setEditing(true)}>✏️ Edit Details</button>
-                  ) : (
-                    <div className={styles.actionGroup}>
-                      <button className={styles.btnSuccess} onClick={saveEdit}>💾 Save</button>
-                      <button className={styles.btnSecondary} onClick={() => setEditing(false)}>Cancel</button>
-                    </div>
-                  )}
-                </div>
-
-                {(() => {
-                  const schema = (selected.formType && FORM_SCHEMAS[selected.formType]) || FORM_SCHEMAS['default'];
-                  return (
-                    <div className={styles.editGrid} style={{ marginTop: 20 }}>
-                      {schema.fields.map(field => (
-                        <div
-                          key={field.key}
-                          className={`${styles.editField} ${field.type === 'textarea' ? styles.editSpan2 : ''}`}
-                        >
-                          <label>{field.label}</label>
-                          {field.type === 'textarea' ? (
-                            <textarea
-                              disabled={!editing}
-                              rows={3}
-                              value={draft[field.key] || ''}
-                              onChange={e => setDraft({ ...draft, [field.key]: e.target.value })}
-                              placeholder={field.placeholder || field.label}
-                            />
-                          ) : field.type === 'select' ? (
-                            <select
-                              disabled={!editing}
-                              className={styles.filterSelect}
-                              style={{ width: '100%' }}
-                              value={draft[field.key] || ''}
-                              onChange={e => setDraft({ ...draft, [field.key]: e.target.value })}
-                            >
-                              <option value="">Select…</option>
-                              {field.options?.map(opt => (
-                                <option key={opt} value={opt}>{opt}</option>
-                              ))}
-                            </select>
-                          ) : (
-                            <input
-                              type={field.type}
-                              disabled={!editing}
-                              value={draft[field.key] || ''}
-                              onChange={e => setDraft({ ...draft, [field.key]: e.target.value })}
-                              placeholder={field.placeholder || field.label}
-                            />
-                          )}
+              <div className={styles.formEditorBox} style={{ marginTop: 16 }}>
+                <div className={styles.editGrid}>
+                  <div className={styles.editField}>
+                    <label>Client Name</label>
+                    <div className={styles.readVal}>{selected.customerName || '—'}</div>
+                  </div>
+                  <div className={styles.editField}>
+                    <label>Client Email</label>
+                    <div className={styles.readVal}>{selected.customerEmail || '—'}</div>
+                  </div>
+                  <div className={styles.editField}>
+                    <label>Client Phone</label>
+                    <div className={styles.readVal}>{selected.customerPhone || '—'}</div>
+                  </div>
+                  <div className={styles.editField}>
+                    <label>Date Added</label>
+                    <div className={styles.readVal}>{selected.date}</div>
+                  </div>
+                  <div className={`${styles.editField} ${styles.editSpan2}`}>
+                    <label>Notes</label>
+                    <div className={styles.readVal} style={{ whiteSpace: 'pre-wrap' }}>{selected.formData?.notes || '—'}</div>
+                  </div>
+                  <div className={`${styles.editField} ${styles.editSpan2}`}>
+                    <label>Uploaded PDF</label>
+                    {selected.formData?.pdfBase64 ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4 }}>
+                        <span style={{ fontSize: '1.4rem' }}>📄</span>
+                        <div>
+                          <div style={{ fontWeight: 700, color: '#1e293b' }}>{selected.formData.pdfName}</div>
+                          <button className={styles.btnInfo} style={{ marginTop: 4, fontSize: '0.8rem', padding: '4px 12px' }} onClick={() => downloadPDF(selected)}>
+                            Download
+                          </button>
                         </div>
-                      ))}
-                    </div>
-                  );
-                })()}
-              </div>
-              
-              <div className={styles.crudBar} style={{ marginTop: 30 }}>
-                <button className={styles.btnDanger} onClick={() => { if(confirm('Delete this form?')) onDeleteOrder(selected.id); setSelected(null); }}>🗑️ Delete Order</button>
+                      </div>
+                    ) : (
+                      <div style={{ color: '#f59e0b', fontWeight: 600, marginTop: 4 }}>⚠ No PDF uploaded — click Edit to upload one.</div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           )}
         </div>
       </div>
 
+      {/* ── Create modal ── */}
       {createOpen && (
-        <div className={styles.modalBackdrop} onClick={() => setCreateOpen(false)}>
-          <div className={styles.modal} style={{ maxWidth: 500 }} onClick={e => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h2>Generate Free Form</h2>
-              <button className={styles.modalClose} onClick={() => setCreateOpen(false)}>✕</button>
-            </div>
-            <div className={styles.modalBody}>
-              <div className={styles.editField} style={{ marginBottom: 15 }}>
-                <label>Select Wales Form</label>
-                <select className={styles.filterSelect} style={{ width: '100%' }} value={newFormType} onChange={e => setNewFormType(e.target.value)}>
+        <WalesFormModal
+          title="Add Wales Form Record"
+          existing={null}
+          onClose={() => setCreateOpen(false)}
+          onSave={handleSaveNew}
+        />
+      )}
+
+      {/* ── Edit modal ── */}
+      {editOpen && selected && (
+        <WalesFormModal
+          title="Edit Wales Form Record"
+          existing={selected}
+          onClose={() => setEditOpen(false)}
+          onSave={handleSaveEdit}
+        />
+      )}
+
+      {/* ── Delete confirm ── */}
+      {warnDelete && (
+        <ConfirmModal
+          title="Delete Form Record?"
+          body={`Delete "${warnDelete.formType}" for ${warnDelete.customerName}? This cannot be undone.`}
+          confirmLabel="Delete"
+          onConfirm={() => { onDeleteOrder(warnDelete.id); setSelected(null); setWarnDelete(null); }}
+          onCancel={() => setWarnDelete(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ── Wales Form create/edit modal ── */
+function WalesFormModal({ title, existing, onClose, onSave }: {
+  title: string;
+  existing: Order | null;
+  onClose: () => void;
+  onSave: (data: {
+    formType: string; clientName: string; clientEmail: string;
+    clientPhone: string; notes: string; pdfBase64: string; pdfName: string;
+  }) => void;
+}) {
+  const [formType,    setFormType]    = useState(existing?.formType    || WALES_FORMS[0]);
+  const [clientName,  setClientName]  = useState(existing?.customerName  || '');
+  const [clientEmail, setClientEmail] = useState(existing?.customerEmail || '');
+  const [clientPhone, setClientPhone] = useState(existing?.customerPhone || '');
+  const [notes,       setNotes]       = useState(existing?.formData?.notes || '');
+  const [pdfBase64,   setPdfBase64]   = useState(existing?.formData?.pdfBase64 || '');
+  const [pdfName,     setPdfName]     = useState(existing?.formData?.pdfName   || '');
+  const [err,         setErr]         = useState('');
+
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith('.pdf')) { setErr('Only PDF files are accepted.'); return; }
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const b64 = (ev.target?.result as string).split(',')[1];
+      setPdfBase64(b64);
+      setPdfName(file.name);
+      setErr('');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!clientName.trim()) { setErr('Client name is required.'); return; }
+    if (!pdfBase64 && !existing?.formData?.pdfBase64) { setErr('Please upload a PDF file.'); return; }
+    onSave({ formType, clientName, clientEmail, clientPhone, notes,
+      pdfBase64: pdfBase64 || existing?.formData?.pdfBase64 || '',
+      pdfName:   pdfName   || existing?.formData?.pdfName   || '',
+    });
+  };
+
+  return (
+    <div className={styles.modalBackdrop} onClick={onClose}>
+      <div className={styles.modal} style={{ maxWidth: 560 }} onClick={e => e.stopPropagation()}>
+        <div className={styles.modalHeader}>
+          <h2>🏴󠁧󠁢󠁷󠁬󠁳󠁿 {title}</h2>
+          <button className={styles.modalClose} onClick={onClose}>✕</button>
+        </div>
+        <form onSubmit={handleSubmit}>
+          <div className={styles.modalBody}>
+            <div className={styles.editGrid}>
+
+              {/* Form type */}
+              <div className={`${styles.editField} ${styles.editSpan2}`}>
+                <label>Wales Form Type <span style={{ color: '#e11d48' }}>*</span></label>
+                <select className={styles.filterSelect} style={{ width: '100%' }} value={formType} onChange={e => setFormType(e.target.value)}>
                   {WALES_FORMS.map(f => <option key={f} value={f}>{f}</option>)}
                 </select>
               </div>
-              <div className={styles.editField} style={{ marginBottom: 15 }}>
-                <label>Client Name (Optional)</label>
-                <input value={customerInfo.name} onChange={e => setCustomerInfo({...customerInfo, name: e.target.value})} placeholder="e.g. John Doe" />
+
+              {/* Client info */}
+              <div className={styles.editField}>
+                <label>Client Name <span style={{ color: '#e11d48' }}>*</span></label>
+                <input value={clientName} onChange={e => setClientName(e.target.value)} placeholder="Full name" />
               </div>
               <div className={styles.editField}>
-                <label>Client Email (Optional)</label>
-                <input value={customerInfo.email} onChange={e => setCustomerInfo({...customerInfo, email: e.target.value})} placeholder="e.g. john@example.com" />
+                <label>Client Email</label>
+                <input type="email" value={clientEmail} onChange={e => setClientEmail(e.target.value)} placeholder="email@example.com" />
               </div>
+              <div className={styles.editField}>
+                <label>Client Phone</label>
+                <input value={clientPhone} onChange={e => setClientPhone(e.target.value)} placeholder="07xxx xxxxxx" />
+              </div>
+              <div className={styles.editField}>
+                <label>Date</label>
+                <div className={styles.readVal} style={{ paddingTop: 8, color: '#64748b' }}>{today()}</div>
+              </div>
+
+              {/* Notes */}
+              <div className={`${styles.editField} ${styles.editSpan2}`}>
+                <label>Notes <span style={{ color: '#94a3b8', fontWeight: 400 }}>(optional)</span></label>
+                <textarea rows={3} value={notes} onChange={e => setNotes(e.target.value)} placeholder="Any additional notes about this form…" />
+              </div>
+
+              {/* PDF upload */}
+              <div className={`${styles.editField} ${styles.editSpan2}`}>
+                <label>
+                  Upload Completed PDF <span style={{ color: '#e11d48' }}>*</span>
+                  {existing?.formData?.pdfBase64 && (
+                    <span style={{ marginLeft: 8, color: '#16a34a', fontWeight: 400 }}>
+                      (current: {existing.formData.pdfName} — leave blank to keep)
+                    </span>
+                  )}
+                </label>
+                <label style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                  border: '2px dashed #cbd5e1', borderRadius: 10, padding: '20px 16px', cursor: 'pointer',
+                  background: pdfBase64 ? '#f0fdf4' : '#f8fafc', transition: 'background 0.2s',
+                }}>
+                  <span style={{ fontSize: '2rem', marginBottom: 6 }}>{pdfBase64 ? '✅' : '📤'}</span>
+                  <span style={{ fontWeight: 600, color: pdfBase64 ? '#16a34a' : '#475569' }}>
+                    {pdfBase64 ? pdfName : 'Click to select PDF'}
+                  </span>
+                  <span style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: 3 }}>PDF files only</span>
+                  <input type="file" accept=".pdf,application/pdf" style={{ display: 'none' }} onChange={handleFile} />
+                </label>
+              </div>
+
             </div>
-            <div className={styles.modalFooter}>
-              <button className={styles.modalCancel} onClick={() => setCreateOpen(false)}>Cancel</button>
-              <button className={styles.modalSave} onClick={generateFreeForm}>Generate Form</button>
-            </div>
+
+            {err && (
+              <div style={{ marginTop: 12, padding: '10px 14px', background: '#fee2e2', border: '1px solid #fca5a5', borderRadius: 8, color: '#b91c1c', fontSize: '0.85rem' }}>
+                ⚠️ {err}
+              </div>
+            )}
           </div>
-        </div>
-      )}
+          <div className={styles.modalFooter}>
+            <button type="button" className={styles.modalCancel} onClick={onClose}>Cancel</button>
+            <button type="submit" className={styles.modalSave}>{existing ? 'Save Changes' : 'Save Record'}</button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
@@ -2599,6 +2762,361 @@ function CashBuyersTab({ inquiries, onUpdate, onDelete }: {
           onCancel={() => setWarn(null)}
         />
       )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════ TENANCY FORM TAB ═══════════════════════════════ */
+const BLANK_TENANCY_FORM: Omit<TenancyFormRecord, 'id' | 'createdAt'> = {
+  tenantName: '', tenantEmail: '', tenantPhone: '',
+  landlordName: '', landlordEmail: '', landlordPhone: '',
+  propertyAddress: '', contractStartDate: '', contractEndDate: '',
+  monthlyRent: '', depositAmount: '', additionalNotes: '',
+  uploadedContract: undefined,
+  status: 'draft',
+};
+
+function TenancyFormTab({ forms, onCreate, onUpdate, onDelete }: {
+  forms: TenancyFormRecord[];
+  onCreate: (f: Omit<TenancyFormRecord, 'id' | 'createdAt'>) => void;
+  onUpdate: (f: TenancyFormRecord) => void;
+  onDelete: (id: string) => void;
+}) {
+  const [selected, setSelected] = useState<TenancyFormRecord | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState<TenancyFormRecord | null>(null);
+  const [warn, setWarn] = useState<TenancyFormRecord | null>(null);
+  const [search, setSearch] = useState('');
+
+  const filtered = forms.filter(f =>
+    !search ||
+    f.tenantName.toLowerCase().includes(search.toLowerCase()) ||
+    f.landlordName.toLowerCase().includes(search.toLowerCase()) ||
+    f.propertyAddress.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const downloadContract = (f: TenancyFormRecord) => {
+    if (!f.uploadedContract) return;
+    const a = document.createElement('a');
+    a.href = f.uploadedContract.base64;
+    a.download = f.uploadedContract.name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
+  const statusColor = (s: TenancyFormRecord['status']) =>
+    s === 'active' ? styles.pillGreen : s === 'ended' ? styles.pillGray : styles.pillAmber;
+
+  return (
+    <div>
+      <div className={styles.toolbar}>
+        <input
+          className={styles.searchInput}
+          placeholder="Search by tenant, landlord or address…"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+        />
+        <div className={styles.toolbarCount}>{filtered.length} form{filtered.length !== 1 ? 's' : ''}</div>
+        <button className={styles.createBtn} onClick={() => { setEditing(null); setModalOpen(true); }}>
+          + Add Form
+        </button>
+      </div>
+
+      <div className={styles.splitView}>
+        <div className={styles.splitLeft}>
+          {filtered.length === 0 ? (
+            <div className={styles.emptyState}>
+              <span>📄</span>
+              <p>No tenancy forms yet. Click &quot;Add Form&quot; to create one.</p>
+            </div>
+          ) : (
+            <div className={styles.submissionCards}>
+              {filtered.map(f => (
+                <div
+                  key={f.id}
+                  className={`${styles.submissionCard} ${selected?.id === f.id ? styles.submissionCardActive : ''}`}
+                  onClick={() => setSelected(f)}
+                >
+                  <div className={styles.submissionCardTop}>
+                    <div>
+                      <div className={styles.submissionAddr}>
+                        📄 {f.tenantName || '(No name)'}
+                        {f.uploadedContract && <span style={{ marginLeft: 6, fontSize: '0.7rem', color: '#16a34a', fontWeight: 800 }}>● PDF</span>}
+                      </div>
+                      <div className={styles.submissionMeta}>{f.propertyAddress || '—'}</div>
+                    </div>
+                    <span className={`${styles.pill} ${statusColor(f.status)}`}>{f.status.toUpperCase()}</span>
+                  </div>
+                  <div className={styles.submissionDate}>Created: {f.createdAt}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className={styles.splitRight}>
+          {!selected ? (
+            <div className={styles.emptyState}><span>👈</span><p>Select a form to view details.</p></div>
+          ) : (
+            <div className={styles.detailPanel}>
+              <div className={styles.detailHeader}>
+                <div>
+                  <h2>{selected.tenantName || 'Tenancy Form'}</h2>
+                  <div style={{ marginTop: 4 }}>
+                    <span className={`${styles.pill} ${statusColor(selected.status)}`}>{selected.status.toUpperCase()}</span>
+                  </div>
+                </div>
+                <button className={`${styles.btn} ${styles.btnEdit}`} onClick={() => { setEditing(selected); setModalOpen(true); }}>✏️ Edit</button>
+              </div>
+
+              {/* Uploaded contract */}
+              <div style={{ marginBottom: 16 }}>
+                {selected.uploadedContract ? (
+                  <div className={styles.filePreview}>
+                    <span className={styles.fileIcon}>📄</span>
+                    <div className={styles.fileInfo}>
+                      <div className={styles.fileName}>{selected.uploadedContract.name}</div>
+                      <div className={styles.fileSize}>Uploaded Contract</div>
+                    </div>
+                    <button className={`${styles.btn} ${styles.btnSuccess}`} style={{ flexShrink: 0 }} onClick={() => downloadContract(selected)}>📥 Download</button>
+                    <button className={`${styles.btn} ${styles.btnInfo}`} style={{ flexShrink: 0 }} onClick={() => selected.uploadedContract && window.open(selected.uploadedContract.base64)}>👁️ View</button>
+                  </div>
+                ) : (
+                  <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '12px 16px', fontSize: '0.875rem', color: '#92400e', fontWeight: 600 }}>
+                    ⚠️ No contract PDF uploaded yet. Click <strong>Edit</strong> to attach one.
+                  </div>
+                )}
+              </div>
+
+              <div className={styles.contactBlock}>
+                <h4>Tenant Details</h4>
+                <div className={styles.contactGrid}>
+                  <ContactItem icon="👤" label="Name"  value={selected.tenantName} />
+                  <ContactItem icon="✉️" label="Email" value={selected.tenantEmail} href={`mailto:${selected.tenantEmail}`} />
+                  <ContactItem icon="📞" label="Phone" value={selected.tenantPhone} href={`tel:${selected.tenantPhone}`} />
+                </div>
+              </div>
+
+              <div className={styles.contactBlock} style={{ marginTop: 12 }}>
+                <h4>Landlord Details</h4>
+                <div className={styles.contactGrid}>
+                  <ContactItem icon="🏢" label="Name"  value={selected.landlordName} />
+                  <ContactItem icon="✉️" label="Email" value={selected.landlordEmail} href={`mailto:${selected.landlordEmail}`} />
+                  <ContactItem icon="📞" label="Phone" value={selected.landlordPhone} href={`tel:${selected.landlordPhone}`} />
+                </div>
+              </div>
+
+              <div className={styles.detailGrid} style={{ marginTop: 12 }}>
+                <DetailRow label="Property Address" value={selected.propertyAddress || '—'} />
+                <DetailRow label="Start Date"       value={selected.contractStartDate || '—'} />
+                <DetailRow label="End Date"         value={selected.contractEndDate || '—'} />
+                <DetailRow label="Monthly Rent"     value={selected.monthlyRent ? `£${selected.monthlyRent}` : '—'} />
+                <DetailRow label="Deposit Amount"   value={selected.depositAmount ? `£${selected.depositAmount}` : '—'} />
+                <DetailRow label="Created"          value={selected.createdAt} />
+              </div>
+
+              {selected.additionalNotes && (
+                <div className={styles.detailSection} style={{ marginTop: 12 }}>
+                  <h4>Additional Notes</h4>
+                  <p>{selected.additionalNotes}</p>
+                </div>
+              )}
+
+              <div className={styles.detailActions} style={{ marginTop: 20 }}>
+                <h4>Contract Status</h4>
+                <div className={styles.statusBtns}>
+                  {(['draft', 'active', 'ended'] as TenancyFormRecord['status'][]).map(s => (
+                    <button
+                      key={s}
+                      className={`${styles.statusBtn} ${selected.status === s ? styles.statusBtnActive : ''}`}
+                      onClick={() => { const upd = { ...selected, status: s }; onUpdate(upd); setSelected(upd); }}
+                    >
+                      {s.charAt(0).toUpperCase() + s.slice(1)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className={styles.crudBar}>
+                <button className={`${styles.btn} ${styles.btnDanger}`} onClick={() => setWarn(selected)}>🗑️ Delete Form</button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {modalOpen && (
+        <TenancyFormModal
+          existing={editing}
+          onClose={() => setModalOpen(false)}
+          onSave={(data) => {
+            if (editing) {
+              const upd = { ...editing, ...data };
+              onUpdate(upd);
+              setSelected(upd);
+            } else {
+              onCreate(data);
+            }
+            setModalOpen(false);
+          }}
+        />
+      )}
+
+      {warn && (
+        <ConfirmModal
+          title="Delete Tenancy Form?"
+          body={`Delete the tenancy form for "${warn.tenantName}"? This cannot be undone.`}
+          confirmLabel="Delete"
+          onConfirm={() => { onDelete(warn.id); setSelected(null); setWarn(null); }}
+          onCancel={() => setWarn(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+function TenancyFormModal({ existing, onClose, onSave }: {
+  existing: TenancyFormRecord | null;
+  onClose: () => void;
+  onSave: (data: Omit<TenancyFormRecord, 'id' | 'createdAt'>) => void;
+}) {
+  const [form, setForm] = useState<Omit<TenancyFormRecord, 'id' | 'createdAt'>>(
+    existing
+      ? {
+          tenantName: existing.tenantName, tenantEmail: existing.tenantEmail, tenantPhone: existing.tenantPhone,
+          landlordName: existing.landlordName, landlordEmail: existing.landlordEmail, landlordPhone: existing.landlordPhone,
+          propertyAddress: existing.propertyAddress, contractStartDate: existing.contractStartDate,
+          contractEndDate: existing.contractEndDate, monthlyRent: existing.monthlyRent,
+          depositAmount: existing.depositAmount, additionalNotes: existing.additionalNotes,
+          uploadedContract: existing.uploadedContract,
+          status: existing.status,
+        }
+      : { ...BLANK_TENANCY_FORM }
+  );
+
+  const set = (key: string, val: string) => setForm(f => ({ ...f, [key]: val }));
+
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = () => setForm(prev => ({ ...prev, uploadedContract: { name: f.name, base64: reader.result as string } }));
+    reader.readAsDataURL(f);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.tenantName || !form.propertyAddress) return;
+    onSave(form);
+  };
+
+  return (
+    <div className={styles.modalBackdrop} onClick={onClose}>
+      <div className={styles.modal} style={{ maxWidth: 700 }} onClick={e => e.stopPropagation()}>
+        <div className={styles.modalHeader}>
+          <h2>{existing ? 'Edit Tenancy Form' : 'Add Tenancy Form'}</h2>
+          <button className={styles.modalClose} onClick={onClose}>✕</button>
+        </div>
+        <form onSubmit={handleSubmit}>
+          <div className={styles.modalBody}>
+
+            <div className={styles.propFormSection} style={{ marginTop: 0 }}><h4>Tenant Information</h4></div>
+            <div className={styles.editGrid}>
+              <div className={`${styles.editField} ${styles.editSpan2}`}>
+                <label>Tenant Name *</label>
+                <input required value={form.tenantName} onChange={e => set('tenantName', e.target.value)} placeholder="Full legal name of tenant" />
+              </div>
+              <div className={styles.editField}>
+                <label>Tenant Email</label>
+                <input type="email" value={form.tenantEmail} onChange={e => set('tenantEmail', e.target.value)} placeholder="tenant@email.com" />
+              </div>
+              <div className={styles.editField}>
+                <label>Tenant Phone</label>
+                <input type="tel" value={form.tenantPhone} onChange={e => set('tenantPhone', e.target.value)} placeholder="07xxx xxxxxx" />
+              </div>
+            </div>
+
+            <div className={styles.propFormSection} style={{ marginTop: 16 }}><h4>Landlord Information</h4></div>
+            <div className={styles.editGrid}>
+              <div className={`${styles.editField} ${styles.editSpan2}`}>
+                <label>Landlord Name *</label>
+                <input required value={form.landlordName} onChange={e => set('landlordName', e.target.value)} placeholder="Full legal name of landlord" />
+              </div>
+              <div className={styles.editField}>
+                <label>Landlord Email</label>
+                <input type="email" value={form.landlordEmail} onChange={e => set('landlordEmail', e.target.value)} placeholder="landlord@email.com" />
+              </div>
+              <div className={styles.editField}>
+                <label>Landlord Phone</label>
+                <input type="tel" value={form.landlordPhone} onChange={e => set('landlordPhone', e.target.value)} placeholder="07xxx xxxxxx" />
+              </div>
+            </div>
+
+            <div className={styles.propFormSection} style={{ marginTop: 16 }}><h4>Contract Details</h4></div>
+            <div className={styles.editGrid}>
+              <div className={`${styles.editField} ${styles.editSpan2}`}>
+                <label>Property Address *</label>
+                <input required value={form.propertyAddress} onChange={e => set('propertyAddress', e.target.value)} placeholder="Full property address including postcode" />
+              </div>
+              <div className={styles.editField}>
+                <label>Contract Start Date</label>
+                <input type="date" value={form.contractStartDate} onChange={e => set('contractStartDate', e.target.value)} />
+              </div>
+              <div className={styles.editField}>
+                <label>Contract End Date</label>
+                <input type="date" value={form.contractEndDate} onChange={e => set('contractEndDate', e.target.value)} />
+              </div>
+              <div className={styles.editField}>
+                <label>Monthly Rent (£)</label>
+                <input type="text" value={form.monthlyRent} onChange={e => set('monthlyRent', e.target.value)} placeholder="e.g. 950.00" />
+              </div>
+              <div className={styles.editField}>
+                <label>Deposit Amount (£)</label>
+                <input type="text" value={form.depositAmount} onChange={e => set('depositAmount', e.target.value)} placeholder="e.g. 1425.00" />
+              </div>
+              <div className={styles.editField}>
+                <label>Status</label>
+                <select value={form.status} onChange={e => set('status', e.target.value)} className={styles.filterSelect} style={{ width: '100%' }}>
+                  <option value="draft">Draft</option>
+                  <option value="active">Active</option>
+                  <option value="ended">Ended</option>
+                </select>
+              </div>
+              <div className={`${styles.editField} ${styles.editSpan2}`}>
+                <label>Additional Notes</label>
+                <textarea rows={3} value={form.additionalNotes} onChange={e => set('additionalNotes', e.target.value)} placeholder="Any special conditions, clauses, or notes…" />
+              </div>
+            </div>
+
+            <div className={styles.propFormSection} style={{ marginTop: 16 }}><h4>Contract PDF</h4></div>
+            <div className={styles.editField}>
+              {!form.uploadedContract ? (
+                <label className={styles.fileDropZone}>
+                  <input type="file" accept=".pdf,.doc,.docx" style={{ display: 'none' }} onChange={handleFile} />
+                  <i>📄</i>
+                  <p>Drop file here or click to upload</p>
+                  <span>Upload the signed Property Trader Contract PDF or any agreement document.</span>
+                </label>
+              ) : (
+                <div className={styles.filePreview}>
+                  <span className={styles.fileIcon}>📄</span>
+                  <div className={styles.fileInfo}>
+                    <div className={styles.fileName}>{form.uploadedContract.name}</div>
+                    <div className={styles.fileSize}>Contract attached</div>
+                  </div>
+                  <button type="button" className={styles.removeFile} onClick={() => setForm(f => ({ ...f, uploadedContract: undefined }))}>✕</button>
+                </div>
+              )}
+            </div>
+
+          </div>
+          <div className={styles.modalFooter}>
+            <button type="button" className={styles.modalCancel} onClick={onClose}>Cancel</button>
+            <button type="submit" className={styles.modalSave}>{existing ? 'Save Changes' : 'Create Form'}</button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

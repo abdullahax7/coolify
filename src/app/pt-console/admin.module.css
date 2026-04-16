@@ -832,6 +832,7 @@
 }
 .editSpan2 { grid-column: span 2; }
 .editField { display: flex; flex-direction: column; gap: 5px; }
+.readVal { font-size: 0.875rem; color: #1e293b; font-weight: 600; padding: 2px 0; }
 .editField label { font-size: 0.75rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; }
 .editField input,
 .editField textarea,

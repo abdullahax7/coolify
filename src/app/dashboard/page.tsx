@@ -272,7 +272,29 @@ export default function DashboardPage() {
         {/* ── MY SERVICES ── */}
         {tab === 'services' && (
           <div>
-            {serviceOrders.length === 0 ? (
+            {/* Wales Forms section */}
+            {serviceOrders.filter(o => !!o.formType).length > 0 && (
+              <div style={{ marginBottom: 40 }}>
+                <h2 className={styles.sectionTitle}>🏴󠁧󠁢󠁷󠁬󠁳󠁿 Wales Housing Forms</h2>
+                <div className={styles.orderList}>
+                  {serviceOrders.filter(o => !!o.formType).map(order => (
+                    <OrderRow key={order.id} order={order} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Other services */}
+            {serviceOrders.filter(o => !o.formType).length > 0 && (
+              <div>
+                <h2 className={styles.sectionTitle}>🛠️ Other Services</h2>
+                <div className={styles.orderList}>
+                  {serviceOrders.filter(o => !o.formType).map(order => <OrderRow key={order.id} order={order} />)}
+                </div>
+              </div>
+            )}
+
+            {serviceOrders.length === 0 && (
               <div className={styles.emptyState}>
                 <div className={styles.emptyIcon}>🛠️</div>
                 <h3>No services booked yet</h3>
@@ -280,10 +302,6 @@ export default function DashboardPage() {
                 <div className={styles.emptyActions}>
                   <Link href="/services" className={styles.primaryAction}>Browse Services</Link>
                 </div>
-              </div>
-            ) : (
-              <div className={styles.orderList}>
-                {serviceOrders.map(order => <OrderRow key={order.id} order={order} />)}
               </div>
             )}
           </div>
@@ -296,6 +314,7 @@ export default function DashboardPage() {
 /* ─── Sub-components ─── */
 
 function OrderRow({ order }: { order: Order }) {
+  const pdfReady = !!order.formData?.pdfBase64;
   return (
     <div className={styles.orderRow}>
       <div className={styles.orderInfo}>
@@ -309,8 +328,9 @@ function OrderRow({ order }: { order: Order }) {
       </div>
       {order.formType && (
         <div className={styles.orderActions}>
-          <Link href={`/dashboard/forms/${order.id}`} className={styles.editFormBtn}>
-            ✏️ Edit Document
+          <Link href={`/dashboard/forms/${order.id}`} className={styles.editFormBtn}
+            style={pdfReady ? { background: '#16a34a', color: '#fff' } : {}}>
+            {pdfReady ? '📥 Download Document' : '📋 View Status'}
           </Link>
         </div>
       )}
