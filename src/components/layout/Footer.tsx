@@ -62,11 +62,28 @@ export const Footer: React.FC = () => {
           </div>
 
           <div className={styles.linkColumn}>
+            <h4>Legal</h4>
+            <Link href="/legal/privacy-notice-landlord">Landlord Privacy Notice</Link>
+            <Link href="/legal/fair-processing-notice">Tenant Privacy Notice</Link>
+            <Link href="/legal/terms-and-conditions">Terms & Conditions</Link>
+            <Link href="/legal/data-protection-policy">Data Protection Policy</Link>
+            <Link href="/legal/complaints-policy">Complaints Policy</Link>
+            <Link href="/legal/tenants-fees">Tenants Fees</Link>
+          </div>
+
+          <div className={styles.linkColumn}>
             <h4>Quick Links</h4>
             <Link href="/properties">Browse Properties</Link>
             <Link href="/pricing">List Your Property</Link>
             <Link href="/we-buy-any-house">We Buy Any House</Link>
             <Link href="/tools">Property Tools</Link>
+          </div>
+
+          <div className={styles.linkColumn}>
+            <h4>Our Blog</h4>
+            <Link href="/blog/brexit-right-to-rent">Brexit & Right to Rent</Link>
+            <Link href="/blog/best-roofs-wales-england">Company History</Link>
+            <Link href="/blog/property-trader-strategy">Our Strategy</Link>
           </div>
         </div>
       </div>

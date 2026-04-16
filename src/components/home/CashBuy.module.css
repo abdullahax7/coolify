@@ -1,6 +1,6 @@
 .section {
   padding: 120px 0;
-  background: var(--navy);
+  background: var(--secondary);
   color: white;
   position: relative;
   overflow: hidden;
@@ -105,20 +105,21 @@
 }
 
 .formCard {
-  background: white;
+  background: var(--primary);
   padding: 48px;
   border-radius: var(--radius-lg);
-  color: var(--secondary);
-  box-shadow: 0 40px 100px rgba(0, 0, 0, 0.4);
+  color: white;
+  box-shadow: 0 40px 100px rgba(225, 29, 72, 0.4);
 }
 
 .formCard h3 {
   font-size: 1.75rem;
   margin-bottom: 12px;
+  color: white;
 }
 
 .formCard p {
-  color: var(--text-muted);
+  color: rgba(255, 255, 255, 0.8);
   font-size: 1rem;
   margin-bottom: 32px;
 }
@@ -155,19 +156,41 @@
 .submitBtn {
   width: 100%;
   padding: 18px;
-  background: var(--primary);
+  background: white;
+  color: var(--primary);
+  border-radius: var(--radius-md);
+  font-weight: 800;
+  font-size: 1rem;
+  letter-spacing: 0.02em;
+  transition: all 0.3s ease;
+  text-align: center;
+  text-decoration: none;
+}
+
+.submitBtn:hover {
+  background: #f8fafc;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+.secondaryBtn {
+  width: 100%;
+  padding: 18px;
+  background: transparent;
   color: white;
   border-radius: var(--radius-md);
   font-weight: 800;
   font-size: 1rem;
   letter-spacing: 0.02em;
   transition: all 0.3s ease;
+  text-align: center;
+  text-decoration: none;
+  border: 2px solid rgba(255, 255, 255, 0.4);
 }
 
-.submitBtn:hover {
-  background: var(--primary-dark);
-  transform: translateY(-2px);
-  box-shadow: 0 10px 20px rgba(225, 29, 72, 0.3);
+.secondaryBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: white;
 }
 
 .formFooter {
@@ -176,7 +199,7 @@
   gap: 12px;
   margin-top: 24px;
   font-size: 0.75rem;
-  color: var(--text-muted);
+  color: rgba(255, 255, 255, 0.6);
 }
 
 .ratingBox {

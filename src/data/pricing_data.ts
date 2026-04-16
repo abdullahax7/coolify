@@ -70,11 +70,51 @@ export const LET_FEATURES: PricingFeature[] = [
   { name: 'EPC', values: [false, false, true] },
 ];
 
+/** MANAGEMENT PACKAGES DATA */
+export const MANAGE_TIERS: PricingTier[] = [
+  { name: 'Tenancy Incl.', price: 'Included', subtitle: 'Contract setup' },
+  { name: 'Fully Managed', price: '10%', isPopular: true, subtitle: 'Of rent collected' },
+  { name: 'Rent Collection', price: '7%', subtitle: 'Of rent collected' },
+  { name: 'Let Only', price: '1 Month', subtitle: 'First month rent fee' },
+  { name: 'Mini Manage', price: '£17', subtitle: 'Per month' },
+];
+
+export const MANAGE_FEATURES: PricingFeature[] = [
+  { name: 'Free Consultation', values: [true, true, true, true, true] },
+  { name: 'Property Marketing', values: [true, true, true, true, false] },
+  { name: 'Internet Advertising', values: [true, true, true, true, true] },
+  { name: 'Newspaper Advertising', values: [true, true, true, true, false] },
+  { name: 'Accompanied Viewings', values: [true, true, true, true, false] },
+  { name: 'Negotiating and agreeing offers', values: [true, true, true, true, true] },
+  { name: 'Tenants referencing services', values: [true, true, true, true, true] },
+  { name: 'Annual rent assessment reviews', values: [true, true, true, true, true] },
+  { name: 'Debt control', values: [true, true, true, true, false] },
+  { name: 'Rent demand service', values: [true, true, true, false, false] },
+  { name: 'Monthly accounts service', values: [true, true, true, false, false] },
+  { name: 'Organise property maintenance', values: [true, true, true, false, false] },
+  { name: 'Handle dilapidation check outs', values: [true, true, false, false, false] },
+  { name: 'Security deposit management', values: [true, true, false, false, true] },
+  { name: 'Gas safety renewal', values: [true, true, false, false, true] },
+  { name: 'Inventory check in/out', values: [true, true, false, false, true] },
+  { name: '24 hours emergency', values: [true, true, false, false, true] },
+  { name: 'Dedicated accounts team', values: [true, true, false, false, true] },
+  { name: 'Online maintenance reporting', values: [true, true, false, false, true] },
+  { name: 'Ensure property compliance', values: [true, true, false, false, true] },
+  { name: '3rd party maintenance liaison', values: [true, true, false, false, false] },
+  { name: 'Portfolio Management', values: [true, true, false, false, false] },
+  { name: 'Routine property visit', values: [true, true, true, true, false] },
+  { name: 'Issuing Section 21 Notice', values: [true, true, false, false, false] },
+  { name: 'Issuing Section 8 Notice', values: [true, true, false, false, false] },
+  { name: 'Issuing Section 13 Notice', values: [true, true, false, false, false] },
+  { name: 'Tenancy renewal', values: [true, true, false, false, false] },
+  { name: 'Rent Smart Wales Compliance', values: [true, true, false, false, true] },
+];
+
 /** SHARED HELPERS */
-export const getPricingData = (type: 'sell' | 'let') => {
-  return type === 'sell' 
-    ? { tiers: SELL_TIERS, features: SELL_FEATURES } 
-    : { tiers: LET_TIERS, features: LET_FEATURES };
+export const getPricingData = (type: 'sell' | 'let' | 'manage') => {
+  if (type === 'sell') return { tiers: SELL_TIERS, features: SELL_FEATURES };
+  if (type === 'let') return { tiers: LET_TIERS, features: LET_FEATURES };
+  return { tiers: MANAGE_TIERS, features: MANAGE_FEATURES };
 };
 
 export const SERVICE_CATALOG: CatalogCategory[] = [

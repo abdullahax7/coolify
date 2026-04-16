@@ -1,7 +1,9 @@
 import React from 'react';
+import Image from 'next/image';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { PricingTable } from '@/components/pricing/PricingTable';
+import { WhyChooseUs } from '@/components/pricing/WhyChooseUs';
 import styles from './pricing-page.module.css';
 
 export const metadata = {
@@ -17,17 +19,33 @@ export default function PricingPage() {
       <main className={styles.main}>
         <div className={styles.hero}>
           <div className={styles.container}>
-            <h1 className={styles.title}>Simple, Transparent <span>Pricing</span></h1>
-            <p className={styles.subtitle}>
-              Maximize your property&apos;s exposure with our curated advertising packages. 
-              No hidden fees, just results.
-            </p>
+            <div className={styles.heroLayout}>
+              <div className={styles.heroText}>
+                <h1 className={styles.title}>Simple, Transparent <span>Pricing</span></h1>
+                <p className={styles.subtitle}>
+                  Maximize your property&apos;s exposure with our curated advertising packages. 
+                  No hidden fees, just results.
+                </p>
+              </div>
+              <div className={styles.heroImage}>
+                <Image 
+                  src="/list_property_hero.png" 
+                  alt="List property character" 
+                  width={500} 
+                  height={550} 
+                  className={styles.heroIllustration}
+                  priority
+                />
+              </div>
+            </div>
           </div>
         </div>
 
         <section className={styles.pricingSection}>
           <PricingTable />
         </section>
+
+        <WhyChooseUs />
 
         <section className={styles.faqSection}>
           <div className={styles.container}>

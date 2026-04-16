@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { getPricingData, PricingTier, PricingFeature } from '@/data/pricing_data';
+import { ManagementInfo } from './ManagementInfo';
 import styles from './Pricing.module.css';
 
 const CheckIcon = () => (
@@ -20,7 +21,7 @@ const CrossIcon = () => (
 interface SubComponentProps {
   tiers: PricingTier[];
   features: PricingFeature[];
-  type: 'sell' | 'let';
+  type: 'sell' | 'let' | 'manage';
 }
 
 /** Mobile card view — one card per tier with all features listed */
@@ -89,7 +90,13 @@ const MobilePricingCards: React.FC<SubComponentProps> = ({ tiers, features, type
 
           <button
             className={`${styles.selectBtn} ${tier.isPopular ? styles.popularBtn : ''} ${styles.mobileSelectBtn}`}
-            onClick={() => window.location.href = `/checkout?plan=${encodeURIComponent(tier.name)}&type=${type}`}
+            onClick={() => {
+              if (type === 'manage') {
+                window.location.href = `/contact/landlord-application?plan=${encodeURIComponent(tier.name)}`;
+              } else {
+                window.location.href = `/checkout?plan=${encodeURIComponent(tier.name)}&type=${type}`;
+              }
+            }}
           >
             SELECT {tier.name.toUpperCase()}
           </button>
@@ -105,7 +112,9 @@ const DesktopPricingTable: React.FC<SubComponentProps> = ({ tiers, features, typ
     <table className={styles.table}>
       <thead>
         <tr className={styles.headerRow}>
-          <th>{/* Feature name column */}</th>
+          <th className={styles.typeHeader}>
+            {type === 'manage' ? 'Landlord Fees and Service options' : 'Plan Features'}
+          </th>
           {tiers.map((tier, idx) => (
             <th key={idx} className={tier.isPopular ? styles.popularColumn : ''}>
               <div className={styles.tierInfo}>
@@ -140,9 +149,15 @@ const DesktopPricingTable: React.FC<SubComponentProps> = ({ tiers, features, typ
           <td>{/* Footer Cell */}</td>
           {tiers.map((tier, idx) => (
             <td key={idx} className={tier.isPopular ? styles.popularColumn : ''}>
-              <button 
+              <button
                 className={`${styles.selectBtn} ${tier.isPopular ? styles.popularBtn : ''}`}
-                onClick={() => window.location.href = `/checkout?plan=${encodeURIComponent(tier.name)}&type=${type}`}
+                onClick={() => {
+                  if (type === 'manage') {
+                    window.location.href = `/contact/landlord-application?plan=${encodeURIComponent(tier.name)}`;
+                  } else {
+                    window.location.href = `/checkout?plan=${encodeURIComponent(tier.name)}&type=${type}`;
+                  }
+                }}
               >
                 SELECT {tier.name.toUpperCase()}
               </button>
@@ -155,35 +170,43 @@ const DesktopPricingTable: React.FC<SubComponentProps> = ({ tiers, features, typ
 );
 
 export const PricingTable: React.FC = () => {
-  const [activeType, setActiveType] = useState<'sell' | 'let'>('sell');
+  const [activeType, setActiveType] = useState<'sell' | 'let' | 'manage'>('sell');
   const { tiers, features } = getPricingData(activeType);
 
   return (
     <div className={styles.container}>
-      
+
       {/* Toggle Selector */}
       <div className={styles.toggleWrapper}>
         <div className={styles.toggleContainer}>
-          <button 
+          <button
             className={`${styles.toggleBtn} ${activeType === 'sell' ? styles.toggleActive : ''}`}
             onClick={() => setActiveType('sell')}
           >
             I want to SELL
           </button>
-          <button 
+          <button
             className={`${styles.toggleBtn} ${activeType === 'let' ? styles.toggleActive : ''}`}
             onClick={() => setActiveType('let')}
           >
             I want to LET
           </button>
-          <div className={`${styles.toggleSlider} ${activeType === 'let' ? styles.sliderLet : ''}`} />
+          <button
+            className={`${styles.toggleBtn} ${activeType === 'manage' ? styles.toggleActive : ''}`}
+            onClick={() => setActiveType('manage')}
+          >
+            Management
+          </button>
+          <div className={`${styles.toggleSlider} ${activeType === 'let' ? styles.sliderLet :
+              activeType === 'manage' ? styles.sliderManage : ''
+            }`} />
         </div>
       </div>
 
       <p className={styles.subtitle}>
-        {activeType === 'sell' 
-          ? "Professional estate agency services at a fraction of the cost."
-          : "Find the perfect tenant with our comprehensive letting packages."}
+        {activeType === 'sell' && "Professional estate agency services at a fraction of the cost."}
+        {activeType === 'let' && "Find the perfect tenant with our comprehensive letting packages."}
+        {activeType === 'manage' && "Experienced property management for complete peace of mind."}
       </p>
 
       {/* Desktop: full comparison table */}
@@ -199,6 +222,8 @@ export const PricingTable: React.FC = () => {
       <div className={styles.bespokeCall}>
         <p>Bespoke Service Call: <strong>0800 6890604</strong></p>
       </div>
+
+      <ManagementInfo isVisible={activeType === 'manage'} />
     </div>
   );
 };

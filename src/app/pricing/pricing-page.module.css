@@ -12,7 +12,32 @@
   background: linear-gradient(135deg, var(--navy) 0%, #1e293b 100%);
   padding: 100px 0 80px;
   color: white;
-  text-align: center;
+  overflow: hidden;
+}
+
+.heroLayout {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 60px;
+}
+
+.heroText {
+  flex: 1;
+  text-align: left;
+}
+
+.heroImage {
+  flex: 0 0 40%;
+  display: flex;
+  justify-content: center;
+}
+
+.heroIllustration {
+  width: 100%;
+  height: auto;
+  max-width: 500px;
+  filter: drop-shadow(0 40px 80px rgba(0,0,0,0.5));
 }
 
 .container {
@@ -26,6 +51,7 @@
   font-weight: 800;
   margin-bottom: 24px;
   line-height: 1.1;
+  text-align: left;
 }
 
 .title span {
@@ -38,7 +64,7 @@
 .subtitle {
   font-size: 1.25rem;
   max-width: 700px;
-  margin: 0 auto;
+  margin: 0;
   opacity: 0.8;
   line-height: 1.6;
 }
@@ -82,6 +108,36 @@
 .faqItem p {
   color: var(--text-muted);
   line-height: 1.7;
+}
+
+@media (max-width: 1024px) {
+  .heroLayout {
+    flex-direction: column;
+    text-align: center;
+    gap: 40px;
+  }
+  
+  .heroText {
+    order: 1;
+    text-align: center;
+  }
+  
+  .title {
+    text-align: center;
+  }
+  
+  .subtitle {
+    margin: 0 auto;
+  }
+  
+  .heroImage {
+    order: -1;
+    width: 100%;
+  }
+  
+  .heroIllustration {
+    max-width: 400px;
+  }
 }
 
 @media (max-width: 768px) {

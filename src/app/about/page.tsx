@@ -1,78 +1,139 @@
 import React from 'react';
+import Image from 'next/image';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
+import { STAFF } from '@/data/staff';
+import { TESTIMONIALS } from '@/data/testimonials';
 import styles from './about.module.css';
 
 export default function AboutPage() {
+  const ceo = STAFF.find(s => s.id === 'mohammed');
+  const otherTeam = STAFF.filter(s => s.id !== 'mohammed');
+
   return (
     <div className={styles.page}>
       <Header />
-      
+
       <main className={styles.main}>
         <section className={styles.hero}>
           <div className={styles.container}>
-            <div className={styles.badge}>Our Story</div>
-            <h1>A Tradition of <span>Excellence</span></h1>
-            <p className={styles.subtitle}>
-              Property Trader was born from a simple vision: to make high-end property 
-              management as seamless as the luxury living it supports.
-            </p>
+            <div className={styles.heroInner}>
+              <div className={styles.badge}>About Us </div>
+              <h1 className={styles.title}>A Tradition of <span>Excellence</span></h1>
+              <p className={styles.subtitle}>
+                Property Trader was born from a simple vision: to make high-end property
+                management as seamless as the luxury living it supports.
+              </p>
+            </div>
           </div>
         </section>
 
-        <section className={styles.content}>
+        {/* New Detailed Intro Section */}
+        <section className={styles.introSection}>
           <div className={styles.container}>
-            <div className={styles.row}>
-              <div className={styles.textContent}>
-                <h2>Experience the <span>Property Trader</span> Difference</h2>
-                <p>
-                  With over 15 years of experience in the luxury real estate market, 
-                  we have refined our processes to ensure that owners and tenants 
-                  receive nothing short of perfection.
-                </p>
-                <p>
-                  Our platform combines cutting-edge technology with the personal touch 
-                  of industry veterans. We don&apos;t just manage buildings; we manage futures.
-                </p>
-                <div className={styles.stats}>
-                  <div className={styles.stat}>
-                    <strong>15+</strong>
-                    <span>Years</span>
-                  </div>
-                  <div className={styles.stat}>
-                    <strong>500+</strong>
-                    <span>Properties</span>
-                  </div>
-                  <div className={styles.stat}>
-                    <strong>£12B</strong>
-                    <span>Managed</span>
-                  </div>
+            <div className={styles.introContent}>
+              <h2>We think <span>nationally.</span> We act <span>locally</span> and <span>regionally</span></h2>
+              <div className={styles.introGrid}>
+                <div className={styles.introText}>
+                  <p className={styles.highlight}>Established since 1996</p>
+                  <p>
+                    We are an independent, privately owned Estate and letting agents and has already established
+                    itself as one of the most progressive and forward thinking agency in Wales & England.
+                  </p>
+                  <p>
+                    We offer various services from the simple introduction of tenants to entire property management,
+                    and we work extremely hard to ensure we provide the best possible service whatever option you choose.
+                  </p>
+                  <p>
+                    We provide clients with comprehensive bespoke services and industry-leading independent advice.
+                    Our property investment advisors focused on the delivery of exciting property investment
+                    opportunities to private individuals, corporate and institutional investors.
+                  </p>
+                  <p>
+                    We know success isn&apos;t just about figures, it&apos;s about the satisfaction of knowing
+                    that we are also providing a first class service to our customers.
+                  </p>
+                  <p>
+                    Our unique combination of friendly and highly professional staff, market leading IT systems,
+                    award winning marketing and, of course, the website – means our customers – including
+                    landlords and tenants – can be assured that they are receiving some of the leading property services.
+                  </p>
                 </div>
-              </div>
-              <div className={styles.imagePlaceholder}>
-                {/* Image of the team or office */}
-                <div className={styles.glassImg}>
-                  <span>Elegance in Every Detail</span>
+                <div className={styles.introImageSide}>
+                  <Image 
+                    src="/images/about-agent.png"
+                    alt="Property Trader Professional"
+                    width={900}
+                    height={1200}
+                    className={styles.agentPng}
+                  />
                 </div>
               </div>
             </div>
           </div>
         </section>
 
+        {/* CEO / Founder Section */}
+        {ceo && (
+          <section className={styles.founderSection}>
+            <div className={styles.container}>
+              <div className={styles.founderGrid}>
+                <div className={styles.founderImageArea}>
+                  <div className={styles.founderImageFrame}>
+                    <Image
+                      src={ceo.image}
+                      alt={ceo.name}
+                      width={500}
+                      height={600}
+                      className={styles.founderImg}
+                      priority
+                    />
+                  </div>
+                </div>
+                <div className={styles.founderText}>
+                  <div className={styles.founderBadge}>Business Owner & CEO</div>
+                  <h2 className={styles.founderName}>Mohammed Athar <span>Rashid</span></h2>
+                  <p className={styles.founderBio}>
+                    Mohammed Rashid has been at the forefront of the UK property market for nearly three decades.
+                    Under his leadership, Property Trader has grown from a local boutique to a nationally
+                    recognized standard-setter in luxury property management and investment sourcing.
+                  </p>
+                  <p className={styles.founderPhilosophy}>
+                    &quot;Our mission is to bridge the gap between architectural elegance and operational
+                    superiority. We believe every property has a story, and our job is to ensure it&apos;s
+                    told with precision and care.&quot;
+                  </p>
+                  <div className={styles.founderStats}>
+                    <div className={styles.miniStat}>
+                      <strong>25+</strong>
+                      <span>Years Experience</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
         <section id="team" className={styles.team}>
           <div className={styles.container}>
-            <h2 className={styles.sectionTitle}>Meet <span>The Team</span></h2>
+            <h2 className={styles.sectionTitle}>Meet <span>The Support Team</span></h2>
             <div className={styles.teamGrid}>
-              {[
-                { name: 'Mohammed Athar Rashid', role: 'Business Owner & Property Manager', image: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=400' },
-                { name: 'Sarah Williams', role: 'Head of Lettings', image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=400' },
-                { name: 'James Thompson', role: 'Investment Consultant', image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=400' }
-              ].map((member, i) => (
-                <div key={i} className={styles.teamCard}>
-                  <div className={styles.teamImg} style={{ backgroundImage: `url(${member.image})` }} />
+              {otherTeam.map((member) => (
+                <div key={member.id} className={styles.teamCard}>
+                  <div className={styles.teamImgWrapper}>
+                    <Image
+                      src={member.image}
+                      alt={member.name}
+                      width={400}
+                      height={500}
+                      className={styles.teamImg}
+                    />
+                  </div>
                   <div className={styles.teamInfo}>
                     <h3>{member.name}</h3>
-                    <p>{member.role}</p>
+                    <p className={styles.roleLabel}>{member.role}</p>
+                    <p className={styles.teamBioSnippet}>{member.description}</p>
                   </div>
                 </div>
               ))}
@@ -84,17 +145,24 @@ export default function AboutPage() {
           <div className={styles.container}>
             <h2 className={styles.sectionTitle}>Client <span>Testimonials</span></h2>
             <div className={styles.testimonialGrid}>
-              {[
-                { quote: "Property Trader has transformed how we manage our portfolio. Their attention to detail is unmatched.", author: "David Henderson", role: "Property Investor" },
-                { quote: "Professional, transparent and highly efficient. The best letting agency in Newport.", author: "Emma Ratcliffe", role: "Landlord" },
-                { quote: "Made finding my new home an absolute breeze. Highly recommend their professional services.", author: "Michael Chen", role: "Tenant" }
-              ].map((t, i) => (
+              {TESTIMONIALS.slice(0, 3).map((t, i) => (
                 <div key={i} className={styles.testimonialCard}>
                   <div className={styles.quoteIcon}>&quot;</div>
                   <p>{t.quote}</p>
                   <div className={styles.author}>
-                    <strong>{t.author}</strong>
-                    <span>{t.role}</span>
+                    <div className={styles.authorFlex}>
+                      <Image
+                        src={t.image}
+                        alt={t.author}
+                        width={48}
+                        height={48}
+                        className={styles.authorImg}
+                      />
+                      <div className={styles.authorMeta}>
+                        <strong>{t.author}</strong>
+                        <span>{t.role}</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               ))}

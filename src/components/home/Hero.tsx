@@ -47,7 +47,6 @@ export const Hero: React.FC = () => {
         </p>
 
         <div className={styles.searchBar}>
-          {/* ... existing fields ... */}
           <div className={styles.searchFields}>
             <div className={styles.field}>
               <label>Location</label>

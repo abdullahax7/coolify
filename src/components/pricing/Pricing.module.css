@@ -40,22 +40,24 @@
 .toggleWrapper {
   display: flex;
   justify-content: center;
-  margin-bottom: 24px;
+  margin-top: 60px; /* More space at top */
+  margin-bottom: 32px;
 }
 
 .toggleContainer {
   position: relative;
   display: flex;
-  background: #f1f5f9;
-  padding: 6px;
-  border-radius: var(--radius-full);
-  min-width: 320px;
-  box-shadow: inset 0 2px 4px rgba(0,0,0,0.06);
+  background: var(--primary); /* Red Background */
+  padding: 4px;
+  border-radius: 0;
+  min-width: 480px;
+  box-shadow: 0 4px 12px rgba(225, 29, 72, 0.2);
 }
 
-@media (max-width: 480px) {
+@media (max-width: 580px) {
   .toggleContainer {
-    min-width: 280px;
+    min-width: 100%;
+    width: 100%;
   }
 }
 
@@ -65,34 +67,44 @@
   z-index: 2;
   border: none;
   background: transparent;
-  padding: 12px 24px;
+  padding: 12px 14px;
   font-size: 0.8125rem;
   font-weight: 800;
-  color: var(--text-muted);
+  color: rgba(255, 255, 255, 0.8); /* Semi-transparent white for inactive */
   cursor: pointer;
-  transition: color 0.3s ease;
+  transition: all 0.2s ease;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.toggleBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
 }
 
 .toggleActive {
-  color: var(--secondary);
+  color: white !important; /* White text on blue slider */
 }
 
 .toggleSlider {
   position: absolute;
-  top: 6px;
-  left: 6px;
-  width: calc(50% - 6px);
-  height: calc(100% - 12px);
-  background: white;
-  border-radius: var(--radius-full);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  top: 4px;
+  left: 4px;
+  width: calc(33.333% - 4px);
+  height: calc(100% - 8px);
+  background: var(--secondary); /* Blue color */
+  border-radius: 0; /* No round corners */
+  box-shadow: 0 4px 12px rgba(30, 58, 138, 0.2);
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .sliderLet {
   transform: translateX(100%);
+}
+
+.sliderManage {
+  transform: translateX(200%);
 }
 
 /* ===== Desktop Table ===== */
@@ -109,21 +121,22 @@
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
+  table-layout: fixed; /* Force fixed widths */
 }
 
 .table th, .table td {
-  padding: 20px 24px;
+  padding: 16px 12px;
   text-align: center;
   border-bottom: 1px solid var(--border-light);
-  transition: var(--transition-fast);
+  font-size: 15px;
 }
 
 .table th:first-child, .table td:first-child {
   text-align: left;
-  font-weight: 500;
-  color: var(--text-muted);
+  font-weight: 700;
+  color: var(--secondary);
   background: white;
-  width: 320px;
+  width: 260px;
 }
 
 .featureName {
@@ -134,17 +147,21 @@
 /* Popular Tier Highlighting */
 .popularColumn {
   position: relative;
-  background: rgba(225, 29, 72, 0.02) !important;
 }
 
-.popularColumn::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: var(--primary);
+
+.typeHeader {
+  background: var(--primary) !important;
+  color: white !important;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  font-weight: 800;
+  text-align: left;
+  line-height: 1.2;
+}
+
+.headerRow th:last-child {
+  border-right: none;
 }
 
 .badge {
@@ -161,9 +178,22 @@
 
 /* Header Cells */
 .headerRow th {
-  padding: 40px 24px;
+  padding: 32px 12px;
   vertical-align: bottom;
-  background: white;
+  background: #1e40af; /* Deep blue from screenshot */
+  color: white;
+  border-right: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.headerRow th .tierName,
+.headerRow th .tierPrice,
+.headerRow th .tierSubtitle {
+  color: white;
+}
+
+.headerRow th:first-child {
+  background: var(--primary);
+  color: white;
 }
 
 .tierInfo {
@@ -174,19 +204,19 @@
 }
 
 .tierName {
-  font-size: 1.125rem;
+  font-size: 0.875rem;
   font-weight: 800;
   color: var(--secondary);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.02em;
 }
 
 .tierPrice {
-  font-size: 2rem;
+  font-size: 1.75rem;
   font-weight: 900;
   color: var(--secondary);
   line-height: 1;
-  margin: 10px 0;
+  margin: 6px 0;
 }
 
 .tierSubtitle {
@@ -197,22 +227,30 @@
 }
 
 /* Feature Rows */
+.featureRow:nth-child(even) td {
+  background: #fdf2f2; /* Light pink/subtle red tint */
+}
+
+.featureRow:nth-child(even) td:first-child {
+  background: #fdf2f2;
+}
+
 .featureRow:hover td {
-  background: rgba(248, 250, 252, 0.8);
+  background: #fee2e2 !important;
 }
 
 .checkIcon {
   color: #10b981;
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   margin: 0 auto;
   display: block;
 }
 
 .crossIcon {
   color: #94a3b8;
-  width: 18px;
-  height: 18px;
+  width: 14px;
+  height: 14px;
   margin: 0 auto;
   display: block;
   opacity: 0.6;
@@ -225,23 +263,24 @@
 }
 
 .footerRow td {
-  padding: 36px 24px;
-  border-bottom: none;
+  padding: 28px 12px;
   background: white;
 }
 
 .selectBtn {
   width: 100%;
-  padding: 13px;
+  padding: 12px 8px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
   font-weight: 700;
-  font-size: 0.875rem;
+  font-size: 0.75rem; /* Slight reduction to help */
   cursor: pointer;
   background: white;
   color: var(--secondary);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .selectBtn:hover {
@@ -262,9 +301,9 @@
 }
 
 .bespokeCall {
-  margin-top: 28px;
-  text-align: right;
-  font-size: 0.9375rem;
+  margin-top: 32px;
+  text-align: center;
+  font-size: 0.8125rem;
   color: var(--text-muted);
 }
 
@@ -280,23 +319,23 @@
 
 /* Tier tab selector */
 .mobileTabs {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
+  display: flex;
+  gap: 4px;
   margin-bottom: 20px;
-  background: #f1f5f9;
-  padding: 6px;
-  border-radius: var(--radius-md);
+  background: var(--primary); /* Red Background */
+  padding: 4px;
+  border-radius: 0;
 }
 
 .mobileTab {
-  padding: 10px 4px;
+  flex: 1;
+  padding: 12px 4px;
   border: none;
-  border-radius: calc(var(--radius-md) - 3px);
+  border-radius: 0;
   background: transparent;
   font-size: 0.8125rem;
   font-weight: 700;
-  color: var(--text-muted);
+  color: rgba(255, 255, 255, 0.8); /* White for mobile tabs too */
   cursor: pointer;
   transition: all 0.2s ease;
   text-transform: uppercase;
@@ -309,9 +348,9 @@
 }
 
 .mobileTabActive {
-  background: white;
-  color: var(--secondary);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  background: var(--secondary);
+  color: white !important;
+  box-shadow: 0 4px 12px rgba(30, 58, 138, 0.2);
 }
 
 .mobileTabPopular.mobileTabActive {

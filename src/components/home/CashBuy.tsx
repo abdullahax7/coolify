@@ -49,17 +49,10 @@ export const CashBuy: React.FC = () => {
               <p>Call or email us today for a free, no-obligation valuation.</p>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '24px' }}>
-                <a href="tel:08006890604" className={styles.submitBtn} style={{ textAlign: 'center', textDecoration: 'none', display: 'block' }}>
+                <a href="tel:08006890604" className={styles.submitBtn}>
                   📞 CALL 0800 6890604
                 </a>
-                <Link href="/we-buy-any-house" className={styles.submitBtn} style={{ 
-                  textAlign: 'center', 
-                  textDecoration: 'none', 
-                  display: 'block', 
-                  background: 'transparent', 
-                  border: '2px solid #000',
-                  color: '#000'
-                }}>
+                <Link href="/we-buy-any-house" className={styles.secondaryBtn}>
                   LEARN MORE →
                 </Link>
               </div>

@@ -1,8 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
+import { QuickStartSection } from '@/components/services/QuickStartSection';
 import { SERVICE_CATALOG } from '@/data/pricing_data';
 import styles from './services-page.module.css';
 
@@ -17,11 +19,26 @@ export default function ServicesHubPage() {
         {/* Hero Section */}
         <section className={styles.hero}>
           <div className={styles.container}>
-            <h1 className={styles.title}>Professional <span>Landlord Services</span></h1>
-            <p className={styles.subtitle}>
-              A comprehensive catalog of management solutions, safety certificates, and legal documentation 
-              designed to keep your property compliant and profitable.
-            </p>
+            <div className={styles.heroLayout}>
+              <div className={styles.heroText}>
+                <div className={styles.badge}>Compliance & Care</div>
+                <h1 className={styles.title}>Professional <span>Landlord Services</span></h1>
+                <p className={styles.subtitle}>
+                  A comprehensive catalog of management solutions, safety certificates, and legal documentation 
+                  designed to keep your property compliant and profitable.
+                </p>
+              </div>
+              <div className={styles.heroImage}>
+                <Image 
+                  src="/services_hero.png" 
+                  alt="Landlord Services Illustration" 
+                  width={500} 
+                  height={400} 
+                  className={styles.heroIllustration}
+                  priority
+                />
+              </div>
+            </div>
           </div>
         </section>
 
@@ -68,6 +85,8 @@ export default function ServicesHubPage() {
             </div>
           </div>
         </section>
+
+        <QuickStartSection />
 
         {/* Contact/CTA Section */}
         <section className={styles.ctaSection}>

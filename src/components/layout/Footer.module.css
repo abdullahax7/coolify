@@ -49,7 +49,7 @@
 
 .linksGrid {
   display: flex;
-  gap: 80px;
+  gap: 30px;
 }
 
 .linkColumn h4 {

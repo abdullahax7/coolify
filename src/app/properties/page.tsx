@@ -1,9 +1,12 @@
 "use client";
 
 import React, { useState, useMemo } from 'react';
+import Image from 'next/image';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { PropertyCard } from '@/components/home/PropertyCard';
+import { ListingBenefits } from '@/components/listing/ListingBenefits';
+import { PropertyFAQ } from '@/components/listing/PropertyFAQ';
 import { PROPERTIES as allProperties, type Property } from '@/data/properties';
 import styles from './properties.module.css';
 
@@ -44,9 +47,23 @@ export default function PropertiesPage() {
       <main className={styles.main}>
         <section className={styles.hero}>
           <div className={styles.container}>
-            <div className={styles.badge}>Exclusive Collection</div>
-            <h1>The <span>Property Portfolio</span></h1>
-            <p className={styles.subtitle}>Handpicked luxury residences managed to the highest global standards.</p>
+            <div className={styles.heroLayout}>
+              <div className={styles.heroText}>
+                <div className={styles.badge}>Exclusive Collection</div>
+                <h1>The <span>Property Portfolio</span></h1>
+                <p className={styles.subtitle}>Handpicked luxury residences managed to the highest global standards.</p>
+              </div>
+              <div className={styles.heroImage}>
+                <Image 
+                  src="/properties_hero_new.png" 
+                  alt="House illustration" 
+                  width={550} 
+                  height={450} 
+                  className={styles.heroIllustration}
+                  priority
+                />
+              </div>
+            </div>
           </div>
         </section>
 
@@ -126,6 +143,9 @@ export default function PropertiesPage() {
             </div>
           </div>
         </section>
+
+        <ListingBenefits />
+        <PropertyFAQ />
       </main>
 
       <Footer />

@@ -7,25 +7,10 @@ import { useParams, notFound } from 'next/navigation';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { Button } from '@/components/common/Button';
+import { PropertyCard } from '@/components/home/PropertyCard';
 import { PROPERTIES as allProperties } from '@/data/properties';
 import styles from './property-detail.module.css';
 
-const getFeatureIcon = (feature: string) => {
-  const lower = feature.toLowerCase();
-  if (lower.includes('pool') || lower.includes('infinity')) return '🏊‍♂️';
-  if (lower.includes('terrace') || lower.includes('balcony')) return '🌅';
-  if (lower.includes('smart') || lower.includes('automated')) return '🤖';
-  if (lower.includes('cinema')) return '🎬';
-  if (lower.includes('gym')) return '🏋️‍♀️';
-  if (lower.includes('park') || lower.includes('garage')) return '🅿️';
-  if (lower.includes('garden')) return '🌿';
-  if (lower.includes('spa')) return '🧖‍♀️';
-  if (lower.includes('wine')) return '🍷';
-  if (lower.includes('beach')) return '🏖️';
-  if (lower.includes('floor') || lower.includes('heating')) return '🔥';
-  if (lower.includes('solar')) return '☀️';
-  return '✨';
-};
 
 // ── Component ────────────────────────────────────────────────────────────────
 export default function PropertyDetailPage() {
@@ -170,11 +155,13 @@ export default function PropertyDetailPage() {
                 <p>{property.description || 'No description available for this property.'}</p>
                 {features.length > 0 && (
                   <>
-                    <h3 className={styles.subHeading}>Key Highlights</h3>
+                    <div className={styles.highlightsHeader}>
+                      <h3 className={styles.subHeading}>Exclusive Features <span>& Amenities</span></h3>
+                      <p className={styles.subText}>The finest details curated for a sophisticated lifestyle.</p>
+                    </div>
                     <div className={styles.featuresGrid}>
                       {features.map((feature: string, idx: number) => (
                         <div key={idx} className={styles.featureCard}>
-                          <div className={styles.featureIcon}>{getFeatureIcon(feature)}</div>
                           <div className={styles.featureLabel}>{feature}</div>
                         </div>
                       ))}
@@ -212,15 +199,26 @@ export default function PropertyDetailPage() {
             </div>
           </section>
 
-          {/* ── MAP ── */}
-          {property.mapEmbedUrl && (
-            <section className={styles.mapSection}>
-              <h2>Location & <span>Satellite View</span></h2>
-              <div className={styles.mapContainer}>
-                <iframe src={property.mapEmbedUrl} loading="lazy" referrerPolicy="no-referrer-when-downgrade" />
-              </div>
-            </section>
-          )}
+          {/* ── RECENT PROPERTIES ── */}
+          <section className={styles.recentSection}>
+            <div className={styles.recentHeader}>
+              <h2>Explore More <span>Properties</span></h2>
+              <p>Discover other exclusive residences from our curated collection.</p>
+            </div>
+            <div className={styles.recentGrid}>
+              {allProperties
+                .filter(p => p.id !== property.id)
+                .slice(0, 3)
+                .map(prop => (
+                  <PropertyCard key={prop.id} {...prop} />
+                ))}
+            </div>
+            <div className={styles.viewMoreBox}>
+              <Link href="/properties">
+                <Button variant="outline" size="lg">Explore All Listings</Button>
+              </Link>
+            </div>
+          </section>
         </div>
       </main>
 

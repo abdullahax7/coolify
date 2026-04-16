@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import styles from './we-buy-any-house.module.css';
@@ -45,12 +46,26 @@ export default function CashBuyPage() {
         {/* Hero Section */}
         <section className={styles.hero}>
           <div className={styles.container}>
-            <div className={styles.heroBadge}>UK&apos;s Trusted Cash Buyer</div>
-            <h1 className={styles.heroTitle}>Sell Your House Fast <span>For Cash</span></h1>
-            <p className={styles.heroSubtitle}>
-              Get a guaranteed offer in 24 hours. No fees, no viewings, and total peace of mind.
-              We buy houses in any condition, across the UK.
-            </p>
+            <div className={styles.heroLayout}>
+              <div className={styles.heroText}>
+                <div className={styles.heroBadge}>UK&apos;s Trusted Cash Buyer</div>
+                <h1 className={styles.heroTitle}>Sell Your House Fast <span>For Cash</span></h1>
+                <p className={styles.heroSubtitle}>
+                  Get a guaranteed offer in 24 hours. No fees, no viewings, and total peace of mind.
+                  We buy houses in any condition, across the UK.
+                </p>
+              </div>
+              <div className={styles.heroImage}>
+                <Image 
+                  src="/cash_buyer_deal_hero.png" 
+                  alt="Professional business deal" 
+                  width={550} 
+                  height={450} 
+                  className={styles.heroIllustration}
+                  priority
+                />
+              </div>
+            </div>
           </div>
         </section>
 

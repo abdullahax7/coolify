@@ -5,6 +5,7 @@ import { QuickActions } from "@/components/home/QuickActions";
 import { FeaturedProperties } from "@/components/home/FeaturedProperties";
 import { Services } from "@/components/home/Services";
 import { Testimonials } from "@/components/home/Testimonials";
+import { CEOFeature } from "@/components/home/CEOFeature";
 import { ImpactStats } from "@/components/home/ImpactStats";
 import { CashBuy } from "@/components/home/CashBuy";
 import styles from "./page.module.css";
@@ -21,7 +22,7 @@ export default function Home() {
           <QuickActions />
           <CashBuy />
           <FeaturedProperties />
-
+          <CEOFeature />
           <Testimonials />
           <ImpactStats />
           <Services />

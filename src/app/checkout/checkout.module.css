@@ -52,20 +52,32 @@
 }
 
 /* ── Summary panel ── */
-.summary { padding-right: 40px; border-right: 1px solid #e2e8f0; }
+.summary {
+  padding: 40px;
+  background: var(--primary);
+  border-radius: var(--radius-lg);
+  color: white;
+}
 
 .backLink {
   display: inline-block;
-  color: #64748b;
+  color: rgba(255, 255, 255, 0.8);
   font-size: 0.875rem;
   font-weight: 600;
   text-decoration: none;
   margin-bottom: 28px;
   transition: color 0.2s;
 }
-.backLink:hover { color: var(--primary); }
+.backLink:hover { color: white; }
 
-.summary h2, .payment h2 {
+.summary h2 {
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: white;
+  margin-bottom: 28px;
+}
+
+.payment h2 {
   font-size: 1.5rem;
   font-weight: 900;
   color: var(--navy);
@@ -93,30 +105,30 @@
   display: flex;
   gap: 10px;
   font-size: 0.9rem;
-  color: #475569;
+  color: rgba(255, 255, 255, 0.9);
   font-weight: 600;
 }
-.featureItem span { color: #16a34a; font-weight: 900; }
+.featureItem span { color: #4ade80; font-weight: 900; }
 
 .total {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 20px 0;
-  border-top: 2px solid #e2e8f0;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
   font-weight: 800;
-  color: var(--navy);
+  color: white;
   font-size: 1.125rem;
   margin-bottom: 16px;
 }
-.totalPrice { font-size: 1.5rem; color: var(--primary); }
+.totalPrice { font-size: 1.5rem; color: white; }
 
 .secure {
   display: flex;
   align-items: center;
   gap: 8px;
   font-size: 0.8125rem;
-  color: #94a3b8;
+  color: rgba(255, 255, 255, 0.7);
   font-weight: 600;
 }
 

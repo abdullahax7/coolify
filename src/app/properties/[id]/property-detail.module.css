@@ -250,12 +250,26 @@
   margin-bottom: 48px;
 }
 
+.highlightsHeader {
+  margin-top: 60px;
+  margin-bottom: 24px;
+}
+
 .subHeading {
-  font-size: 1.25rem;
+  font-size: 1.5rem;
   font-weight: 800;
   color: var(--navy);
-  margin-top: 48px;
-  margin-bottom: 24px;
+  margin-bottom: 4px;
+}
+
+.subHeading span {
+  color: var(--primary);
+}
+
+.subText {
+  font-size: 0.875rem;
+  color: #64748b;
+  margin-bottom: 0;
 }
 
 .featuresGrid {
@@ -265,21 +279,22 @@
 }
 
 .featureCard {
-  background: #f8fafc;
-  padding: 20px 16px;
-  border-radius: var(--radius-lg);
-  border: 1px solid #e2e8f0;
+  background: var(--primary); /* Red background */
+  padding: 16px;
+  border-radius: var(--radius-md);
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   text-align: center;
-  gap: 10px;
+  min-height: 40px;
   transition: all 0.25s ease;
+  border: none;
 }
 .featureCard:hover {
-  transform: translateY(-6px);
-  border-color: var(--primary);
-  box-shadow: 0 16px 32px rgba(0,0,0,0.06);
+  transform: translateY(-4px);
+  filter: brightness(1.1);
+  box-shadow: 0 10px 20px rgba(225, 29, 72, 0.2);
 }
 .featureIcon {
   font-size: 1.5rem;
@@ -295,7 +310,7 @@
 .featureLabel {
   font-size: 0.75rem;
   font-weight: 800;
-  color: var(--navy);
+  color: white; /* White text on red */
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -304,18 +319,19 @@
 .sidebar { display: flex; flex-direction: column; gap: 32px; }
 
 .agentCard {
-  background: var(--navy);
+  background: #1e40af; /* Deep Blue */
   color: white;
   padding: 32px;
   border-radius: var(--radius-lg);
+  box-shadow: 0 20px 40px rgba(30, 64, 175, 0.15);
 }
 
 .mortgageCalc {
-  background: #fdfdfd;
-  border: 1px solid #eff0f2;
+  background: #1e40af; /* Same Deep Blue */
+  color: white;
   padding: 32px;
   border-radius: var(--radius-lg);
-  box-shadow: 0 10px 30px rgba(0,0,0,0.04);
+  box-shadow: 0 20px 40px rgba(30, 64, 175, 0.15);
 }
 
 .agentCard h3 {
@@ -328,7 +344,7 @@
 }
 .mortgageCalc h3 {
   font-size: 0.75rem;
-  color: #64748b;
+  color: rgba(255,255,255,0.55);
   text-transform: uppercase;
   letter-spacing: 0.12em;
   font-weight: 800;
@@ -346,11 +362,11 @@
 .payment {
   font-size: 2rem;
   font-weight: 900;
-  color: var(--navy);
+  color: white;
   margin-bottom: 8px;
 }
-.payment span { font-size: 1rem; color: #64748b; font-weight: 600; }
-.mortgageCalc p { font-size: 0.875rem; color: #64748b; line-height: 1.65; margin-bottom: 20px; }
+.payment span { font-size: 1rem; color: rgba(255,255,255,0.6); font-weight: 600; }
+.mortgageCalc p { font-size: 0.875rem; color: rgba(255,255,255,0.7); line-height: 1.65; margin-bottom: 20px; }
 
 /* ─── NEARBY PLACES ─── */
 .nearby {
@@ -492,33 +508,56 @@
   margin-top: 2px;
 }
 
-/* ─── MAP ─── */
-.mapSection { margin-top: 100px; padding-bottom: 100px; }
-.mapSection h2 {
+/* ─── RECENT PROPERTIES ─── */
+.recentSection {
+  margin-top: 100px;
+  padding-top: 80px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.recentHeader {
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+.recentHeader h2 {
   font-size: 2.25rem;
-  color: var(--navy);
   font-weight: 900;
-  margin-bottom: 32px;
+  color: var(--navy);
+  margin-bottom: 12px;
+}
+
+.recentHeader h2 span { color: var(--primary); }
+
+.recentHeader p {
+  color: #64748b;
+  font-size: 1.125rem;
+}
+
+.recentGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+  margin-bottom: 48px;
+}
+
+.viewMoreBox {
   display: flex;
-  align-items: center;
-  gap: 16px;
+  justify-content: center;
 }
-.mapSection h2::before {
-  content: '';
-  width: 6px;
-  height: 32px;
-  background: var(--primary);
-  border-radius: var(--radius-full);
+
+@media (max-width: 1024px) {
+  .recentGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
-.mapSection h2 span { color: var(--primary); }
-.mapContainer {
-  height: 500px;
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 30px 80px rgba(0,0,0,0.08);
+
+@media (max-width: 640px) {
+  .recentGrid {
+    grid-template-columns: 1fr;
+  }
+  .recentHeader h2 { font-size: 1.75rem; }
 }
-.mapContainer iframe { width: 100%; height: 100%; border: none; }
 
 /* ─── LIGHTBOX ─── */
 .lightbox {
