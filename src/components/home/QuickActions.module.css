@@ -55,7 +55,7 @@
   .container {
     padding: 0 24px;
     flex-direction: column;
-    align-items: stretch;
+    align-items: center;
   }
   
   .actionBtn {
