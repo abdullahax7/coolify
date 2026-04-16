@@ -11,17 +11,18 @@ export default function FormStatusPage() {
   const orderId = params.orderId as string;
   const router  = useRouter();
 
-  const [order, setOrder] = useState<Order | null>(null);
-  const [user,  setUser]  = useState<User  | null>(null);
+  const [user]  = useState<User  | null>(getUser);
+  const [order] = useState<Order | null>(() => 
+    getOrders().find(ord => ord.id === orderId) || null
+  );
 
   useEffect(() => {
-    const u = getUser();
-    if (!u) { router.push('/login'); return; }
-    setUser(u);
-    const o = getOrders().find(ord => ord.id === orderId) || null;
-    if (!o || !o.formType) { router.push('/dashboard'); return; }
-    setOrder(o);
-  }, [orderId, router]);
+    if (!user) {
+      router.push('/login');
+    } else if (!order || !order.formType) {
+      router.push('/dashboard');
+    }
+  }, [user, order, router, orderId]);
 
   const downloadPDF = () => {
     if (!order?.formData?.pdfBase64) return;
