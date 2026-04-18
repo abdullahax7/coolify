@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { squareClient, SQUARE_LOCATION_ID } from '@/lib/square';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
+  const admin = await createAdminClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
@@ -32,7 +33,7 @@ export async function POST(req: NextRequest) {
       const buffer = Buffer.from(base64Content, 'base64');
       const filePath = `${user.id}/${orderId}.pdf`;
 
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      const { data: uploadData, error: uploadError } = await admin.storage
         .from('pdfs')
         .upload(filePath, buffer, {
           contentType: 'application/pdf',
@@ -42,10 +43,15 @@ export async function POST(req: NextRequest) {
       if (uploadError) {
         console.error('[checkout] PDF upload error:', uploadError.message);
       } else {
-        const { data: { publicUrl } } = supabase.storage
+        const { data: signedData, error: signError } = await admin.storage
           .from('pdfs')
-          .getPublicUrl(filePath);
-        finalPdfUrl = publicUrl;
+          .createSignedUrl(filePath, 60 * 60 * 24 * 365 * 10); // 10 years
+        
+        if (signError) {
+          console.error('[checkout] PDF sign error:', signError.message);
+        } else {
+          finalPdfUrl = signedData?.signedUrl ?? null;
+        }
       }
     } catch (e) {
       console.error('[checkout] PDF processing error:', e);
