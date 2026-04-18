@@ -108,7 +108,7 @@ export const Services: React.FC = () => {
                     <p>{item.desc}</p>
                     <button 
                       className={styles.selectBtn}
-                      onClick={() => window.location.href = `/checkout?plan=${encodeURIComponent(item.name)}`}
+                      onClick={() => window.location.href = `/checkout?service=${encodeURIComponent(item.name)}&price=${encodeURIComponent(item.price)}`}
                     >
                       SELECT SERVICE
                     </button>

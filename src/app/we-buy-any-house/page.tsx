@@ -17,24 +17,16 @@ export default function CashBuyPage() {
   });
   const [status, setStatus] = useState<'idle' | 'busy' | 'done'>('idle');
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setStatus('busy');
-    
-    // Simulate API call and save to localStorage for admin panel
-    setTimeout(() => {
-      const inquiries = JSON.parse(localStorage.getItem('pt_cash_inquiries') || '[]');
-      const newInquiry = {
-        ...form,
-        id: `CASH-${Date.now()}`,
-        date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
-        status: 'new'
-      };
-      localStorage.setItem('pt_cash_inquiries', JSON.stringify([newInquiry, ...inquiries]));
-      
-      setStatus('done');
-      setForm({ name: '', phone: '', email: '', price: '', address: '', postcode: '' });
-    }, 1000);
+    await fetch('/api/cash-inquiries', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(form),
+    });
+    setStatus('done');
+    setForm({ name: '', phone: '', email: '', price: '', address: '', postcode: '' });
   };
 
   const set = (f: string, v: string) => setForm(prev => ({ ...prev, [f]: v }));

@@ -27,6 +27,23 @@ const FAQS = [
 export const PropertyFAQ = () => {
   return (
     <section className={styles.section}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            "mainEntity": FAQS.map(faq => ({
+              "@type": "Question",
+              "name": faq.q,
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": faq.a
+              }
+            }))
+          })
+        }}
+      />
       <div className={styles.container}>
         <div className={styles.header}>
           <h2>Got <span>Questions?</span></h2>

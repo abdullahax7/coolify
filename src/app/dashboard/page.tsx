@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { getUser, getOrders, clearUser, type User, type Order } from '@/lib/auth';
+import { getUser, getOrders, signOut, type User, type Order } from '@/lib/auth';
 import styles from './dashboard.module.css';
 
 interface PropertySubmission {
@@ -24,13 +24,18 @@ interface PropertySubmission {
   contactPhone: string;
 }
 
-function getSubmissions(): PropertySubmission[] {
-  if (typeof window === 'undefined') return [];
-  try { return JSON.parse(localStorage.getItem('pt_submissions') || '[]'); } catch { return []; }
-}
-function saveSubmission(s: PropertySubmission) {
-  const all = getSubmissions();
-  localStorage.setItem('pt_submissions', JSON.stringify([s, ...all]));
+async function getSubmissions(): Promise<PropertySubmission[]> {
+  const res = await fetch('/api/submissions');
+  if (!res.ok) return [];
+  const data = await res.json();
+  return (data.submissions ?? []).map((s: Record<string, unknown>) => ({
+    id: s.id, address: s.address, postcode: s.postcode, type: s.type,
+    beds: s.beds, baths: s.baths, sqft: s.sqft, price: s.price,
+    description: s.description, features: s.features,
+    submittedAt: s.submitted_at ? new Date(s.submitted_at as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '',
+    status: s.status as PropertySubmission['status'],
+    contactName: s.contact_name, contactEmail: s.contact_email, contactPhone: s.contact_phone,
+  }));
 }
 
 type Tab = 'overview' | 'list-property' | 'services';
@@ -44,16 +49,17 @@ export default function DashboardPage() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
-    const u = getUser();
-    if (!u) { router.replace('/login'); return; }
-    requestAnimationFrame(() => {
+    (async () => {
+      const u = await getUser();
+      if (!u) { router.replace('/login'); return; }
       setUser(u);
-      setOrders(getOrders());
-      setSubmissions(getSubmissions());
-    });
+      const [orders, subs] = await Promise.all([getOrders(), getSubmissions()]);
+      setOrders(orders);
+      setSubmissions(subs);
+    })();
   }, [router]);
 
-  const handleLogout = () => { clearUser(); router.push('/'); };
+  const handleLogout = async () => { await signOut(); router.push('/'); router.refresh(); };
 
   if (!user) return null;
 
@@ -314,7 +320,7 @@ export default function DashboardPage() {
 /* ─── Sub-components ─── */
 
 function OrderRow({ order }: { order: Order }) {
-  const pdfReady = !!order.formData?.pdfBase64;
+  const pdfReady = !!order.pdfUrl;
   return (
     <div className={styles.orderRow}>
       <div className={styles.orderInfo}>
@@ -326,12 +332,24 @@ function OrderRow({ order }: { order: Order }) {
         <span className={styles.orderDate}>{order.date}</span>
         <span className={styles.orderPrice}>{order.price}</span>
       </div>
-      {order.formType && (
+      {(order.formType || pdfReady) && (
         <div className={styles.orderActions}>
-          <Link href={`/dashboard/forms/${order.id}`} className={styles.editFormBtn}
-            style={pdfReady ? { background: '#16a34a', color: '#fff' } : {}}>
-            {pdfReady ? '📥 Download Document' : '📋 View Status'}
-          </Link>
+          {pdfReady ? (
+            <a 
+              href={order.pdfUrl} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className={styles.editFormBtn}
+              style={{ background: '#16a34a', color: '#fff', textAlign: 'center' }}
+              download
+            >
+              📥 Download
+            </a>
+          ) : (
+            <Link href={`/dashboard/forms/${order.id}`} className={styles.editFormBtn}>
+              📋 View Status
+            </Link>
+          )}
         </div>
       )}
     </div>
@@ -414,31 +432,33 @@ function SubmitPropertyForm({
     else if (step === 2 && validateStep2()) setStep(3);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setLoading(true);
-    setTimeout(() => {
-      const submission: PropertySubmission = {
-        id: Date.now().toString(),
-        address: form.address,
-        postcode: form.postcode,
+    const res = await fetch('/api/submissions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        address: form.address, postcode: form.postcode,
         type: `${form.saleType} — ${form.type}`,
-        beds: form.beds,
-        baths: form.baths || '—',
-        sqft: form.sqft || '—',
-        price: form.price,
-        description: form.description,
-        features: form.features,
-        submittedAt: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
-        status: 'pending',
-        contactName: form.name,
-        contactEmail: form.email,
-        contactPhone: form.phone,
-      };
-      saveSubmission(submission);
-      setLoading(false);
-      setDone(true);
-      onSubmitted(submission);
-    }, 1200);
+        beds: form.beds, baths: form.baths || '—',
+        sqft: form.sqft || '—', price: form.price,
+        description: form.description, features: form.features,
+        contactName: form.name, contactEmail: form.email, contactPhone: form.phone,
+      }),
+    });
+    setLoading(false);
+    if (!res.ok) return;
+    const submission = await res.json();
+    setDone(true);
+    onSubmitted({
+      id: submission.id, address: submission.address, postcode: submission.postcode,
+      type: submission.type, beds: submission.beds, baths: submission.baths,
+      sqft: submission.sqft, price: submission.price,
+      description: submission.description, features: submission.features,
+      submittedAt: new Date(submission.submitted_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+      status: 'pending',
+      contactName: submission.contact_name, contactEmail: submission.contact_email, contactPhone: submission.contact_phone,
+    });
   };
 
   const resetForm = () => {

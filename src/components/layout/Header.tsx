@@ -4,7 +4,8 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Logo } from '../common/Logo';
-import { getUser, clearUser, type User } from '@/lib/auth';
+import { CartIcon } from '../common/Cart';
+import { getUser, signOut, type User } from '@/lib/auth';
 import styles from './Header.module.css';
 
 export const Header: React.FC = () => {
@@ -21,13 +22,7 @@ export const Header: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const currentUser = getUser();
-    if (currentUser) {
-      requestAnimationFrame(() => setUser(currentUser));
-    }
-    const onStorage = () => setUser(getUser());
-    window.addEventListener('storage', onStorage);
-    return () => window.removeEventListener('storage', onStorage);
+    getUser().then(u => { if (u) setUser(u); });
   }, []);
 
   useEffect(() => {
@@ -39,10 +34,11 @@ export const Header: React.FC = () => {
     return () => { document.body.style.overflow = 'unset'; };
   }, [isMenuOpen]);
 
-  const handleLogout = () => {
-    clearUser();
+  const handleLogout = async () => {
+    await signOut();
     setUser(null);
     router.push('/');
+    router.refresh();
   };
 
   return (
@@ -103,6 +99,7 @@ export const Header: React.FC = () => {
           </nav>
 
           <div className={styles.actions}>
+            <CartIcon />
             {user ? (
               <div className={styles.userMenu}>
                 <Link href="/dashboard" className={styles.avatarBtn} title="Dashboard">

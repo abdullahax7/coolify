@@ -4,13 +4,38 @@ import React from 'react';
 import Link from 'next/link';
 import { PropertyCard } from './PropertyCard';
 import { Button } from '../common/Button';
-import { PROPERTIES } from '@/data/properties';
 import styles from './FeaturedProperties.module.css';
 
-export const FeaturedProperties: React.FC = () => {
-  const featured = PROPERTIES.slice(0, 3);
+interface FeaturedProperty {
+  id: string;
+  gallery_urls?: string | string[];
+  image_url?: string;
+  title: string;
+  location: string;
+  price: string;
+  beds: string;
+  baths: string;
+  sqft: string;
+  type: string;
+}
 
-  if (featured.length === 0) return null;
+export const FeaturedProperties: React.FC = () => {
+  const [featured, setFeatured] = React.useState<FeaturedProperty[]>([]);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    fetch('/api/properties/custom')
+      .then(res => res.json())
+      .then(data => {
+        const properties = data.properties ?? [];
+        setFeatured(properties.slice(0, 3));
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
+  if (loading) return null;
+  if (!loading && featured.length === 0) return null;
 
   return (
     <section className={styles.section}>
@@ -30,13 +55,19 @@ export const FeaturedProperties: React.FC = () => {
             <PropertyCard
               key={prop.id}
               id={prop.id}
-              image={Array.isArray(prop.gallery) && prop.gallery.length > 0 ? prop.gallery[0] : prop.image}
+              image={(() => {
+                if (prop.gallery_urls) {
+                  const list = Array.isArray(prop.gallery_urls) ? prop.gallery_urls : prop.gallery_urls.split('|DELIM|').filter(Boolean);
+                  if (list.length > 0) return list[0];
+                }
+                return prop.image_url || '/placeholder-property.jpg';
+              })()}
               title={prop.title}
               location={prop.location}
               price={prop.price}
-              beds={prop.beds}
-              baths={prop.baths}
-              sqft={prop.sqft}
+              beds={parseInt(prop.beds) || 0}
+              baths={parseInt(prop.baths) || 0}
+              sqft={parseInt(prop.sqft) || 0}
               type={prop.type}
             />
           ))}

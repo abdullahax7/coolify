@@ -1,13 +1,21 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import dynamic from 'next/dynamic';
 import { PROPERTIES, type Property } from '@/data/properties';
 import styles from './admin.module.css';
+import { exportPDF, uint8ToBase64 } from '@/components/PSPDFKitViewer';
+import MessagesTab, { type Message } from './components/MessagesTab';
+import ConfirmModalShared from './components/ConfirmModal';
+
+const PSPDFKitViewer = dynamic(() => import('@/components/PSPDFKitViewer'), {
+  ssr: false,
+  loading: () => <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:500, color:'#94a3b8' }}>Loading PDF editor…</div>,
+});
 
 /* ═══════════════════════════════ TYPES ═══════════════════════════════ */
-interface AdminSession { loggedIn: boolean; at: string; }
 interface Order {
   id: string; type: 'listing' | 'service'; name: string;
   price: string; detail: string; date: string; status: string;
@@ -21,10 +29,6 @@ interface Submission {
   description: string; features: string; submittedAt: string; status: string;
   contactName: string; contactEmail: string; contactPhone: string;
 }
-interface Message {
-  id: string; name: string; email: string; phone: string;
-  subject: string; message: string; receivedAt: string; read: boolean;
-}
 interface PropOverride { hidden?: boolean; featured?: boolean; notes?: string; }
 interface CustomProp {
   id: string; title: string; location: string; price: string;
@@ -32,7 +36,6 @@ interface CustomProp {
   sector: string; status: string; createdAt: string; notes: string;
   image: string; gallery: string; mapEmbedUrl: string;
   description: string; features: string;
-  interior: string; exterior: string;
 }
 interface PropertyDocument {
   id: string;
@@ -42,7 +45,8 @@ interface PropertyDocument {
   expiryDate: string;
   dateUploaded: string;
   status: 'Current' | 'Expiring' | 'Expired';
-  fileBase64?: string;
+  fileUrl?: string;   // signed URL from Supabase storage (loaded from DB)
+  fileBase64?: string; // data URI (newly uploaded in modal, before save)
   fileName?: string;
 }
 interface Tenancy {
@@ -83,9 +87,7 @@ interface CashInquiry {
   status: 'new' | 'viewed' | 'contacted' | 'rejected' | 'accepted';
 }
 
-const ADMIN_EMAIL = 'admin@propertytrader1.co.uk';
-const ADMIN_PASS  = 'PTAdmin2024';
-const SESSION_KEY = 'pt_adm_sess';
+import { signIn as supabaseSignIn, signOut as supabaseSignOut, getUser } from '@/lib/auth';
 
 type Tab = 'overview' | 'properties' | 'submissions' | 'listing-plans' | 'services' | 'messages' | 'documents' | 'tenants' | 'appointments' | 'forms' | 'cash-buyers' | 'tenancy-form';
 
@@ -108,38 +110,26 @@ interface TenancyFormRecord {
   status: 'draft' | 'active' | 'ended';
 }
 
-/* ═══════════════════════════════ LS HELPERS ═══════════════════════════════ */
-function ls<T>(key: string, fb: T): T {
-  if (typeof window === 'undefined') return fb;
-  try { const r = localStorage.getItem(key); return r ? JSON.parse(r) : fb; } catch { return fb; }
-}
-function lsSet(key: string, v: unknown) {
-  try { localStorage.setItem(key, JSON.stringify(v)); } catch { /* ignore */ }
-}
-function uid() { return `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`; }
 function today() { return new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); }
 
 /* ═══════════════════════════════ ROOT ═══════════════════════════════ */
 export default function AdminPanel() {
-  const [authed, setAuthed]       = useState(false);
-  const [ready, setReady]         = useState(false);
-  const [tab, setTab]             = useState<Tab>('overview');
+  const [authed, setAuthed] = useState(false);
+  const [ready, setReady]   = useState(false);
+  const [tab, setTab]       = useState<Tab>('overview');
 
   useEffect(() => {
-    const s = ls<AdminSession | null>(SESSION_KEY, null);
-    requestAnimationFrame(() => {
-      if (s?.loggedIn) setAuthed(true);
+    getUser().then(u => {
+      if (u?.isAdmin) setAuthed(true);
       setReady(true);
     });
   }, []);
 
   if (!ready) return null;
   if (!authed) return (
-    <AdminLogin
-      onLogin={() => { lsSet(SESSION_KEY, { loggedIn: true, at: new Date().toISOString() }); setAuthed(true); }}
-    />
+    <AdminLogin onLogin={() => setAuthed(true)} />
   );
-  return <Shell tab={tab} setTab={setTab} onLogout={() => { localStorage.removeItem(SESSION_KEY); setAuthed(false); }} />;
+  return <Shell tab={tab} setTab={setTab} onLogout={async () => { await supabaseSignOut(); setAuthed(false); }} />;
 }
 
 /* ═══════════════════════════════ LOGIN ═══════════════════════════════ */
@@ -150,10 +140,13 @@ function AdminLogin({ onLogin }: { onLogin: () => void }) {
   const [busy, setBusy]   = useState(false);
   const [show, setShow]   = useState(false);
 
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault(); setErr('');
-    if (email === ADMIN_EMAIL && pass === ADMIN_PASS) { setBusy(true); setTimeout(onLogin, 700); }
-    else setErr('Invalid credentials. Please try again.');
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault(); setErr(''); setBusy(true);
+    const { error } = await supabaseSignIn(email, pass);
+    if (error) { setErr('Invalid credentials. Please try again.'); setBusy(false); return; }
+    const user = await getUser();
+    if (!user?.isAdmin) { setErr('You do not have admin access.'); setBusy(false); return; }
+    onLogin();
   };
   return (
     <div className={styles.loginPage}>
@@ -208,91 +201,263 @@ function Shell({ tab, setTab, onLogout }: { tab: Tab; setTab: (t: Tab) => void; 
   const [menuOpen, setMenuOpen]   = useState(false);
 
   useEffect(() => {
-    requestAnimationFrame(() => {
-      setOrders(ls('pt_orders', []));
-      setSubs(ls('pt_submissions', []));
-      setMessages(ls('pt_messages', []));
-      setOverrides(ls('pt_prop_overrides', {}));
-      setCustomProps(ls('pt_custom_props', []));
-      setDocuments(ls('pt_documents', []));
-      setTenancies(ls('pt_tenancies', []));
-      setAppointments(ls('pt_appointments', []));
-      setCashInquiries(ls('pt_cash_inquiries', []));
-      setTenancyForms(ls('pt_tenancy_forms', []));
-    });
+    (async () => {
+      const fetchItem = async (url: string, key: string) => {
+        try {
+          const res = await fetch(url);
+          if (!res.ok) throw new Error(`Failed to fetch ${key}`);
+          return await res.json();
+        } catch (e) {
+          console.error(`Error loading ${key}:`, e);
+          return { [key]: [] }; // Return empty set on failure
+        }
+      };
+
+      const [oD, sD, mD, dD, tD, aD, cD, tfD, cpD, orD] = await Promise.all([
+        fetchItem('/api/orders', 'orders'),
+        fetchItem('/api/submissions', 'submissions'),
+        fetchItem('/api/messages', 'messages'),
+        fetchItem('/api/documents', 'documents'),
+        fetchItem('/api/tenancies', 'tenancies'),
+        fetchItem('/api/appointments', 'appointments'),
+        fetchItem('/api/cash-inquiries', 'inquiries'),
+        fetchItem('/api/tenancy-forms', 'forms'),
+        fetchItem('/api/properties/custom', 'properties'),
+        fetchItem('/api/properties/overrides', 'overrides'),
+      ]);
+
+      setOrders((oD.orders ?? []).map((o: Record<string,unknown>) => ({
+        id: o.id, type: o.type, name: o.name, price: o.price, detail: o.detail ?? '',
+        date: o.date ?? '', status: o.status, formType: o.form_type ?? undefined,
+        formData: o.form_data ?? undefined, customerName: o.customer_name ?? '',
+        customerEmail: o.customer_email ?? '', customerPhone: o.customer_phone ?? '',
+      })));
+      setSubs((sD.submissions ?? []).map((s: Record<string,unknown>) => ({
+        id: s.id, address: s.address, postcode: s.postcode, type: s.type,
+        beds: s.beds, baths: s.baths, sqft: s.sqft, price: s.price,
+        description: s.description, features: s.features, status: s.status,
+        submittedAt: s.submitted_at ? new Date(s.submitted_at as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '',
+        contactName: s.contact_name, contactEmail: s.contact_email, contactPhone: s.contact_phone,
+      })));
+      setMessages((mD.messages ?? []).map((m: Record<string,unknown>) => ({
+        id: m.id, name: m.name, email: m.email, phone: m.phone ?? '',
+        subject: m.subject, message: m.message, read: m.read ?? false,
+        receivedAt: m.received_at ? new Date(m.received_at as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '',
+      })));
+      setDocuments((dD.documents ?? []).map((d: Record<string,unknown>) => ({
+        id: d.id, propertyId: d.property_id, propertyName: d.property_name,
+        documentType: d.document_type, expiryDate: d.expiry_date,
+        dateUploaded: d.date_uploaded, status: d.status, fileUrl: d.file_url, fileName: d.file_name,
+      })));
+      setTenancies((tD.tenancies ?? []).map((t: Record<string,unknown>) => ({
+        id: t.id, propertyId: t.property_id, propertyName: t.property_name,
+        startDate: t.start_date, endDate: t.end_date, rentAmount: t.rent_amount,
+        rentFrequency: t.rent_frequency, rentDay: t.rent_day, depositAmount: t.deposit_amount,
+        tenantName: t.tenant_name, tenantEmail: t.tenant_email, tenantPhone: t.tenant_phone,
+        agreementFile: t.agreement_file_url ? { name: '', base64: t.agreement_file_url as string } : undefined,
+        status: t.status, createdAt: t.created_at ?? '',
+      })));
+      setAppointments((aD.appointments ?? []).map((a: Record<string,unknown>) => ({
+        id: a.id, name: a.name, number: a.number, timing: a.timing, day: a.day,
+        description: a.description ?? undefined, createdAt: a.created_at ?? '',
+      })));
+      setCashInquiries((cD.inquiries ?? []).map((c: Record<string,unknown>) => ({
+        id: c.id, name: c.name, phone: c.phone, email: c.email, price: c.price,
+        address: c.address, postcode: c.postcode, date: c.date ?? '', status: c.status,
+      })));
+      setTenancyForms((tfD.forms ?? []).map((f: Record<string,unknown>) => ({
+        id: f.id, tenantName: f.tenant_name, landlordName: f.landlord_name,
+        propertyAddress: f.property_address, contractStartDate: f.contract_start_date,
+        contractEndDate: f.contract_end_date, monthlyRent: f.monthly_rent,
+        depositAmount: f.deposit_amount, tenantEmail: f.tenant_email, tenantPhone: f.tenant_phone,
+        landlordEmail: f.landlord_email, landlordPhone: f.landlord_phone,
+        additionalNotes: f.additional_notes ?? '',
+        uploadedContract: f.contract_file_url ? { name: '', base64: f.contract_file_url as string } : undefined,
+        createdAt: f.created_at ?? '', status: f.status,
+      })));
+      setCustomProps((cpD.properties ?? []).map((p: Record<string,unknown>) => ({
+        id: p.id, title: p.title, location: p.location, price: p.price,
+        beds: p.beds, baths: p.baths, sqft: p.sqft, type: p.type,
+        sector: p.sector, status: p.status, createdAt: p.created_at ?? '',
+        notes: p.notes ?? '', image: p.image_url ?? '', gallery: p.gallery_urls ?? '',
+        mapEmbedUrl: p.map_embed_url ?? '', description: p.description ?? '',
+        features: p.features ?? '', interior: p.interior ?? '', exterior: p.exterior ?? '',
+      })));
+      const overrideMap: Record<string, PropOverride> = {};
+      (orD.overrides ?? []).forEach((o: Record<string,unknown>) => {
+        overrideMap[o.property_id as string] = { hidden: o.hidden as boolean, featured: o.featured as boolean, notes: o.notes as string };
+      });
+      setOverrides(overrideMap);
+    })();
   }, []);
 
+  const api = {
+    post: (url: string, body: unknown) => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }),
+    put:  (url: string, body: unknown) => fetch(url, { method: 'PUT',  headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }),
+    del:  (url: string)               => fetch(url, { method: 'DELETE' }),
+  };
+
   /* Orders CRUD */
-  const saveOrders = (next: Order[]) => { lsSet('pt_orders', next); setOrders(next); };
-  const createOrder = (o: Omit<Order, 'id' | 'date'>) => saveOrders([{ ...o, id: `ORD-${uid()}`, date: today() }, ...orders]);
-  const updateOrder = (upd: Order) => saveOrders(orders.map(o => o.id === upd.id ? upd : o));
-  const deleteOrder = (id: string) => saveOrders(orders.filter(o => o.id !== id));
+  const createOrder = async (o: Omit<Order, 'id' | 'date'> | Order) => {
+    const res = await api.post('/api/orders', o);
+    const data = await res.json();
+    setOrders(prev => [{ ...o, id: data.id, date: data.date ?? today() } as Order, ...prev]);
+  };
+  const updateOrder = async (upd: Order) => {
+    await api.put(`/api/orders/${upd.id}`, upd);
+    setOrders(prev => prev.map(o => o.id === upd.id ? upd : o));
+  };
+  const deleteOrder = async (id: string) => {
+    await api.del(`/api/orders/${id}`);
+    setOrders(prev => prev.filter(o => o.id !== id));
+  };
 
   /* Submissions CRUD */
-  const saveSubs = (next: Submission[]) => { lsSet('pt_submissions', next); setSubs(next); };
-  const createSub = (s: Omit<Submission, 'id' | 'submittedAt' | 'status'>) =>
-    saveSubs([{ ...s, id: uid(), submittedAt: today(), status: 'pending' }, ...submissions]);
-  const updateSub = (upd: Submission) => saveSubs(submissions.map(s => s.id === upd.id ? upd : s));
-  const deleteSub = (id: string) => saveSubs(submissions.filter(s => s.id !== id));
+  const createSub = async (s: Omit<Submission, 'id' | 'submittedAt' | 'status'>) => {
+    const res = await api.post('/api/submissions', { ...s, contactName: s.contactName, contactEmail: s.contactEmail, contactPhone: s.contactPhone });
+    const data = await res.json();
+    setSubs(prev => [{ ...s, id: data.id, submittedAt: today(), status: 'pending' as const }, ...prev]);
+  };
+  const updateSub = async (upd: Submission) => {
+    await api.put(`/api/submissions/${upd.id}`, {
+      status: upd.status,
+      address: upd.address, postcode: upd.postcode, type: upd.type,
+      beds: upd.beds, baths: upd.baths, sqft: upd.sqft, price: upd.price,
+      description: upd.description, features: upd.features,
+      contact_name: upd.contactName, contact_email: upd.contactEmail, contact_phone: upd.contactPhone,
+    });
+    setSubs(prev => prev.map(s => s.id === upd.id ? upd : s));
+  };
+  const deleteSub = async (id: string) => {
+    await api.del(`/api/submissions/${id}`);
+    setSubs(prev => prev.filter(s => s.id !== id));
+  };
 
   /* Messages CRUD */
-  const saveMsgs = (next: Message[]) => { lsSet('pt_messages', next); setMessages(next); };
-  const markRead = (id: string) => saveMsgs(messages.map(m => m.id === id ? { ...m, read: true } : m));
-  const markAllRead = () => saveMsgs(messages.map(m => ({ ...m, read: true })));
-  const deleteMsg = (id: string) => saveMsgs(messages.filter(m => m.id !== id));
+  const markRead = async (id: string) => {
+    await api.put(`/api/messages/${id}`, { read: true });
+    setMessages(prev => prev.map(m => m.id === id ? { ...m, read: true } : m));
+  };
+  const markAllRead = async () => {
+    await Promise.all(messages.filter(m => !m.read).map(m => api.put(`/api/messages/${m.id}`, { read: true })));
+    setMessages(prev => prev.map(m => ({ ...m, read: true })));
+  };
+  const deleteMsg = async (id: string) => {
+    await api.del(`/api/messages/${id}`);
+    setMessages(prev => prev.filter(m => m.id !== id));
+  };
 
   /* Property overrides */
-  const saveOverride = (id: string, patch: Partial<PropOverride>) => {
-    const next = { ...overrides, [id]: { ...(overrides[id] ?? {}), ...patch } };
-    lsSet('pt_prop_overrides', next); setOverrides(next);
+  const saveOverride = async (id: string, patch: Partial<PropOverride>) => {
+    const next = { ...(overrides[id] ?? {}), ...patch };
+    await api.post('/api/properties/overrides', { propertyId: id, ...next });
+    setOverrides(prev => ({ ...prev, [id]: { ...(prev[id] ?? {}), ...patch } }));
   };
 
   /* Custom properties CRUD */
-  const saveCustom = (next: CustomProp[]) => { lsSet('pt_custom_props', next); setCustomProps(next); };
-  const createCustom = (c: Omit<CustomProp, 'id' | 'createdAt'>) =>
-    saveCustom([{ ...c, id: `CUSTOM-${uid()}`, createdAt: today() }, ...customProps]);
-  const updateCustom = (upd: CustomProp) => saveCustom(customProps.map(c => c.id === upd.id ? upd : c));
-  const deleteCustom = (id: string) => saveCustom(customProps.filter(c => c.id !== id));
+  const createCustom = async (c: Omit<CustomProp, 'id' | 'createdAt'>) => {
+    const res = await api.post('/api/properties/custom', { 
+      title: c.title, location: c.location, price: c.price,
+      beds: c.beds, baths: c.baths, sqft: c.sqft,
+      type: c.type, sector: c.sector, status: c.status,
+      notes: c.notes, image_url: c.image, gallery_urls: c.gallery,
+      map_embed_url: c.mapEmbedUrl, description: c.description,
+      features: c.features
+    });
+    const data = await res.json();
+    setCustomProps(prev => [{ ...c, id: data.id, createdAt: today() }, ...prev]);
+  };
+  const updateCustom = async (upd: CustomProp) => {
+    await api.put(`/api/properties/custom/${upd.id}`, { 
+      title: upd.title, location: upd.location, price: upd.price,
+      beds: upd.beds, baths: upd.baths, sqft: upd.sqft,
+      type: upd.type, sector: upd.sector, status: upd.status,
+      notes: upd.notes, image_url: upd.image, gallery_urls: upd.gallery,
+      map_embed_url: upd.mapEmbedUrl, description: upd.description,
+      features: upd.features
+    });
+    setCustomProps(prev => prev.map(c => c.id === upd.id ? upd : c));
+  };
+  const deleteCustom = async (id: string) => {
+    await api.del(`/api/properties/custom/${id}`);
+    setCustomProps(prev => prev.filter(c => c.id !== id));
+  };
 
   /* Documents CRUD */
-  const saveDocs = (next: PropertyDocument[]) => { lsSet('pt_documents', next); setDocuments(next); };
-  const createDoc = (d: Omit<PropertyDocument, 'id' | 'dateUploaded'>) =>
-    saveDocs([{ ...d, id: `DOC-${uid()}`, dateUploaded: today() }, ...documents]);
-  const updateDoc = (upd: PropertyDocument) => saveDocs(documents.map(d => d.id === upd.id ? upd : d));
-  const deleteDoc = (id: string) => saveDocs(documents.filter(d => d.id !== id));
+  const createDoc = async (d: Omit<PropertyDocument, 'id' | 'dateUploaded'>) => {
+    const fd = new FormData();
+    fd.append('meta', JSON.stringify({ propertyId: d.propertyId, propertyName: d.propertyName, documentType: d.documentType, expiryDate: d.expiryDate, status: d.status }));
+    if (d.fileBase64 && d.fileName) {
+      const blob = await fetch(d.fileBase64).then(r => r.blob());
+      fd.append('file', blob, d.fileName);
+    }
+    const res = await fetch('/api/documents', { method: 'POST', body: fd });
+    const data = await res.json();
+    setDocuments(prev => [{ ...d, id: data.id, fileUrl: data.file_url ?? undefined, dateUploaded: today() }, ...prev]);
+  };
+  const updateDoc = async (upd: PropertyDocument) => {
+    await api.put(`/api/documents/${upd.id}`, { status: upd.status, expiry_date: upd.expiryDate });
+    setDocuments(prev => prev.map(d => d.id === upd.id ? upd : d));
+  };
+  const deleteDoc = async (id: string) => {
+    await api.del(`/api/documents/${id}`);
+    setDocuments(prev => prev.filter(d => d.id !== id));
+  };
 
   /* Tenancies CRUD */
-  const saveTenancies = (next: Tenancy[]) => { lsSet('pt_tenancies', next); setTenancies(next); };
-  const createTenancy = (t: Omit<Tenancy, 'id' | 'createdAt'>) =>
-    saveTenancies([{ ...t, id: `TEN-${uid()}`, createdAt: today() }, ...tenancies]);
-  const updateTenancy = (upd: Tenancy) => saveTenancies(tenancies.map(t => t.id === upd.id ? upd : t));
-  const deleteTenancy = (id: string) => saveTenancies(tenancies.filter(t => t.id !== id));
+  const createTenancy = async (t: Omit<Tenancy, 'id' | 'createdAt'>) => {
+    const res = await api.post('/api/tenancies', { propertyId: t.propertyId, propertyName: t.propertyName, startDate: t.startDate, endDate: t.endDate, rentAmount: t.rentAmount, rentFrequency: t.rentFrequency, rentDay: t.rentDay, depositAmount: t.depositAmount, tenantName: t.tenantName, tenantEmail: t.tenantEmail, tenantPhone: t.tenantPhone, status: t.status });
+    const data = await res.json();
+    setTenancies(prev => [{ ...t, id: data.id, createdAt: today() }, ...prev]);
+  };
+  const updateTenancy = async (upd: Tenancy) => {
+    await api.put(`/api/tenancies/${upd.id}`, { status: upd.status });
+    setTenancies(prev => prev.map(t => t.id === upd.id ? upd : t));
+  };
+  const deleteTenancy = async (id: string) => {
+    await api.del(`/api/tenancies/${id}`);
+    setTenancies(prev => prev.filter(t => t.id !== id));
+  };
 
   /* Appointments CRUD */
-  const saveAppointments = (next: Appointment[]) => { lsSet('pt_appointments', next); setAppointments(next); };
-  const createAppointment = (a: Omit<Appointment, 'id' | 'createdAt'>) =>
-    saveAppointments([{ ...a, id: `APT-${uid()}`, createdAt: today() }, ...appointments]);
-  const updateAppointment = (upd: Appointment) => saveAppointments(appointments.map(a => a.id === upd.id ? upd : a));
-  const deleteAppointment = (id: string) => saveAppointments(appointments.filter(a => a.id !== id));
+  const createAppointment = async (a: Omit<Appointment, 'id' | 'createdAt'>) => {
+    const res = await api.post('/api/appointments', a);
+    const data = await res.json();
+    setAppointments(prev => [{ ...a, id: data.id, createdAt: today() }, ...prev]);
+  };
+  const updateAppointment = async (upd: Appointment) => {
+    await api.put(`/api/appointments/${upd.id}`, { name: upd.name, number: upd.number, timing: upd.timing, day: upd.day, description: upd.description ?? null });
+    setAppointments(prev => prev.map(a => a.id === upd.id ? upd : a));
+  };
+  const deleteAppointment = async (id: string) => {
+    await api.del(`/api/appointments/${id}`);
+    setAppointments(prev => prev.filter(a => a.id !== id));
+  };
 
   /* Cash Inquiries CRUD */
-  const updateCashInquiry = (inc: CashInquiry) => {
-    const next = cashInquiries.map(i => i.id === inc.id ? inc : i);
-    setCashInquiries(next);
-    lsSet('pt_cash_inquiries', next);
+  const updateCashInquiry = async (inc: CashInquiry) => {
+    await api.put(`/api/cash-inquiries/${inc.id}`, { status: inc.status });
+    setCashInquiries(prev => prev.map(i => i.id === inc.id ? inc : i));
   };
-  const deleteCashInquiry = (id: string) => {
-    const next = cashInquiries.filter(i => i.id !== id);
-    setCashInquiries(next);
-    lsSet('pt_cash_inquiries', next);
+  const deleteCashInquiry = async (id: string) => {
+    await api.del(`/api/cash-inquiries/${id}`);
+    setCashInquiries(prev => prev.filter(i => i.id !== id));
   };
 
   /* Tenancy Forms CRUD */
-  const saveTenancyForms = (next: TenancyFormRecord[]) => { lsSet('pt_tenancy_forms', next); setTenancyForms(next); };
-  const createTenancyForm = (f: Omit<TenancyFormRecord, 'id' | 'createdAt'>) =>
-    saveTenancyForms([{ ...f, id: `TF-${uid()}`, createdAt: today() }, ...tenancyForms]);
-  const updateTenancyForm = (upd: TenancyFormRecord) => saveTenancyForms(tenancyForms.map(f => f.id === upd.id ? upd : f));
-  const deleteTenancyForm = (id: string) => saveTenancyForms(tenancyForms.filter(f => f.id !== id));
+  const createTenancyForm = async (f: Omit<TenancyFormRecord, 'id' | 'createdAt'>) => {
+    const res = await api.post('/api/tenancy-forms', { tenantName: f.tenantName, landlordName: f.landlordName, propertyAddress: f.propertyAddress, contractStartDate: f.contractStartDate, contractEndDate: f.contractEndDate, monthlyRent: f.monthlyRent, depositAmount: f.depositAmount, tenantEmail: f.tenantEmail, tenantPhone: f.tenantPhone, landlordEmail: f.landlordEmail, landlordPhone: f.landlordPhone, additionalNotes: f.additionalNotes, status: f.status });
+    const data = await res.json();
+    setTenancyForms(prev => [{ ...f, id: data.id, createdAt: today() }, ...prev]);
+  };
+  const updateTenancyForm = async (upd: TenancyFormRecord) => {
+    await api.put(`/api/tenancy-forms/${upd.id}`, { status: upd.status });
+    setTenancyForms(prev => prev.map(f => f.id === upd.id ? upd : f));
+  };
+  const deleteTenancyForm = async (id: string) => {
+    await api.del(`/api/tenancy-forms/${id}`);
+    setTenancyForms(prev => prev.filter(f => f.id !== id));
+  };
 
   const unread       = messages.filter(m => !m.read).length;
   const listingOrders = orders.filter(o => o.type === 'listing');
@@ -310,7 +475,7 @@ function Shell({ tab, setTab, onLogout }: { tab: Tab; setTab: (t: Tab) => void; 
     { id: 'messages',       label: 'Messages',       icon: '✉️', badge: unread || undefined },
     { id: 'appointments',   label: 'Appointments',   icon: '📅' },
     { id: 'cash-buyers',    label: 'Cash Buyers',    icon: '💰' },
-    { id: 'forms',          label: 'Wales Forms',     icon: '🏴󠁧󠁢󠁷󠁬󠁳󠁿', badge: orders.filter(o => !!o.formType && !o.formData?.pdfBase64).length || undefined },
+    { id: 'forms',          label: 'Wales Forms',     icon: '🏴󠁧󠁢󠁷󠁬󠁳󠁿', badge: orders.filter(o => !!o.formType).length || undefined },
     { id: 'tenancy-form',   label: 'Tenancy Form',    icon: '📄', badge: tenancyForms.filter(f => f.status === 'active').length || undefined },
   ];
 
@@ -352,7 +517,7 @@ function Shell({ tab, setTab, onLogout }: { tab: Tab; setTab: (t: Tab) => void; 
           </div>
           <div className={styles.topRight}>
             <span className={styles.adminBadge}>Admin</span>
-            <span className={styles.adminEmail}>{ADMIN_EMAIL}</span>
+            <span className={styles.adminEmail}>admin@propertytrader1.co.uk</span>
           </div>
         </header>
 
@@ -403,27 +568,8 @@ function Shell({ tab, setTab, onLogout }: { tab: Tab; setTab: (t: Tab) => void; 
   );
 }
 
-/* ═══════════════════════════════ SHARED: CONFIRM MODAL ═══════════════════════════════ */
-function ConfirmModal({ title, body, confirmLabel = 'Delete', onConfirm, onCancel }: {
-  title: string; body: string; confirmLabel?: string;
-  onConfirm: () => void; onCancel: () => void;
-}) {
-  return (
-    <div className={styles.modalBackdrop} onClick={onCancel}>
-      <div className={styles.modal} style={{ maxWidth: 440 }} onClick={e => e.stopPropagation()}>
-        <div className={styles.warnModalBody}>
-          <div className={styles.warnIcon}>⚠️</div>
-          <h2 className={styles.warnTitle}>{title}</h2>
-          <p className={styles.warnBody}>{body}</p>
-          <div className={styles.warnActions}>
-            <button className={styles.warnCancel} onClick={onCancel}>Cancel</button>
-            <button className={styles.warnConfirm} onClick={onConfirm}>{confirmLabel}</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+/* ConfirmModal — now lives in ./components/ConfirmModal.tsx */
+const ConfirmModal = ConfirmModalShared;
 
 function Overview({ orders, submissions, messages, setTab, documents, tenancies }: {
   orders: Order[]; submissions: Submission[]; messages: Message[];
@@ -539,7 +685,7 @@ function PropertyListItem({ title, image, sector, isCustom, onEdit, onDelete, on
   return (
     <div className={styles.propCard}>
       <div className={styles.propCardImgWrap}>
-        {image ? <Image src={image} alt={title} className={styles.propCardImg} width={120} height={80} /> : <div className={styles.customThumb}>🏠</div>}
+        {image ? <Image src={image} alt={title} className={styles.propCardImg} width={120} height={80} unoptimized /> : <div className={styles.customThumb}>🏠</div>}
       </div>
       <div className={styles.propCardInfo}>
         <div className={styles.propCardTitle}>{title}</div>
@@ -575,7 +721,7 @@ const EMPTY_CUSTOM: Omit<CustomProp, 'id' | 'createdAt'> = {
   title: '', location: '', price: '', beds: '', baths: '', sqft: '',
   type: 'Sale', sector: 'Residential', status: 'Live', notes: '',
   image: '', gallery: '', mapEmbedUrl: '',
-  description: '', features: '', interior: '', exterior: '',
+  description: '', features: '',
 };
 
 function PropertiesTab({ overrides, onOverride, customProps, onCreate, onUpdate, onDelete, onAddTenancy, onAddDoc, onViewCompliance, onViewDetails }: {
@@ -766,24 +912,42 @@ function PropForm({ draft, onChange }: {
     </div>
   );
 
-  const readFiles = (files: FileList | null, multi: boolean) => {
+  const [uploading, setUploading] = useState(false);
+
+  const uploadFiles = async (files: FileList | null, multi: boolean) => {
     if (!files || files.length === 0) return;
-    const readers: Promise<string>[] = Array.from(files).map(file => new Promise(res => {
-      const r = new FileReader();
-      r.onload = () => res(r.result as string);
-      r.readAsDataURL(file);
-    }));
-    Promise.all(readers).then(results => {
+    setUploading(true);
+    
+    try {
+      const results: string[] = [];
+      for (const file of Array.from(files)) {
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('bucket', 'properties');
+        
+        const res = await fetch('/api/storage/upload', {
+          method: 'POST',
+          body: fd
+        });
+        const data = await res.json();
+        if (data.url) results.push(data.url);
+      }
+
       if (multi) {
-        const existing = (draft.gallery || '').split(',').map(s => s.trim()).filter(Boolean);
-        onChange('gallery', [...existing, ...results].join(','));
-      } else {
+        const existing = (draft.gallery || '').split('|DELIM|').map(s => s.trim()).filter(Boolean);
+        onChange('gallery', [...existing, ...results].join('|DELIM|'));
+      } else if (results.length > 0) {
         onChange('image', results[0]);
       }
-    });
+    } catch (err) {
+      console.error('Upload failed:', err);
+      alert('Failed to upload one or more images.');
+    } finally {
+      setUploading(false);
+    }
   };
 
-  const galleryList = (draft.gallery || '').split(',').map(s => s.trim()).filter(Boolean);
+  const galleryList = (draft.gallery || '').split('|DELIM|').map(s => s.trim()).filter(Boolean);
 
   return (
     <div>
@@ -802,6 +966,9 @@ function PropForm({ draft, onChange }: {
         <div className={styles.editField}><label>Sector</label>
           <select value={draft.sector} onChange={e => onChange('sector', e.target.value)}><option>Residential</option><option>Commercial</option></select>
         </div>
+        <div className={styles.editField}><label>Listing Status</label>
+          <select value={draft.status} onChange={e => onChange('status', e.target.value)}><option>Live</option><option>Draft</option><option>Archived</option></select>
+        </div>
       </div>
 
       {/* Photos */}
@@ -814,8 +981,9 @@ function PropForm({ draft, onChange }: {
           <label className={styles.uploadBtn}>
             📷 {draft.image ? 'Replace Main Photo' : 'Upload Main Photo'}
             <input type="file" accept="image/*" style={{ display: 'none' }}
-              onChange={e => readFiles(e.target.files, false)} />
+              onChange={e => uploadFiles(e.target.files, false)} disabled={uploading} />
           </label>
+          {uploading && <div className={styles.uploadProgress}>Uploading...</div>}
           {draft.image && (
             <button type="button" className={`${styles.btn} ${styles.btnDanger}`} style={{ marginTop: 6 }}
               onClick={() => onChange('image', '')}>Remove</button>
@@ -830,7 +998,7 @@ function PropForm({ draft, onChange }: {
                 <div key={i} className={styles.galleryThumbWrap}>
                   <Image src={src} alt={`gallery-${i}`} className={styles.galleryThumb} width={80} height={60} unoptimized />
                   <button type="button" className={styles.galleryRemoveBtn}
-                    onClick={() => onChange('gallery', galleryList.filter((_, j) => j !== i).join(','))}>✕</button>
+                    onClick={() => onChange('gallery', galleryList.filter((_, j) => j !== i).join('|DELIM|'))}>✕</button>
                 </div>
               ))}
             </div>
@@ -838,8 +1006,9 @@ function PropForm({ draft, onChange }: {
           <label className={styles.uploadBtn}>
             🖼️ Add Gallery Photos
             <input type="file" accept="image/*" multiple style={{ display: 'none' }}
-              onChange={e => readFiles(e.target.files, true)} />
+              onChange={e => uploadFiles(e.target.files, true)} disabled={uploading} />
           </label>
+          {uploading && <div className={styles.uploadProgress}>Uploading...</div>}
           {galleryList.length > 0 && (
             <button type="button" className={`${styles.btn} ${styles.btnDanger}`} style={{ marginTop: 6 }}
               onClick={() => onChange('gallery', '')}>Clear Gallery</button>
@@ -869,12 +1038,6 @@ function PropForm({ draft, onChange }: {
         {ta('features','Key Features (one per line)',3,'Smart Home\nPrivate Terrace\n…')}
       </div>
 
-      {/* Detailed info */}
-      <div className={styles.propFormSection}><h4>Detailed Info</h4></div>
-      <div className={styles.editGrid}>
-        {ta('interior','Interior Description',3)}
-        {ta('exterior','Exterior Description',3)}
-      </div>
 
       {/* Admin notes */}
       <div className={styles.propFormSection}><h4>Admin Notes</h4></div>
@@ -1287,100 +1450,7 @@ function OrdersTab({ type, orders, onCreate, onUpdate, onDelete }: {
   );
 }
 
-/* ═══════════════════════════════ MESSAGES ═══════════════════════════════ */
-function MessagesTab({ messages, onMarkRead, onMarkAllRead, onDelete }: {
-  messages: Message[]; onMarkRead: (id: string) => void;
-  onMarkAllRead: () => void; onDelete: (id: string) => void;
-}) {
-  const [selected, setSelected] = useState<Message | null>(null);
-  const [warn, setWarn]         = useState<Message | null>(null);
-  const [warnAll, setWarnAll]   = useState(false);
-
-  const select = (m: Message) => { setSelected(m); if (!m.read) onMarkRead(m.id); };
-
-  return (
-    <div>
-      <div className={styles.toolbar}>
-        <div className={styles.toolbarCount}>{messages.length} messages · {messages.filter(m => !m.read).length} unread</div>
-        {messages.some(m => !m.read) && (
-          <button className={`${styles.btn} ${styles.btnInfo}`} onClick={onMarkAllRead}>Mark all read</button>
-        )}
-        {messages.length > 0 && (
-          <button className={`${styles.btn} ${styles.btnDanger}`} onClick={() => setWarnAll(true)}>Delete all</button>
-        )}
-      </div>
-
-      <div className={styles.splitView}>
-        <div className={styles.splitLeft}>
-          {messages.length === 0 ? (
-            <div className={styles.emptyState}><span>✉️</span><p>No messages yet.</p></div>
-          ) : (
-            <div className={styles.submissionCards}>
-              {messages.map(m => (
-                <div key={m.id}
-                  className={`${styles.submissionCard} ${selected?.id === m.id ? styles.submissionCardActive : ''} ${!m.read ? styles.unreadCard : ''}`}
-                  onClick={() => select(m)}>
-                  <div className={styles.submissionCardTop}>
-                    <div>
-                      <div className={styles.submissionAddr}>{!m.read && <span className={styles.unreadDot} />} {m.name}</div>
-                      <div className={styles.submissionMeta}>{m.subject || '(no subject)'}</div>
-                    </div>
-                    <span className={styles.msgDate}>{new Date(m.receivedAt).toLocaleDateString('en-GB')}</span>
-                  </div>
-                  <div className={styles.submissionDate}>{m.email}</div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className={styles.splitRight}>
-          {!selected ? (
-            <div className={styles.emptyState}><span>👈</span><p>Select a message.</p></div>
-          ) : (
-            <div className={styles.detailPanel}>
-              <div className={styles.detailHeader}><h2>{selected.subject || '(no subject)'}</h2></div>
-              <div className={styles.contactBlock}>
-                <h4>Sender</h4>
-                <div className={styles.contactGrid}>
-                  <ContactItem icon="👤" label="Name"  value={selected.name} />
-                  <ContactItem icon="✉️" label="Email" value={selected.email} href={`mailto:${selected.email}`} />
-                  {selected.phone && <ContactItem icon="📞" label="Phone" value={selected.phone} href={`tel:${selected.phone}`} />}
-                  <ContactItem icon="📅" label="Received" value={new Date(selected.receivedAt).toLocaleString('en-GB')} />
-                </div>
-              </div>
-              <div className={styles.msgBody}>{selected.message}</div>
-              <div className={styles.crudBar}>
-                <a href={`mailto:${selected.email}?subject=Re: ${selected.subject}`} className={`${styles.btn} ${styles.btnInfo}`}>✉️ Reply</a>
-                {selected.phone && <a href={`tel:${selected.phone}`} className={`${styles.btn} ${styles.btnInfo}`}>📞 Call</a>}
-                <button className={`${styles.btn} ${styles.btnDanger}`} onClick={() => setWarn(selected)}>🗑️ Delete</button>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {warn && (
-        <ConfirmModal
-          title="Delete Message?"
-          body={`Delete message from "${warn.name}" (${warn.email})? This cannot be undone.`}
-          confirmLabel="Yes, Delete"
-          onConfirm={() => { onDelete(warn.id); setSelected(null); setWarn(null); }}
-          onCancel={() => setWarn(null)}
-        />
-      )}
-      {warnAll && (
-        <ConfirmModal
-          title="Delete ALL Messages?"
-          body={`This will permanently delete all ${messages.length} messages. This cannot be undone.`}
-          confirmLabel="Delete All"
-          onConfirm={() => { messages.forEach(m => onDelete(m.id)); setSelected(null); setWarnAll(false); }}
-          onCancel={() => setWarnAll(false)}
-        />
-      )}
-    </div>
-  );
-}
+/* MessagesTab — extracted to ./components/MessagesTab.tsx */
 
 /* ─── Micro-components ─── */
 function StatusPill({ status }: { status: string }) {
@@ -1508,7 +1578,7 @@ function DocumentsTab({ documents, onCreate, onUpdate, onDelete, customProps }: 
                           🔄 Renew now
                         </button>
                       )}
-                      <button className={styles.docActionIcon} title="View" onClick={() => doc.fileBase64 && window.open(doc.fileBase64)}>👁️</button>
+                      <button className={styles.docActionIcon} title="View" onClick={() => { const url = doc.fileUrl || doc.fileBase64; if (url) window.open(url, '_blank'); }}>👁️</button>
                       <button className={styles.docActionIcon} title="Edit" onClick={() => setEditDoc(doc)}>✏️</button>
                       <button className={styles.docActionIcon} title="Delete" onClick={() => setWarn(doc)}>🗑️</button>
                     </div>
@@ -2168,12 +2238,13 @@ const WALES_FORMS = [
 function FormsTab({ orders, onUpdateOrder, onCreateOrder, onDeleteOrder }: {
   orders: Order[];
   onUpdateOrder: (o: Order) => void;
-  onCreateOrder: (o: Omit<Order, 'id' | 'date'>) => void;
+  onCreateOrder: (o: Order) => void;
   onDeleteOrder: (id: string) => void;
 }) {
   const [selected,    setSelected]    = useState<Order | null>(null);
   const [createOpen,  setCreateOpen]  = useState(false);
   const [editOpen,    setEditOpen]    = useState(false);
+  const [pdfEditorOpen, setPdfEditorOpen] = useState(false);
   const [warnDelete,  setWarnDelete]  = useState<Order | null>(null);
   const [search,      setSearch]      = useState('');
 
@@ -2200,19 +2271,25 @@ function FormsTab({ orders, onUpdateOrder, onCreateOrder, onDeleteOrder }: {
     formType: string; clientName: string; clientEmail: string;
     clientPhone: string; notes: string; pdfBase64: string; pdfName: string;
   }) => {
-    onCreateOrder({
+    const newOrder: Order = {
+      id: `ORD-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      date: today(),
       type: 'service',
       name: data.formType,
       price: '£0.00 (Admin)',
-      detail: data.notes || 'Admin uploaded Wales Form',
-      status: 'completed',
+      detail: data.notes || 'Admin Wales Form',
+      status: 'active',
       customerName:  data.clientName  || 'Admin',
-      customerEmail: data.clientEmail || ADMIN_EMAIL,
+      customerEmail: data.clientEmail || 'admin@propertytrader1.co.uk',
       customerPhone: data.clientPhone,
       formType: data.formType,
       formData: { pdfBase64: data.pdfBase64, pdfName: data.pdfName, notes: data.notes },
-    });
+    };
+    onCreateOrder(newOrder);
     setCreateOpen(false);
+    setSelected(newOrder);
+    // If no PDF was uploaded, immediately open the PSPDFKit editor
+    if (!data.pdfBase64) setPdfEditorOpen(true);
   };
 
   const handleSaveEdit = (data: {
@@ -2229,6 +2306,7 @@ function FormsTab({ orders, onUpdateOrder, onCreateOrder, onDeleteOrder }: {
       detail:        data.notes || selected.detail,
       formType:      data.formType,
       formData: {
+        ...selected.formData,
         pdfBase64: data.pdfBase64 || selected.formData?.pdfBase64 || '',
         pdfName:   data.pdfName   || selected.formData?.pdfName   || '',
         notes:     data.notes,
@@ -2288,6 +2366,13 @@ function FormsTab({ orders, onUpdateOrder, onCreateOrder, onDeleteOrder }: {
                 <h2>{selected.formType}</h2>
                 <div className={styles.actions}>
                   <button className={styles.btnEdit}   onClick={() => setEditOpen(true)}>✏️ Edit</button>
+                  <button
+                    className={styles.btnInfo}
+                    onClick={() => setPdfEditorOpen(true)}
+                    title="Open in PSPDFKit editor"
+                  >
+                    📝 PSPDFKit
+                  </button>
                   <button className={styles.btnInfo}   onClick={() => downloadPDF(selected)} disabled={!selected.formData?.pdfBase64}>📥 Download PDF</button>
                   <button className={styles.btnDanger} onClick={() => setWarnDelete(selected)}>🗑️</button>
                 </div>
@@ -2358,6 +2443,23 @@ function FormsTab({ orders, onUpdateOrder, onCreateOrder, onDeleteOrder }: {
         />
       )}
 
+      {/* ── PSPDFKit editor modal ── */}
+      {pdfEditorOpen && selected && (
+        <PSPDFKitEditorModal
+          order={selected}
+          onClose={() => setPdfEditorOpen(false)}
+          onSave={(pdfBase64, pdfName) => {
+            const updated: Order = {
+              ...selected,
+              formData: { ...selected.formData, pdfBase64, pdfName },
+            };
+            onUpdateOrder(updated);
+            setSelected(updated);
+            setPdfEditorOpen(false);
+          }}
+        />
+      )}
+
       {/* ── Delete confirm ── */}
       {warnDelete && (
         <ConfirmModal
@@ -2368,6 +2470,204 @@ function FormsTab({ orders, onUpdateOrder, onCreateOrder, onDeleteOrder }: {
           onCancel={() => setWarnDelete(null)}
         />
       )}
+    </div>
+  );
+}
+
+/* ── PSPDFKit editor modal (admin) ── */
+function PSPDFKitEditorModal({ order, onClose, onSave }: {
+  order: Order;
+  onClose: () => void;
+  onSave: (pdfBase64: string, pdfName: string) => void;
+}) {
+  const instanceRef = useRef<unknown>(null);
+  const [saving,  setSaving]  = useState(false);
+  const [sharing, setSharing] = useState(false);
+  const [shareEmail, setShareEmail] = useState(order.customerEmail || '');
+  const [shareNote,  setShareNote]  = useState('');
+  const [shareOk,    setShareOk]    = useState(false);
+  const [shareErr,   setShareErr]   = useState('');
+  const [showShare,  setShowShare]  = useState(false);
+
+  /** Build the document URL for PSPDFKit:
+   *  - If a filled PDF is already stored, create a blob URL from it.
+   *  - Otherwise fall back to the template in /forms/. */
+  const documentUrl = React.useMemo(() => {
+    const b64 = order.formData?.pdfBase64;
+    if (b64) {
+      const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+      const blob  = new Blob([bytes], { type: 'application/pdf' });
+      return URL.createObjectURL(blob);
+    }
+    // Fall back to public template
+    const match = order.formType?.match(/RHW(\d+)/i);
+    if (!match) return null;
+    const padded = String(parseInt(match[1], 10)).padStart(2, '0');
+    return `/forms/form-RHW${padded}.pdf`;
+  }, [order.formData?.pdfBase64, order.formType]);
+
+  const handleSave = async () => {
+    if (!instanceRef.current) return;
+    setSaving(true);
+    try {
+      const bytes  = await exportPDF(instanceRef.current);
+      const base64 = uint8ToBase64(bytes);
+      onSave(base64, order.formData?.pdfName || `${order.formType}.pdf`);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDownload = async () => {
+    let bytes: Uint8Array;
+    if (instanceRef.current) {
+      bytes = await exportPDF(instanceRef.current);
+    } else if (order.formData?.pdfBase64) {
+      bytes = Uint8Array.from(atob(order.formData.pdfBase64), c => c.charCodeAt(0));
+    } else return;
+    const blob = new Blob([bytes.buffer as ArrayBuffer], { type: 'application/pdf' });
+    const url  = URL.createObjectURL(blob);
+    const a    = Object.assign(document.createElement('a'), {
+      href: url,
+      download: order.formData?.pdfName || `${order.formType}.pdf`,
+    });
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a); URL.revokeObjectURL(url);
+  };
+
+  const handleShare = async () => {
+    if (!shareEmail.trim()) { setShareErr('Please enter a recipient email.'); return; }
+    setSharing(true); setShareErr(''); setShareOk(false);
+
+    let base64 = order.formData?.pdfBase64 || '';
+    if (instanceRef.current) {
+      const bytes = await exportPDF(instanceRef.current);
+      base64 = uint8ToBase64(bytes);
+    }
+
+    try {
+      const res = await fetch('/api/share-form', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          recipientEmail: shareEmail,
+          recipientName:  order.customerName,
+          formType:  order.formType,
+          pdfBase64: base64,
+          pdfName:   order.formData?.pdfName || `${order.formType}.pdf`,
+          senderNote: shareNote,
+        }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      setShareOk(true);
+      setShowShare(false);
+    } catch (err) {
+      console.error(err);
+      setShareErr('Failed to send email. Please try again.');
+    } finally {
+      setSharing(false);
+    }
+  };
+
+  if (!documentUrl) {
+    return (
+      <div className={styles.modalBackdrop} onClick={onClose}>
+        <div className={styles.modal} style={{ maxWidth: 480, textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+          <div className={styles.modalHeader}>
+            <h2>PSPDFKit Editor</h2>
+            <button className={styles.modalClose} onClick={onClose}>✕</button>
+          </div>
+          <div className={styles.modalBody}>
+            <p style={{ color: '#92400e', background: '#fef9c3', borderRadius: 8, padding: 16 }}>
+              ⚠️ Could not determine the form template. Please check the form type is set correctly.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={styles.modalBackdrop} onClick={onClose}>
+      <div
+        className={styles.modal}
+        style={{ width: '95vw', maxWidth: 1020, display: 'flex', flexDirection: 'column', overflowY: 'auto', maxHeight: '95vh' }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Modal header */}
+        <div className={styles.modalHeader} style={{ flexShrink: 0 }}>
+          <h2>🏴󠁧󠁢󠁷󠁬󠁳󠁿 {order.formType} — PSPDFKit Editor</h2>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            {shareOk && <span style={{ fontSize: '0.8rem', color: '#16a34a', fontWeight: 700 }}>✅ Email sent!</span>}
+            <button
+              onClick={() => setShowShare(s => !s)}
+              style={{ background: '#0ea5e9', color: '#fff', border: 'none', borderRadius: 7, padding: '7px 14px', fontWeight: 700, cursor: 'pointer', fontSize: '0.8rem' }}
+            >
+              ✉️ Share
+            </button>
+            <button
+              onClick={handleDownload}
+              style={{ background: '#475569', color: '#fff', border: 'none', borderRadius: 7, padding: '7px 14px', fontWeight: 700, cursor: 'pointer', fontSize: '0.8rem' }}
+            >
+              📥 Download
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              style={{ background: '#6366f1', color: '#fff', border: 'none', borderRadius: 7, padding: '7px 16px', fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', fontSize: '0.8rem', opacity: saving ? 0.6 : 1 }}
+            >
+              {saving ? 'Saving…' : '💾 Save'}
+            </button>
+            <button className={styles.modalClose} onClick={onClose}>✕</button>
+          </div>
+        </div>
+
+        {/* Share panel */}
+        {showShare && (
+          <div style={{ padding: '12px 24px', background: '#f0f9ff', borderBottom: '1px solid #bae6fd', flexShrink: 0 }}>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+              <div style={{ flex: 1, minWidth: 220 }}>
+                <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#0369a1', display: 'block', marginBottom: 4 }}>Recipient Email</label>
+                <input
+                  type="email"
+                  value={shareEmail}
+                  onChange={e => setShareEmail(e.target.value)}
+                  placeholder="client@example.com"
+                  style={{ width: '100%', padding: '8px 10px', border: '1px solid #bae6fd', borderRadius: 7, fontSize: '0.875rem' }}
+                />
+              </div>
+              <div style={{ flex: 2, minWidth: 200 }}>
+                <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#0369a1', display: 'block', marginBottom: 4 }}>Note (optional)</label>
+                <input
+                  value={shareNote}
+                  onChange={e => setShareNote(e.target.value)}
+                  placeholder="Any message to include in the email…"
+                  style={{ width: '100%', padding: '8px 10px', border: '1px solid #bae6fd', borderRadius: 7, fontSize: '0.875rem' }}
+                />
+              </div>
+              <button
+                onClick={handleShare}
+                disabled={sharing}
+                style={{ background: '#0ea5e9', color: '#fff', border: 'none', borderRadius: 7, padding: '9px 18px', fontWeight: 700, cursor: sharing ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap', opacity: sharing ? 0.6 : 1 }}
+              >
+                {sharing ? 'Sending…' : '✉️ Send Email'}
+              </button>
+            </div>
+            {shareErr && <p style={{ color: '#b91c1c', fontSize: '0.8rem', marginTop: 6 }}>{shareErr}</p>}
+          </div>
+        )}
+
+        {/* PSPDFKit */}
+        <div style={{ height: 620, flexShrink: 0 }}>
+          <PSPDFKitViewer
+            document={documentUrl}
+            onLoad={(inst) => { instanceRef.current = inst; }}
+            style={{ height: 620 }}
+          />
+        </div>
+      </div>
     </div>
   );
 }
@@ -2408,7 +2708,6 @@ function WalesFormModal({ title, existing, onClose, onSave }: {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!clientName.trim()) { setErr('Client name is required.'); return; }
-    if (!pdfBase64 && !existing?.formData?.pdfBase64) { setErr('Please upload a PDF file.'); return; }
     onSave({ formType, clientName, clientEmail, clientPhone, notes,
       pdfBase64: pdfBase64 || existing?.formData?.pdfBase64 || '',
       pdfName:   pdfName   || existing?.formData?.pdfName   || '',
@@ -2458,26 +2757,29 @@ function WalesFormModal({ title, existing, onClose, onSave }: {
                 <textarea rows={3} value={notes} onChange={e => setNotes(e.target.value)} placeholder="Any additional notes about this form…" />
               </div>
 
-              {/* PDF upload */}
+              {/* Optional PDF upload */}
               <div className={`${styles.editField} ${styles.editSpan2}`}>
                 <label>
-                  Upload Completed PDF <span style={{ color: '#e11d48' }}>*</span>
-                  {existing?.formData?.pdfBase64 && (
+                  Upload PDF{' '}
+                  <span style={{ color: '#94a3b8', fontWeight: 400 }}>
+                    (optional — leave blank to edit the template in PSPDFKit after saving)
+                  </span>
+                  {existing?.formData?.pdfBase64 && !pdfBase64 && (
                     <span style={{ marginLeft: 8, color: '#16a34a', fontWeight: 400 }}>
-                      (current: {existing.formData.pdfName} — leave blank to keep)
+                      (current: {existing.formData.pdfName})
                     </span>
                   )}
                 </label>
                 <label style={{
                   display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                  border: '2px dashed #cbd5e1', borderRadius: 10, padding: '20px 16px', cursor: 'pointer',
+                  border: '2px dashed #cbd5e1', borderRadius: 10, padding: '16px', cursor: 'pointer',
                   background: pdfBase64 ? '#f0fdf4' : '#f8fafc', transition: 'background 0.2s',
                 }}>
-                  <span style={{ fontSize: '2rem', marginBottom: 6 }}>{pdfBase64 ? '✅' : '📤'}</span>
-                  <span style={{ fontWeight: 600, color: pdfBase64 ? '#16a34a' : '#475569' }}>
-                    {pdfBase64 ? pdfName : 'Click to select PDF'}
+                  <span style={{ fontSize: '1.8rem', marginBottom: 4 }}>{pdfBase64 ? '✅' : '📤'}</span>
+                  <span style={{ fontWeight: 600, color: pdfBase64 ? '#16a34a' : '#475569', fontSize: '0.875rem' }}>
+                    {pdfBase64 ? pdfName : 'Click to upload a PDF (optional)'}
                   </span>
-                  <span style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: 3 }}>PDF files only</span>
+                  <span style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: 2 }}>PDF files only</span>
                   <input type="file" accept=".pdf,application/pdf" style={{ display: 'none' }} onChange={handleFile} />
                 </label>
               </div>
@@ -2492,7 +2794,9 @@ function WalesFormModal({ title, existing, onClose, onSave }: {
           </div>
           <div className={styles.modalFooter}>
             <button type="button" className={styles.modalCancel} onClick={onClose}>Cancel</button>
-            <button type="submit" className={styles.modalSave}>{existing ? 'Save Changes' : 'Save Record'}</button>
+            <button type="submit" className={styles.modalSave}>
+              {existing ? 'Save Changes' : (pdfBase64 ? 'Save Record' : 'Save & Open Editor')}
+            </button>
           </div>
         </form>
       </div>

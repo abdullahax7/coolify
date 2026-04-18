@@ -1,37 +1,68 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { getUser, saveUser } from '@/lib/auth';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { signIn } from '@/lib/auth';
+import Captcha from '@/components/common/Captcha';
 import styles from './login.module.css';
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirect = searchParams.get('redirect');
+
   const [form, setForm] = useState({ email: '', password: '' });
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    if (getUser()) router.replace('/dashboard');
-  }, [router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm(p => ({ ...p, [e.target.name]: e.target.value }));
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleCaptcha = useCallback((token: string | null) => setCaptchaToken(token), []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     if (!form.email || !form.password) { setError('Please fill in all fields.'); return; }
-    if (form.password.length < 6) { setError('Password must be at least 6 characters.'); return; }
+    if (!captchaToken) { setError('Please complete the CAPTCHA.'); return; }
     setLoading(true);
-    setTimeout(() => {
-      const name = form.email.split('@')[0].replace(/[^a-zA-Z]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-      saveUser({ name, email: form.email, createdAt: new Date().toISOString() });
-      router.push('/dashboard');
-    }, 800);
+    const { error: err } = await signIn(form.email, form.password, captchaToken);
+    if (err) { setError(err); setLoading(false); return; }
+    const dest = redirect && redirect.startsWith('/') ? redirect : '/dashboard';
+    router.push(dest);
+    router.refresh();
   };
 
+  return (
+    <form onSubmit={handleSubmit} className={styles.form} noValidate>
+      <div className={styles.field}>
+        <label>Email Address</label>
+        <input name="email" type="email" placeholder="john@example.com"
+          value={form.email} onChange={handleChange} disabled={loading} />
+      </div>
+      <div className={styles.field}>
+        <div className={styles.fieldLabelRow}>
+          <label>Password</label>
+          <Link href="/forgot-password" className={styles.forgotLink}>Forgot password?</Link>
+        </div>
+        <input name="password" type="password" placeholder="••••••••"
+          value={form.password} onChange={handleChange} disabled={loading} />
+      </div>
+
+      <Captcha onChange={handleCaptcha} />
+
+      {error && <div className={styles.error}>{error}</div>}
+
+      <button type="submit" className={styles.submitBtn} disabled={loading || !captchaToken}>
+        {loading ? <span className={styles.spinner} /> : 'Sign In →'}
+      </button>
+    </form>
+  );
+}
+
+export default function LoginPage() {
   return (
     <div className={styles.page}>
       <div className={styles.left}>
@@ -53,27 +84,9 @@ export default function LoginPage() {
           <h2>Sign In</h2>
           <p className={styles.sub}>Don&apos;t have an account? <Link href="/register">Create one free</Link></p>
 
-          <form onSubmit={handleSubmit} className={styles.form} noValidate>
-            <div className={styles.field}>
-              <label>Email Address</label>
-              <input name="email" type="email" placeholder="john@example.com"
-                value={form.email} onChange={handleChange} disabled={loading} />
-            </div>
-            <div className={styles.field}>
-              <div className={styles.fieldLabelRow}>
-                <label>Password</label>
-                <Link href="/forgot-password" className={styles.forgotLink}>Forgot password?</Link>
-              </div>
-              <input name="password" type="password" placeholder="••••••••"
-                value={form.password} onChange={handleChange} disabled={loading} />
-            </div>
-
-            {error && <div className={styles.error}>{error}</div>}
-
-            <button type="submit" className={styles.submitBtn} disabled={loading}>
-              {loading ? <span className={styles.spinner} /> : 'Sign In →'}
-            </button>
-          </form>
+          <Suspense fallback={<div style={{ height: 200 }} />}>
+            <LoginForm />
+          </Suspense>
 
           <p className={styles.dividerText}>or</p>
           <Link href="/register" className={styles.altBtn}>Create a New Account</Link>

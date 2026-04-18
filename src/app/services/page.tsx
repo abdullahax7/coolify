@@ -5,11 +5,32 @@ import Image from 'next/image';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { QuickStartSection } from '@/components/services/QuickStartSection';
+import { useCart } from '@/context/CartContext';
 import { SERVICE_CATALOG } from '@/data/pricing_data';
 import styles from './services-page.module.css';
 
+interface Item {
+  name: string;
+  price: string;
+  desc: string;
+}
+
 export default function ServicesHubPage() {
+  const { addItem } = useCart();
   const [activeCategory, setActiveCategory] = useState(SERVICE_CATALOG[0].category);
+  const [notification, setNotification] = useState<{ msg: string; type: 'success' | 'info' } | null>(null);
+
+  const handleAddToCart = (item: Item) => {
+    const numericPrice = parseFloat(item.price.replace(/[^0-9.]/g, '')) || 0;
+    const success = addItem({ id: item.name, name: item.name, price: item.price, numericPrice });
+    
+    setNotification({
+      msg: success ? `Added ${item.name} to cart` : `${item.name} is already in cart`,
+      type: success ? 'success' : 'info'
+    });
+
+    setTimeout(() => setNotification(null), 3000);
+  };
 
   return (
     <div className={styles.page}>
@@ -45,6 +66,11 @@ export default function ServicesHubPage() {
         {/* Full Service Catalog Section - NOW THE PRIMARY FOCUS */}
         <section className={styles.section} id="catalog">
           <div className={styles.container}>
+            {notification && (
+              <div className={`${styles.toast} ${styles[notification.type]}`}>
+                {notification.type === 'success' ? '✓' : 'ℹ️'} {notification.msg}
+              </div>
+            )}
             <div className={styles.sectionHeader}>
               <h2 className={styles.sectionTitle}>Full Service <span>Catalog</span></h2>
               <p className={styles.sectionSubtitle}>Individual services, products, and compliance certificates for landlords.</p>
@@ -64,24 +90,43 @@ export default function ServicesHubPage() {
                 ))}
               </div>
 
-              {/* Items Grid */}
-              <div className={styles.catalogGrid}>
-                {SERVICE_CATALOG.find(c => c.category === activeCategory)?.items.map((item, idx) => (
+            <div className={styles.catalogGrid}>
+              {SERVICE_CATALOG.find(c => c.category === activeCategory)?.items.map((item, idx) => {
+                const isRHW = /Form RHW/i.test(item.name);
+
+                return (
                   <div key={idx} className={styles.catalogCard}>
                     <div className={styles.cardHeader}>
                       <h3>{item.name}</h3>
                       <span className={styles.price}>{item.price}</span>
                     </div>
                     <p>{item.desc}</p>
-                    <button 
-                      className={styles.selectBtn}
-                      onClick={() => window.location.href = `/checkout?service=${encodeURIComponent(item.name)}&price=${encodeURIComponent(item.price)}`}
-                    >
-                      SELECT SERVICE
-                    </button>
+                    <div className={styles.cardActions}>
+                      <button
+                        className={styles.selectBtn}
+                        onClick={() => {
+                          if (isRHW) {
+                            window.location.href = `/forms/preview?form=${encodeURIComponent(item.name)}&price=${encodeURIComponent(item.price)}`;
+                          } else {
+                            window.location.href = `/checkout?service=${encodeURIComponent(item.name)}&price=${encodeURIComponent(item.price)}`;
+                          }
+                        }}
+                      >
+                        {isRHW ? 'EDIT & PAY' : 'BUY NOW'}
+                      </button>
+                      {!isRHW && (
+                        <button 
+                          className={styles.cartBtn}
+                          onClick={() => handleAddToCart(item)}
+                        >
+                          + CART
+                        </button>
+                      )}
+                    </div>
                   </div>
-                ))}
-              </div>
+                );
+              })}
+            </div>
             </div>
           </div>
         </section>

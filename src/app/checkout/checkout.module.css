@@ -55,7 +55,7 @@
 .summary {
   padding: 40px;
   background: var(--primary);
-  border-radius: var(--radius-lg);
+  border-radius: 32px;
   color: white;
 }
 
@@ -89,16 +89,24 @@
   align-items: center;
   gap: 16px;
   background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: var(--radius-lg);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 24px;
   padding: 20px 24px;
   margin-bottom: 28px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
 }
 .summaryIcon { font-size: 2rem; flex-shrink: 0; }
 .summaryInfo { flex: 1; }
 .summaryName { font-weight: 800; color: var(--navy); font-size: 1rem; }
 .summaryDetail { font-size: 0.8125rem; color: #94a3b8; margin-top: 3px; }
 .summaryPrice { font-size: 1.375rem; font-weight: 900; color: var(--primary); flex-shrink: 0; }
+
+.cartItemsList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 28px;
+}
 
 .featureList { display: flex; flex-direction: column; gap: 10px; margin-bottom: 32px; }
 .featureItem {
@@ -305,13 +313,104 @@
   font-weight: 900;
   margin-bottom: 8px;
 }
+
+.pdfDownloadSection {
+  margin: 24px 0;
+  padding: 24px;
+  background: #f0fdf4;
+  border: 1.5px dashed #22c55e;
+  border-radius: 16px;
+  width: 100%;
+}
+
+.downloadBtn {
+  display: block;
+  background: #16a34a;
+  color: white;
+  padding: 16px;
+  border-radius: 12px;
+  font-weight: 800;
+  text-decoration: none;
+  font-size: 1rem;
+  transition: all 0.2s;
+  margin-bottom: 12px;
+}
+
+.downloadBtn:hover {
+  background: #15803d;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(22, 163, 74, 0.2);
+}
+
+.pdfHint {
+  font-size: 0.8125rem;
+  color: #166534;
+  margin: 0;
+  font-weight: 600;
+}
 .successCard h2 { font-size: 1.75rem; font-weight: 900; color: var(--navy); }
 .successCard p { color: #64748b; line-height: 1.7; }
 .successActions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-top: 8px; }
 
 /* Responsive */
 @media (max-width: 900px) {
-  .layout { grid-template-columns: 1fr; padding: 32px 20px; }
-  .summary { padding-right: 0; border-right: none; border-bottom: 1px solid #e2e8f0; padding-bottom: 32px; }
-  .cardRow2 { grid-template-columns: 1fr; }
+  .layout {
+    grid-template-columns: 1fr;
+    padding: 24px 16px;
+    gap: 32px;
+  }
+  
+  .header {
+    padding: 16px 20px;
+  }
+
+  .summary {
+    padding: 32px 24px;
+  }
+
+  .summaryCard {
+    padding: 16px;
+  }
+
+  .summaryName {
+    font-size: 0.9375rem;
+  }
+
+  .summaryPrice {
+    font-size: 1.125rem;
+  }
+
+  .payment {
+    padding-bottom: 40px;
+  }
+}
+
+@media (max-width: 480px) {
+  .summaryCard {
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+    gap: 12px;
+  }
+
+  .summaryPrice {
+    align-self: flex-end;
+    margin-top: -8px;
+  }
+
+  .total {
+    font-size: 1rem;
+  }
+
+  .totalPrice {
+    font-size: 1.25rem;
+  }
+
+  .paySection, .billingSection {
+    padding: 20px;
+  }
+
+  .cardRow2 {
+    grid-template-columns: 1fr;
+  }
 }

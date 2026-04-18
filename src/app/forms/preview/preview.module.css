@@ -1,0 +1,165 @@
+.page {
+  min-height: 100vh;
+  background: #f8fafc;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  background: #fff;
+  border-bottom: 1.5px solid #e2e8f0;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  flex-wrap: wrap;
+}
+
+.backLink {
+  color: #64748b;
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.backLink:hover { color: #1e293b; }
+
+.headerCenter {
+  flex: 1;
+  min-width: 200px;
+}
+.headerCenter h1 {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+}
+.headerCenter p {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin: 2px 0 0;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.payBtn {
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 22px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  white-space: nowrap;
+}
+.payBtn:disabled { opacity: 0.6; cursor: not-allowed; }
+.payBtn:not(:disabled):hover { opacity: 0.88; }
+
+.errorBadge {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fca5a5;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.infoBanner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: #eff6ff;
+  border-bottom: 1px solid #bfdbfe;
+  padding: 12px 1.5rem;
+  font-size: 0.85rem;
+  color: #1e40af;
+  line-height: 1.5;
+}
+
+.editorWrap {
+  flex: 1;
+  padding: 1.5rem;
+}
+
+.pdfLoading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 600px;
+  color: #94a3b8;
+  font-size: 1rem;
+  background: #fff;
+  border-radius: 12px;
+  border: 1.5px solid #e2e8f0;
+}
+
+.bottomBar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  background: #fff;
+  border-top: 1.5px solid #e2e8f0;
+  position: sticky;
+  bottom: 0;
+}
+
+.cancelLink {
+  color: #64748b;
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.cancelLink:hover { color: #1e293b; }
+
+/* Watermark styles */
+.editorWrap {
+  position: relative;
+  flex: 1;
+  padding: 1.5rem;
+}
+
+.watermarkOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none; /* User can still interact with PDF below */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  align-items: center;
+  z-index: 100;
+  overflow: hidden;
+  opacity: 0.12;
+  margin: 1.5rem;
+}
+
+.watermarkText {
+  font-size: 5rem;
+  font-weight: 950;
+  color: #000;
+  transform: rotate(-30deg);
+  white-space: nowrap;
+  user-select: none;
+  letter-spacing: 0.3em;
+}
+
+@media (max-width: 768px) {
+  .watermarkText {
+    font-size: 2rem;
+  }
+}

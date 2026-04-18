@@ -1,7 +1,11 @@
+import { createClient } from '@/lib/supabase/client';
+
 export interface User {
+  id: string;
   name: string;
   email: string;
   phone?: string;
+  isAdmin?: boolean;
   createdAt: string;
 }
 
@@ -15,48 +19,97 @@ export interface Order {
   status: 'active' | 'pending' | 'completed';
   formData?: Record<string, string>;
   formType?: string;
+  pdfUrl?: string;
 }
 
-const USER_KEY = 'pt_user';
-const ORDERS_KEY = 'pt_orders';
-
-export function getUser(): User | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    const raw = localStorage.getItem(USER_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch { return null; }
-}
-
-export function saveUser(user: User) {
-  localStorage.setItem(USER_KEY, JSON.stringify(user));
-}
-
-export function clearUser() {
-  localStorage.removeItem(USER_KEY);
-}
-
-export function getOrders(): Order[] {
-  if (typeof window === 'undefined') return [];
-  try {
-    const raw = localStorage.getItem(ORDERS_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch { return []; }
-}
-
-export function addOrder(order: Omit<Order, 'id' | 'date'>) {
-  const orders = getOrders();
-  const newOrder: Order = {
-    ...order,
-    id: `ORD-${Date.now()}`,
-    date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+export async function getUser(): Promise<User | null> {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('name, phone, is_admin, created_at')
+    .eq('id', user.id)
+    .single();
+  if (!profile) return null;
+  return {
+    id: user.id,
+    name: profile.name,
+    email: user.email!,
+    phone: profile.phone ?? undefined,
+    isAdmin: profile.is_admin ?? false,
+    createdAt: profile.created_at,
   };
-  localStorage.setItem(ORDERS_KEY, JSON.stringify([newOrder, ...orders]));
-  return newOrder;
 }
 
-export function updateOrder(id: string, updates: Partial<Order>) {
-  const orders = getOrders();
-  const next = orders.map(o => o.id === id ? { ...o, ...updates } : o);
-  localStorage.setItem(ORDERS_KEY, JSON.stringify(next));
+export async function signIn(
+  email: string,
+  password: string,
+  captchaToken?: string | null,
+): Promise<{ error?: string }> {
+  const res = await fetch('/api/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password, captchaToken }),
+  });
+  const data = await res.json() as { error?: string };
+  if (!res.ok) return { error: data.error ?? 'Sign in failed.' };
+  return {};
+}
+
+export async function signUp(
+  name: string,
+  email: string,
+  phone: string,
+  password: string,
+  captchaToken?: string | null,
+): Promise<{ error?: string; needsConfirmation?: boolean }> {
+  const res = await fetch('/api/auth/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, email, phone, password, captchaToken }),
+  });
+  const data = await res.json() as { error?: string; needsConfirmation?: boolean };
+  if (!res.ok) return { error: data.error ?? 'Registration failed.' };
+  return { needsConfirmation: data.needsConfirmation };
+}
+
+export async function signOut(): Promise<void> {
+  const supabase = createClient();
+  await supabase.auth.signOut();
+}
+
+export async function getOrders(): Promise<Order[]> {
+  const res = await fetch('/api/orders');
+  if (!res.ok) return [];
+  const data = await res.json();
+  return (data.orders ?? []).map((o: Record<string, unknown>) => ({
+    id: o.id,
+    type: o.type,
+    name: o.name,
+    price: o.price,
+    detail: o.detail ?? '',
+    date: o.date ?? '',
+    status: o.status ?? 'pending',
+    formType: o.form_type ?? undefined,
+    formData: o.form_data ?? undefined,
+    pdfUrl: o.pdf_url ?? undefined,
+  }));
+}
+
+export async function addOrder(order: Omit<Order, 'id' | 'date'>): Promise<Order> {
+  const res = await fetch('/api/orders', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(order),
+  });
+  return res.json();
+}
+
+export async function updateOrder(id: string, updates: Partial<Order>): Promise<void> {
+  await fetch(`/api/orders/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(updates),
+  });
 }

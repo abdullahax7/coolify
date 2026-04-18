@@ -1,44 +1,57 @@
-"use client";
-
-import React, { useState, useMemo } from 'react';
 import Image from 'next/image';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
-import { PropertyCard } from '@/components/home/PropertyCard';
 import { ListingBenefits } from '@/components/listing/ListingBenefits';
 import { PropertyFAQ } from '@/components/listing/PropertyFAQ';
-import { PROPERTIES as allProperties, type Property } from '@/data/properties';
+import { PROPERTIES, type Property } from '@/data/properties';
+import { createClient } from '@/lib/supabase/server';
+import PropertiesClient from './PropertiesClient';
 import styles from './properties.module.css';
 
-type ListingType = 'All' | 'Sale' | 'Rent';
-type SectorType = 'All' | 'Residential' | 'Commercial';
+async function fetchCustomProperties(): Promise<Property[]> {
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from('custom_properties')
+      .select('*')
+      .order('created_at', { ascending: false });
+    return (data ?? []).map((p: Record<string, unknown>) => ({
+      id: p.id as string,
+      title: p.title as string,
+      location: p.location as string,
+      price: p.price as string,
+      beds: parseInt(String(p.beds ?? '0')) || 0,
+      baths: parseInt(String(p.baths ?? '0')) || 0,
+      sqft: parseInt(String(p.sqft ?? '0')) || 0,
+      type: p.type as string,
+      listingType: ((p.listingType ?? (p.type === 'Rent' ? 'Rent' : 'Sale')) as 'Sale' | 'Rent'),
+      sector: ((p.sector ?? 'Residential') as 'Residential' | 'Commercial'),
+      image: (p.image_url as string) || '/placeholder-property.jpg',
+      gallery: p.gallery_urls
+        ? (Array.isArray(p.gallery_urls)
+            ? (p.gallery_urls as string[])
+            : String(p.gallery_urls).split('|DELIM|').map((s: string) => s.trim()).filter(Boolean))
+        : [],
+      features: p.features
+        ? (Array.isArray(p.features)
+            ? (p.features as string[])
+            : String(p.features).split(/[\n,]/).map((s: string) => s.trim()).filter(Boolean))
+        : [],
+      videoUrl: (p.video_url as string) ?? '',
+      mapEmbedUrl: (p.map_embed_url as string) ?? '',
+      description: (p.description as string) ?? '',
+      detailedInfo: { interior: '', exterior: '', neighbourhood: '' },
+      amenities: [],
+      agent: { name: '', role: '', image: '', phone: '' },
+    }));
+  } catch {
+    return [];
+  }
+}
 
-export default function PropertiesPage() {
-  const [listingType, setListingType] = useState<ListingType>('All');
-  const [sector, setSector] = useState<SectorType>('All');
-  const [sortBy, setSortBy] = useState('Price: High to Low');
-  const properties = allProperties;
-  const loadingProps = false;
-
-  const filteredProperties = useMemo(() => {
-    return properties
-      .filter((prop: Property) => {
-        const matchesType =
-          listingType === 'All' ||
-          (prop.listingType ?? '').toLowerCase() === listingType.toLowerCase();
-        const matchesSector =
-          sector === 'All' ||
-          (prop.sector ?? '').toLowerCase() === sector.toLowerCase();
-        return matchesType && matchesSector;
-      })
-      .sort((a: Property, b: Property) => {
-        const priceA = parseInt(String(a.price ?? '0').replace(/[^0-9]/g, '')) || 0;
-        const priceB = parseInt(String(b.price ?? '0').replace(/[^0-9]/g, '')) || 0;
-        if (sortBy === 'Price: High to Low') return priceB - priceA;
-        if (sortBy === 'Price: Low to High') return priceA - priceB;
-        return 0;
-      });
-  }, [properties, listingType, sector, sortBy]);
+export default async function PropertiesPage() {
+  const customProperties = await fetchCustomProperties();
+  const allProperties: Property[] = [...PROPERTIES, ...customProperties];
 
   return (
     <div className={styles.page}>
@@ -54,11 +67,11 @@ export default function PropertiesPage() {
                 <p className={styles.subtitle}>Handpicked luxury residences managed to the highest global standards.</p>
               </div>
               <div className={styles.heroImage}>
-                <Image 
-                  src="/properties_hero_new.png" 
-                  alt="House illustration" 
-                  width={550} 
-                  height={450} 
+                <Image
+                  src="/properties_hero_new.png"
+                  alt="House illustration"
+                  width={550}
+                  height={450}
                   className={styles.heroIllustration}
                   priority
                 />
@@ -67,82 +80,7 @@ export default function PropertiesPage() {
           </div>
         </section>
 
-        <section className={styles.content}>
-          <div className={styles.container}>
-            {/* Primary Listing Type Tabs */}
-            <div className={styles.categoryTabs}>
-              {(['All', 'Sale', 'Rent'] as ListingType[]).map((type) => (
-                <button
-                  key={type}
-                  className={`${styles.tab} ${listingType === type ? styles.activeTab : ''}`}
-                  onClick={() => setListingType(type)}
-                >
-                  {type === 'All' ? 'View All Listings' : `For ${type}`}
-                </button>
-              ))}
-            </div>
-
-            {/* Secondary Sector Filters */}
-            <div className={styles.subFilters}>
-              {(['All', 'Residential', 'Commercial'] as SectorType[]).map((s) => (
-                <button
-                  key={s}
-                  className={`${styles.subFilter} ${sector === s ? styles.activeSub : ''}`}
-                  onClick={() => setSector(s)}
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-
-            <div className={styles.results}>
-              <div className={styles.resultsHeader}>
-                <p>Displaying <span>{filteredProperties.length}</span> curated properties</p>
-                <div className={styles.sort}>
-                  <label>Order by:</label>
-                  <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
-                    <option>Price: High to Low</option>
-                    <option>Price: Low to High</option>
-                  </select>
-                </div>
-              </div>
-
-              {loadingProps ? (
-                <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--text-muted)' }}>
-                  Loading properties...
-                </div>
-              ) : (
-                <div className={styles.grid}>
-                  {filteredProperties.map((prop: Property) => (
-                    <PropertyCard
-                      key={prop.id}
-                      id={prop.id}
-                      image={
-                        Array.isArray(prop.gallery) && prop.gallery.length > 0
-                          ? prop.gallery[0]
-                          : prop.image ?? '/placeholder-property.jpg'
-                      }
-                      title={prop.title ?? ''}
-                      location={prop.location ?? ''}
-                      price={prop.price ?? ''}
-                      beds={prop.beds ?? 0}
-                      baths={prop.baths ?? 0}
-                      sqft={prop.sqft ?? 0}
-                      type={prop.type ?? ''}
-                    />
-                  ))}
-                </div>
-              )}
-
-              {!loadingProps && filteredProperties.length === 0 && (
-                <div style={{ textAlign: 'center', padding: '100px 0', borderTop: '1px solid var(--border-light)' }}>
-                   <h3 style={{ color: 'var(--text-muted)' }}>No properties match your exact criteria.</h3>
-                   <p>Try adjusting your sector or listing filters.</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </section>
+        <PropertiesClient initialProperties={allProperties} />
 
         <ListingBenefits />
         <PropertyFAQ />

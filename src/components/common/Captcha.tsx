@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import ReCAPTCHA from 'react-google-recaptcha';
 import styles from './Captcha.module.css';
 
@@ -13,12 +13,11 @@ const Captcha: React.FC<CaptchaProps> = ({ onChange }) => {
   const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
   const isEnabled = process.env.NEXT_PUBLIC_RECAPTCHA_ENABLED === 'true';
 
+  useEffect(() => {
+    if (!isEnabled) onChange('bypass-token');
+  }, [isEnabled, onChange]);
+
   if (!isEnabled) {
-    // If disabled, automatically report as verified for development
-    // but in a real app you might want to hide it.
-    // However, since forms check for captcha state, we just "bypass" it.
-    // Return null so it doesn't render.
-    // Note: The form components should probably defaults to 'verified' if disabled.
     return (
       <div className={styles.disabledCaptcha}>
         <span className={styles.secureText}>Secured by Webxoo</span>

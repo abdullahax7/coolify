@@ -67,7 +67,7 @@ function LandlordApplicationForm() {
             ...form, 
             subject: 'Landlord Fees And Services Application',
             message: `Service: ${form.service}\nProperty: ${form.propertyType}\nCertificates: ${form.certificates.join(', ')}\nHeating: ${form.heating}\nGlazing: ${form.glazing}\nBathrooms: ${form.bathrooms}, Toilets: ${form.toilets}, Kitchens: ${form.kitchens}\nCooker: ${form.cooker}\nOwner: ${form.ownerDetails}\nAddress: ${form.rentalProperty}\nPhone: ${form.contactNumber}\nPeriod/Amount: ${form.rentalPeriodAmount}`,
-            captcha 
+            captchaToken: captcha
         }),
       });
 
@@ -81,18 +81,17 @@ function LandlordApplicationForm() {
         try {
           const fullMessage = `Service: ${form.service}\nProperty: ${form.propertyType}\nAddress: ${form.rentalProperty}\nBathrooms: ${form.bathrooms}, Toilets: ${form.toilets}, Kitchens: ${form.kitchens}\nHeating: ${form.heating}\nGlazing: ${form.glazing}\nCooker: ${form.cooker}\nCertificates: ${form.certificates.join(', ') || 'None'}\nPeriod/Amount: ${form.rentalPeriodAmount}\nPhone: ${form.contactNumber}`;
 
-          const msgs = JSON.parse(localStorage.getItem('pt_messages') || '[]');
-          msgs.unshift({ 
-            id: `LND-${Date.now()}`, 
-            name: form.ownerDetails,
-            email: form.email,
-            subject: 'Landlord Application',
-            message: fullMessage,
-            receivedAt: new Date().toISOString(), 
-            read: false,
-            details: form
+          await fetch('/api/messages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: form.ownerDetails,
+              email: form.email,
+              phone: form.contactNumber,
+              subject: 'Landlord Application',
+              message: fullMessage,
+            }),
           });
-          localStorage.setItem('pt_messages', JSON.stringify(msgs));
         } catch { /* ignore */ }
         
         setStatus('success');

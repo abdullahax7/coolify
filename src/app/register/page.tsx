@@ -1,36 +1,80 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { getUser, saveUser } from '@/lib/auth';
+import Captcha from '@/components/common/Captcha';
 import styles from './register.module.css';
 
 export default function RegisterPage() {
   const router = useRouter();
   const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', confirm: '' });
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    if (getUser()) router.replace('/dashboard');
-  }, [router]);
+  const [confirmed, setConfirmed] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm(p => ({ ...p, [e.target.name]: e.target.value }));
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleCaptcha = useCallback((token: string | null) => setCaptchaToken(token), []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     if (!form.name || !form.email || !form.password) { setError('Name, email and password are required.'); return; }
     if (form.password.length < 6) { setError('Password must be at least 6 characters.'); return; }
     if (form.password !== form.confirm) { setError('Passwords do not match.'); return; }
+    if (!captchaToken) { setError('Please complete the CAPTCHA.'); return; }
+    
     setLoading(true);
-    setTimeout(() => {
-      saveUser({ name: form.name, email: form.email, phone: form.phone, createdAt: new Date().toISOString() });
-      router.push('/dashboard');
-    }, 800);
+
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...form, captchaToken }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || 'Registration failed.');
+        setLoading(false);
+        return;
+      }
+
+      if (data.needsConfirmation) {
+        setConfirmed(true);
+      } else {
+        router.push('/dashboard');
+        router.refresh();
+      }
+    } catch {
+      setError('A network error occurred. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
+
+  if (confirmed) return (
+    <div className={styles.page}>
+      <div className={styles.right} style={{ width: '100%', justifyContent: 'center' }}>
+        <div className={styles.formCard} style={{ textAlign: 'center', maxWidth: 480 }}>
+          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📧</div>
+          <h2>Check your email</h2>
+          <p style={{ color: '#64748b', marginTop: '0.75rem', lineHeight: 1.6 }}>
+            We sent a confirmation link to <strong>{form.email}</strong>.
+            Click the link to activate your account, then come back to sign in.
+          </p>
+          <Link href="/login" className={styles.submitBtn}
+            style={{ display: 'block', marginTop: '1.5rem', textDecoration: 'none', textAlign: 'center' }}>
+            Go to Sign In →
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className={styles.page}>
@@ -84,9 +128,11 @@ export default function RegisterPage() {
               </div>
             </div>
 
+            <Captcha onChange={handleCaptcha} />
+
             {error && <div className={styles.error}>{error}</div>}
 
-            <button type="submit" className={styles.submitBtn} disabled={loading}>
+            <button type="submit" className={styles.submitBtn} disabled={loading || !captchaToken}>
               {loading ? <span className={styles.spinner} /> : 'Create Account →'}
             </button>
           </form>

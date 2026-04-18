@@ -36,9 +36,9 @@ export const CEOFeature: React.FC = () => {
             <div className={styles.badge}>Our Visionary</div>
             <h2 className={styles.title}>Leading with <span>Integrity & Excellence</span></h2>
             <p className={styles.quote}>
-              "At Property Trader, we don't just manage buildings; we manage the futures of our clients 
+              &quot;At Property Trader, we don&apos;t just manage buildings; we manage the futures of our clients 
               and the communities we serve. Our commitment is to provide a seamless, premium experience 
-              built on trust and decades of industry expertise."
+              built on trust and decades of industry expertise.&quot;
             </p>
             
             <div className={styles.ceoDetails}>

@@ -30,8 +30,8 @@ export default function TermsAndConditions() {
             <h2>1. Definitions and Interpretation</h2>
             <p>In these Terms and Conditions, unless the context otherwise requires, the following expressions have the following meanings:</p>
             <ul>
-              <li><strong>"Content"</strong> means any and all text, images, audio, video, scripts, code, software, databases and any other form of information capable of being stored on a computer that appears on, or forms part of, Our Site; and</li>
-              <li><strong>"We/Us/Our"</strong> means Property Trader Nts Letting and Sales whose trading address is 113-114 Commercial Road Newport City NP20 2GW and whose main trading.</li>
+              <li><strong>&quot;Content&quot;</strong> means any and all text, images, audio, video, scripts, code, software, databases and any other form of information capable of being stored on a computer that appears on, or forms part of, Our Site; and</li>
+              <li><strong>&quot;We/Us/Our&quot;</strong> means Property Trader Nts Letting and Sales whose trading address is 113-114 Commercial Road Newport City NP20 2GW and whose main trading.</li>
             </ul>
 
             <h2>2. Information About Us</h2>
@@ -44,7 +44,7 @@ export default function TermsAndConditions() {
             <ul>
               <li>Access to Our Site is free of charge.</li>
               <li>It is your responsibility to make any and all arrangements necessary in order to access Our Site.</li>
-              <li>Access to Our Site is provided "as is" and on an "as available" basis. We may alter, suspend or discontinue Our Site (or any part of it) at any time and without notice. We will not be liable to you in any way if Our Site (or any part of it) is unavailable at any time and for any period.</li>
+              <li>Access to Our Site is provided &quot;as is&quot; and on an &quot;as available&quot; basis. We may alter, suspend or discontinue Our Site (or any part of it) at any time and without notice. We will not be liable to you in any way if Our Site (or any part of it) is unavailable at any time and for any period.</li>
             </ul>
 
             <h2>4. Intellectual Property Rights</h2>
@@ -103,7 +103,7 @@ export default function TermsAndConditions() {
             <p>
               All personal information that We may use will be collected, processed, and held in 
               accordance with the provisions of EU Regulation 2016/679 General Data Protection 
-              Regulation ("GDPR") and your rights under the GDPR.
+              Regulation (&quot;GDPR&quot;) and your rights under the GDPR.
             </p>
 
             <h2>11. Law and Jurisdiction</h2>

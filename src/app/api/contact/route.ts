@@ -1,9 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
+import { createClient } from '@/lib/supabase/server';
+import { verifyCaptcha, captchaEnabled } from '@/lib/captcha';
 
 export async function POST(req: NextRequest) {
   try {
-    const { name, email, phone, subject, message } = await req.json();
+    const { name, email, phone, subject, message, captchaToken } = await req.json();
+
+    if (captchaEnabled()) {
+      if (!captchaToken) {
+        return NextResponse.json({ error: 'Please complete the CAPTCHA.' }, { status: 400 });
+      }
+      const valid = await verifyCaptcha(captchaToken);
+      if (!valid) {
+        return NextResponse.json({ error: 'CAPTCHA verification failed. Please try again.' }, { status: 400 });
+      }
+    }
 
     if (!name || !email || !message) {
       return NextResponse.json({ error: 'Name, email and message are required.' }, { status: 400 });
@@ -44,6 +56,15 @@ export async function POST(req: NextRequest) {
         </div>
       `,
     });
+
+    // Persist to Supabase
+    try {
+      const supabase = await createClient();
+      await supabase.from('messages').insert({
+        id: `MSG-${Date.now()}`,
+        name, email, phone: phone ?? '', subject: subject ?? 'Contact Form', message,
+      });
+    } catch { /* non-fatal */ }
 
     return NextResponse.json({ success: true });
   } catch (err) {

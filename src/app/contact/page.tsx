@@ -6,7 +6,6 @@ import { useSearchParams } from 'next/navigation';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import Captcha from '@/components/common/Captcha';
-import { STAFF } from '@/data/staff';
 import styles from './contact.module.css';
 
 type Status = 'idle' | 'loading' | 'success' | 'error';
@@ -22,17 +21,21 @@ function ContactForm() {
     const plan = searchParams.get('plan');
     const type = searchParams.get('type');
     if (type === 'manage') {
-      setForm(prev => ({
-        ...prev,
-        subject: 'Property Management Enquiry',
-        message: plan ? `I am interested in the ${plan} property management tier. Please provide more details.` : ''
-      }));
+      setTimeout(() => {
+        setForm(prev => ({
+          ...prev,
+          subject: 'Property Management Enquiry',
+          message: plan ? `I am interested in the ${plan} property management tier. Please provide more details.` : ''
+        }));
+      }, 0);
     } else if (type === 'sell' || type === 'let') {
-      setForm(prev => ({
-        ...prev,
-        subject: type === 'sell' ? 'Sales Enquiry' : 'Lettings Enquiry',
-        message: plan ? `Inquiry regarding the ${plan} package.` : ''
-      }));
+      setTimeout(() => {
+        setForm(prev => ({
+          ...prev,
+          subject: type === 'sell' ? 'Sales Enquiry' : 'Lettings Enquiry',
+          message: plan ? `Inquiry regarding the ${plan} package.` : ''
+        }));
+      }, 0);
     }
   }, [searchParams]);
 
@@ -50,7 +53,7 @@ function ContactForm() {
       const res = await fetch('/api/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, captcha }),
+        body: JSON.stringify({ ...form, captchaToken: captcha }),
       });
 
       const data = await res.json();

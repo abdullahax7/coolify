@@ -110,6 +110,38 @@
   font-size: 1.1rem;
 }
 
+/* Toast Notification */
+.toast {
+  position: fixed;
+  top: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  padding: 12px 24px;
+  border-radius: var(--radius-md);
+  color: white;
+  font-weight: 700;
+  font-size: 0.9375rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from { transform: translate(-50%, -20px); opacity: 0; }
+  to { transform: translate(-50%, 0); opacity: 1; }
+}
+
+.success {
+  background: #10b981; /* Emerald 500 */
+}
+
+.info {
+  background: #6366f1; /* Indigo 500 */
+}
+
 /* Catalog Layout */
 .catalogLayout {
   display: grid;
@@ -199,8 +231,14 @@
   flex: 1;
 }
 
-.selectBtn {
+.cardActions {
+  display: flex;
+  gap: 12px;
   width: 100%;
+}
+
+.selectBtn {
+  flex: 1;
   padding: 12px;
   border-radius: var(--radius-md);
   background: var(--secondary);
@@ -214,6 +252,24 @@
 
 .selectBtn:hover {
   background: var(--primary);
+}
+
+.cartBtn {
+  background: var(--accent-cream);
+  color: var(--secondary);
+  border: 1.5px solid var(--border-light);
+  padding: 12px 20px;
+  border-radius: var(--radius-md);
+  font-weight: 800;
+  font-size: 0.8125rem;
+  transition: all 0.2s ease;
+}
+
+.cartBtn:hover {
+  background: white;
+  border-color: var(--primary);
+  color: var(--primary);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 /* CTA Section */

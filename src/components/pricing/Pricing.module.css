@@ -67,15 +67,30 @@
   z-index: 2;
   border: none;
   background: transparent;
-  padding: 12px 14px;
+  padding: 12px 10px;
   font-size: 0.8125rem;
   font-weight: 800;
   color: rgba(255, 255, 255, 0.8); /* Semi-transparent white for inactive */
   cursor: pointer;
   transition: all 0.2s ease;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.05em;
   white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+  .toggleBtn {
+    font-size: 0.7rem;
+    padding: 10px 4px;
+    letter-spacing: 0.02em;
+  }
+}
+
+@media (max-width: 360px) {
+  .toggleBtn {
+    font-size: 0.6rem;
+    padding: 8px 2px;
+  }
 }
 
 .toggleBtn:hover {

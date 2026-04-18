@@ -549,25 +549,28 @@
 
 .cardDots {
   position: absolute;
-  top: 20px;
-  right: 20px;
-  width: 32px;
-  height: 32px;
+  top: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   border-radius: 50%;
-  color: #94a3b8;
+  color: #0f172a;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
   transition: all 0.2s;
-  background: none;
-  border: none;
-  font-size: 1.25rem;
+  font-size: 1.4rem;
+  z-index: 5;
 }
 
 .cardDots:hover {
-  background: #f1f5f9;
-  color: #0f172a;
+  background: #e11d48;
+  color: white;
+  border-color: #e11d48;
+  transform: rotate(90deg);
 }
 
 .cardMenu {
