@@ -62,7 +62,6 @@
   right: 0;
   height: 80px;
   background: white; /* Changed from rgba to pure white to seamlessly blend the jpg logo */
-  border-bottom: 1px solid var(--border-light);
   display: flex;
   align-items: center;
   z-index: 1000;

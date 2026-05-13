@@ -173,7 +173,7 @@ export default function PropertiesClient({ initialProperties }: PropertiesClient
                     style={{
                       padding: '0.75rem 1.5rem',
                       borderRadius: 'var(--radius-md)',
-                      background: 'var(--primary)',
+                      background: '#3b82f6',
                       color: '#fff',
                       fontWeight: 600,
                       border: 'none',

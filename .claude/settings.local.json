@@ -45,7 +45,29 @@
       "Bash(taskkill /PID 22996 /F)",
       "Bash(node -e ' *)",
       "Bash(node --input-type=module)",
-      "Bash(xargs -I{} sh -c 'echo \"=== {} ===\" && cat \"{}\"')"
+      "Bash(xargs -I{} sh -c 'echo \"=== {} ===\" && cat \"{}\"')",
+      "Bash(xargs grep *)",
+      "Bash(mkdir -p \"C:\\\\Users\\\\abdul\\\\OneDrive\\\\Documents\\\\websites\\\\Property Antigaravityt\\\\Property Antigaravityt\\\\public\\\\pspdfkit\")",
+      "Bash(cp -r \"C:\\\\Users\\\\abdul\\\\OneDrive\\\\Documents\\\\websites\\\\Property Antigaravityt\\\\Property Antigaravityt\\\\node_modules\\\\pspdfkit\\\\dist\\\\.\" \"C:\\\\Users\\\\abdul\\\\OneDrive\\\\Documents\\\\websites\\\\Property Antigaravityt\\\\Property Antigaravityt\\\\public\\\\pspdfkit\\\\\" 2>&1 && echo \"done\")",
+      "Bash(mkdir -p 'C:/Users/abdul/OneDrive/Documents/websites/Property Antigaravityt/Property Antigaravityt/public/pspdfkit')",
+      "Bash(cp -r 'C:/Users/abdul/OneDrive/Documents/websites/Property Antigaravityt/Property Antigaravityt/node_modules/pspdfkit/dist/.' 'C:/Users/abdul/OneDrive/Documents/websites/Property Antigaravityt/Property Antigaravityt/public/pspdfkit/')",
+      "Bash(npm uninstall *)",
+      "Bash(mkdir -p \"C:\\\\Users\\\\abdul\\\\OneDrive\\\\Documents\\\\websites\\\\Property Antigaravityt\\\\Property Antigaravityt\\\\src\\\\app\\\\api\\\\orders\\\\[id]\")",
+      "Bash(mkdir -p \"C:\\\\Users\\\\abdul\\\\OneDrive\\\\Documents\\\\websites\\\\Property Antigaravityt\\\\Property Antigaravityt\\\\src\\\\app\\\\api\\\\submissions\\\\[id]\")",
+      "Bash(mkdir -p \"C:\\\\Users\\\\abdul\\\\OneDrive\\\\Documents\\\\websites\\\\Property Antigaravityt\\\\Property Antigaravityt\\\\src\\\\app\\\\api\\\\messages\\\\[id]\")",
+      "Bash(mkdir -p \"C:\\\\Users\\\\abdul\\\\OneDrive\\\\Documents\\\\websites\\\\Property Antigaravityt\\\\Property Antigaravityt\\\\src\\\\app\\\\api\\\\cash-inquiries\\\\[id]\")",
+      "Bash(mkdir -p \"C:\\\\Users\\\\abdul\\\\OneDrive\\\\Documents\\\\websites\\\\Property Antigaravityt\\\\Property Antigaravityt\\\\src\\\\app\\\\api\\\\appointments\\\\[id]\")",
+      "Bash(node -e \"const sq = require\\('square'\\); console.log\\(Object.keys\\(sq\\).slice\\(0,20\\)\\)\")",
+      "Bash(node -e \"const sq = require\\('square'\\); const c = new sq.SquareClient\\({token:'x',environment:sq.SquareEnvironment.Sandbox}\\); console.log\\(Object.getOwnPropertyNames\\(Object.getPrototypeOf\\(c\\)\\)\\)\")",
+      "Bash(python3 -c ' *)",
+      "Bash(node -e \"const sq = require\\('square'\\); const c = new sq.SquareClient\\({token:'x',environment:sq.SquareEnvironment.Sandbox}\\); const p = c.payments; console.log\\(Object.getOwnPropertyNames\\(Object.getPrototypeOf\\(p\\)\\).slice\\(0,10\\)\\)\")",
+      "Bash(vercel --version)",
+      "Bash(vercel whoami *)",
+      "Bash(vercel env *)",
+      "Bash(vercel --prod)",
+      "Bash(node backup.mjs)",
+      "Bash(npx next *)",
+      "Read(//tmp/**)"
     ]
   }
 }

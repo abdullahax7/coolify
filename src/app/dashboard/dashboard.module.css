@@ -3,11 +3,13 @@
   grid-template-columns: 280px 1fr;
   min-height: 100vh;
   background: #f8fafc;
+  color: var(--navy);
 }
 
 /* ── Sidebar ── */
 .sidebar {
-  background: var(--navy);
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(12px);
   color: white;
   display: flex;
   flex-direction: column;
@@ -16,6 +18,7 @@
   top: 0;
   height: 100vh;
   overflow-y: auto;
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .logoLink {
@@ -35,7 +38,8 @@
   align-items: center;
   gap: 12px;
   padding: 16px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--radius-md);
   margin-bottom: 32px;
 }
@@ -60,7 +64,7 @@
 
 .userEmail {
   font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.45);
   margin-top: 2px;
   word-break: break-all;
 }
@@ -80,23 +84,23 @@
   border-radius: var(--radius-md);
   background: none;
   border: none;
-  color: rgba(255, 255, 255, 0.65);
+  color: #64748b;
   font-size: 0.9375rem;
   font-weight: 600;
   cursor: pointer;
   text-align: left;
-  transition: background 0.2s, color 0.2s;
+  transition: all 0.2s;
   width: 100%;
 }
 
 .navItem:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: white;
+  background: rgba(255, 255, 255, 0.05);
+  color: #cbd5e1;
 }
 
 .navActive {
-  background: rgba(255, 255, 255, 0.1) !important;
-  color: white !important;
+  background: rgba(59, 130, 246, 0.15) !important;
+  color: #93c5fd !important;
 }
 
 .badge {
@@ -115,31 +119,32 @@
   gap: 8px;
   margin-top: 24px;
   padding-top: 24px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .addBtn {
   display: block;
   text-align: center;
   padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.06);
-  color: white;
+  background: rgba(255, 255, 255, 0.05);
+  color: #cbd5e1;
   border-radius: var(--radius-md);
   font-size: 0.875rem;
   font-weight: 700;
   text-decoration: none;
-  transition: background 0.2s;
+  transition: all 0.2s;
 }
 
 .addBtn:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
 }
 
 .logoutBtn {
   padding: 10px 16px;
   background: none;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  color: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #64748b;
   border-radius: var(--radius-md);
   font-size: 0.875rem;
   font-weight: 700;
@@ -148,9 +153,9 @@
 }
 
 .logoutBtn:hover {
-  background: rgba(225, 29, 72, 0.15);
-  border-color: var(--primary);
-  color: white;
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.2);
+  color: #f87171;
 }
 
 /* ── Main content ── */
@@ -162,8 +167,14 @@
 .topBar {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 40px;
+  align-items: center;
+  padding: 20px 48px;
+  background: white;
+  border-bottom: 1px solid #e2e8f0;
+  margin: -40px -48px 40px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .pageTitle {
@@ -1778,53 +1789,4 @@
   font-size: 0.6875rem;
   font-weight: 800;
   text-transform: uppercase;
-}
-
-/* ── Premium Theme Defaults ── */
-.statCard,
-.orderRow,
-.planCard,
-.emptyState,
-.submissionRow,
-.submitCard,
-.complianceCard,
-.tableWrap,
-.table th {
-  background: #1e293b;
-  border-color: #334155;
-  color: #f8fafc;
-}
-
-.table td {
-  border-bottom-color: #334155;
-  color: #cbd5e1;
-}
-
-.pageTitle,
-.statNum,
-.orderName,
-.orderPrice,
-.planName,
-.submitCardTitle,
-.cardInfo h4,
-.sectionTitle {
-  color: #f8fafc;
-}
-
-.page {
-  background: #0f172a;
-}
-
-.topBar {
-  border-bottom-color: #334155;
-}
-
-.alertBanner {
-  background: rgba(30, 41, 59, 0.5);
-  border-color: #334155;
-}
-
-.alertText strong,
-.alertText p {
-  color: #60a5fa;
 }

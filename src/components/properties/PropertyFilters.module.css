@@ -92,7 +92,7 @@
 .applyBtn {
   width: 100%;
   padding: 12px;
-  background: var(--primary);
+  background: #3b82f6;
   color: white;
   border: none;
   border-radius: var(--radius-md);
@@ -103,7 +103,7 @@
 }
 
 .applyBtn:hover {
-  background: var(--primary-dark);
+  background: #2563eb;
 }
 
 .resetBtn {
