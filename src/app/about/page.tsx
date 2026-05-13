@@ -5,7 +5,7 @@ import { Footer } from '@/components/layout/Footer';
 import { getStaff } from '@/data/staff';
 import { getTestimonials } from '@/data/testimonials';
 import { getPageContent } from '@/lib/getContent';
-import { createAdminClient } from '@/lib/supabase/server';
+import { createStaticClient } from '@/lib/supabase/server';
 import styles from './about.module.css';
 
 export const metadata = {
@@ -35,8 +35,8 @@ export default async function AboutPage() {
 
   const globalContent = await getPageContent('global');
 
-  const adminClient = await createAdminClient();
-  const allStaff = await getStaff(adminClient as any);
+  const staticClient = await createStaticClient();
+  const allStaff = await getStaff(staticClient);
   const allTestimonials = await getTestimonials();
 
   const ceo = allStaff.find(s => s.id === 'mohammed');
