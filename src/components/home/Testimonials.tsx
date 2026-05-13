@@ -2,10 +2,16 @@
 
 import React from 'react';
 import Image from 'next/image';
-import { TESTIMONIALS } from '@/data/testimonials';
+import { TESTIMONIALS_DEFAULTS, getTestimonials, type Testimonial } from '@/data/testimonials';
 import styles from './HomeSections.module.css';
 
 export const Testimonials: React.FC = () => {
+  const [list, setList] = React.useState<Testimonial[]>(TESTIMONIALS_DEFAULTS);
+
+  React.useEffect(() => {
+    getTestimonials().then(setList);
+  }, []);
+
   return (
     <section className={styles.testimonials}>
       <div className={styles.sectionHeader}>
@@ -14,7 +20,7 @@ export const Testimonials: React.FC = () => {
       </div>
 
       <div className={styles.staticGrid}>
-        {TESTIMONIALS.slice(0, 3).map((t, idx) => (
+        {list.slice(0, 3).map((t, idx) => (
           <div key={idx} className={styles.card}>
             <p className={styles.quote}>&quot;{t.quote}&quot;</p>
             <div className={styles.author}>

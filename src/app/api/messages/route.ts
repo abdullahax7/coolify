@@ -8,7 +8,7 @@ export async function GET() {
   const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', user.id).single();
   if (!profile?.is_admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-  const { data, error } = await supabase.from('messages').select('*').order('received_at', { ascending: false });
+  const { data, error } = await supabase.from('messages').select('*').is('deleted_at', null).order('received_at', { ascending: false });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ messages: data });
 }

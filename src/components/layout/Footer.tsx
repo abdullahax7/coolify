@@ -91,13 +91,13 @@ export const Footer: React.FC = () => {
       <div className={styles.bottomBar}>
         <div className={styles.container}>
           <div className={styles.legalInfo}>
-            <p>© Copyright Property Trader NTS Letting & Sales. All rights reserved 2026</p>
+            <p>© Copyright Property Trader NTS Letting & Sales. All rights reserved 2026 | Developed by <a href="https://webxoo.com" target="_blank" rel="noopener noreferrer" style={{ color: '#fff', fontWeight: 700 }}>Webxoo</a></p>
             <p className={styles.regulatoryText}>
               AML Licence Number: XFML00000191364 • Licensed Agent: Rent Smart Wales • Member of The Property Ombudsman (TPO) • Client Money Protect (CMP) Member • ICO Registered
             </p>
           </div>
           <div className={styles.legalLinks}>
-            <Link href="tel:08006890604">0800 6890604</Link>
+            <Link href="tel:08006890604">08006890604</Link>
             <span className={styles.dot}>•</span>
             <Link href="mailto:info@propertytrader1.co.uk">info@propertytrader1.co.uk</Link>
           </div>

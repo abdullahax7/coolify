@@ -19,14 +19,25 @@
 }
 
 .header .logoImage {
-  height: 50px;
+  height: 80px;
   width: auto;
 }
 
 .footer .logoImage {
-  height: 60px;
+  height: 100px;
   width: auto;
-  filter: brightness(0) invert(1); /* Ensure logos are white in the dark footer */
+  background: white;
+  padding: 10px;
+  border-radius: 8px;
+}
+
+.sidebar .logoImage {
+  height: 60px;
+  width: 100%;
+  max-width: 220px;
+  background: white;
+  padding: 8px;
+  border-radius: 8px;
 }
 
 .img {
@@ -51,10 +62,10 @@
 
 @media (max-width: 768px) {
   .header .logoImage {
-    height: 36px;
+    height: 60px;
   }
   .footer .logoImage {
-    height: 48px;
+    height: 80px;
   }
   .phone {
     font-size: 0.75rem;
@@ -63,13 +74,13 @@
 
 @media (max-width: 480px) {
   .header .logoImage {
-    height: 28px;
+    height: 50px;
   }
 }
 
 @media (max-width: 360px) {
   .header .logoImage {
-    height: 24px;
+    height: 40px;
   }
   .phone {
     font-size: 0.65rem;

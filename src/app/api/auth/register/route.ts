@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { sendEmail, getWelcomeEmailHtml } from '@/lib/email';
 
 async function verifyCaptcha(token: string): Promise<boolean> {
   const secret = process.env.RECAPTCHA_SECRET_KEY;
@@ -15,7 +16,7 @@ async function verifyCaptcha(token: string): Promise<boolean> {
 
 export async function POST(req: NextRequest) {
   try {
-    const { name, email, phone, password, captchaToken } = await req.json();
+    const { name, email, phone, password, captchaToken, role } = await req.json();
 
     const captchaEnabled = process.env.NEXT_PUBLIC_RECAPTCHA_ENABLED === 'true';
     if (captchaEnabled) {
@@ -37,7 +38,7 @@ export async function POST(req: NextRequest) {
       email,
       password,
       options: {
-        data: { name, phone }
+        data: { name, phone, role: role || 'tenant' }
       }
     });
 
@@ -45,12 +46,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
+    // Send Welcome Email (Non-blocking)
+    sendEmail({
+      to: email,
+      subject: 'Welcome to Property Trader!',
+      html: getWelcomeEmailHtml(name),
+    }).catch(err => console.error('Failed to send welcome email:', err));
+
     return NextResponse.json({ 
       success: true, 
       needsConfirmation: !data.session 
     });
-  } catch (err) {
-    console.error('Registration error:', err);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('Registration error:', msg);
     return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });
   }
 }

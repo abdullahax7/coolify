@@ -2,7 +2,17 @@ import type { Metadata } from "next";
 import { Inter, Outfit } from "next/font/google";
 import { WhatsAppButton } from "@/components/common/WhatsAppButton";
 import { CartProvider } from "@/context/CartContext";
+import Script from "next/script";
 import "./globals.css";
+import DynamicTheme from "@/components/theme/DynamicTheme";
+import { PageProgressBar } from "@/components/common/PageProgressBar";
+import { Suspense } from 'react';
+
+const SANDBOX_APP_ID = (process.env.NEXT_PUBLIC_SQUARE_APP_ID ?? '').trim();
+const IS_SANDBOX = SANDBOX_APP_ID.startsWith('sandbox');
+const SQUARE_URL = IS_SANDBOX 
+  ? 'https://sandbox.web.squarecdn.com/v1/square.js' 
+  : 'https://web.squarecdn.com/v1/square.js';
 
 const inter = Inter({
   variable: "--font-sans",
@@ -49,25 +59,59 @@ export default function RootLayout({
     <html lang="en" className={`${inter.variable} ${outfit.variable}`}>
       <head>
         <link rel="preconnect" href="https://images.unsplash.com" />
+        <link rel="preconnect" href="https://web.squarecdn.com" />
+        <link rel="preconnect" href="https://sandbox.web.squarecdn.com" />
         <link rel="dns-prefetch" href="https://wa.me" />
+        <DynamicTheme />
       </head>
       <body suppressHydrationWarning>
-        <script
+        <Script
+          id="json-ld-website"
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               "@context": "https://schema.org",
-              "@type": "Organization",
-              "name": "Property Trader",
+              "@type": "WebSite",
+              "@id": "https://property-trader1.co.uk/#website",
               "url": "https://property-trader1.co.uk",
-              "logo": "https://property-trader1.co.uk/logo.png",
-              "contactPoint": {
+              "name": "Property Trader",
+              "inLanguage": "en-GB",
+              "publisher": { "@id": "https://property-trader1.co.uk/#organization" },
+              "potentialAction": {
+                "@type": "SearchAction",
+                "target": "https://property-trader1.co.uk/properties?search={search_term_string}",
+                "query-input": "required name=search_term_string"
+              }
+            })
+          }}
+        />
+        <Script
+          id="json-ld"
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": ["Organization", "RealEstateAgent"],
+              "@id": "https://property-trader1.co.uk/#organization",
+              "name": "Property Trader",
+              "legalName": "Property Trader Ltd",
+              "url": "https://property-trader1.co.uk",
+              "logo": {
+                "@type": "ImageObject",
+                "url": "https://property-trader1.co.uk/images/logo.png",
+                "width": 512,
+                "height": 512
+              },
+              "image": "https://property-trader1.co.uk/images/logo.png",
+              "areaServed": ["GB", "GB-WLS", "GB-ENG"],
+              "knowsAbout": ["Property Sales", "Property Management", "Residential Lettings", "Cash House Buying", "Estate Agency"],
+              "contactPoint": [{
                 "@type": "ContactPoint",
                 "telephone": "+44-800-689-0604",
                 "contactType": "customer service",
                 "areaServed": "GB",
-                "availableLanguage": "en"
-              },
+                "availableLanguage": ["English"]
+              }],
               "sameAs": [
                 "https://facebook.com/propertytrader",
                 "https://instagram.com/propertytrader"
@@ -75,6 +119,13 @@ export default function RootLayout({
             })
           }}
         />
+        <Script 
+          src={SQUARE_URL}
+          strategy="afterInteractive"
+        />
+        <Suspense fallback={null}>
+          <PageProgressBar />
+        </Suspense>
         <CartProvider>
           {children}
         </CartProvider>

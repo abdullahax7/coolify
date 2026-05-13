@@ -89,6 +89,19 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 60px;
+  align-items: center;
+  margin-bottom: 100px;
+}
+
+.introGrid:last-child {
+  margin-bottom: 0;
+}
+
+.introGridMirrored {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px;
+  align-items: center;
 }
 
 .introText p {
@@ -364,10 +377,14 @@
     text-align: left;
   }
 
-  .introGrid {
+  .introGrid, .introGridMirrored {
     display: flex;
     flex-direction: column-reverse;
-    gap: 32px;
+    gap: 40px;
+  }
+
+  .introGridMirrored {
+    flex-direction: column;
   }
 
   .introText p {

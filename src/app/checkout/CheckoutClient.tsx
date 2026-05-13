@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { getUser } from '@/lib/auth';
 import type { User } from '@/lib/auth';
 import styles from './checkout.module.css';
+import { useCart } from '@/context/CartContext';
 
 declare global {
   interface Window {
@@ -30,6 +31,7 @@ interface CheckoutClientProps {
     price?: string;
     cart?: string;
   };
+  initialUser: User | null;
 }
 
 type CardInstance = {
@@ -41,22 +43,28 @@ const SANDBOX_APP_ID = (process.env.NEXT_PUBLIC_SQUARE_APP_ID ?? '').trim();
 const LOCATION_ID = (process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID ?? '').trim();
 const IS_SANDBOX = SANDBOX_APP_ID.startsWith('sandbox');
 
-import { useCart } from '@/context/CartContext';
-
-export default function CheckoutClient({ searchParams }: CheckoutClientProps) {
+export default function CheckoutClient({ searchParams, initialUser }: CheckoutClientProps) {
   const router = useRouter();
   const { items: cartItems, total: cartTotal, clearCart } = useCart();
-  const [user, setUser] = useState<User | null>(null);
-  const [userLoading, setUserLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(initialUser);
+  const [userLoading, setUserLoading] = useState(!initialUser);
   const [payLoading, setPayLoading] = useState(false);
   const [done, setDone] = useState<{ active: boolean; pdfUrl?: string }>({ active: false });
   const [error, setError] = useState('');
   const [sdkReady, setSdkReady] = useState(false);
   const [cardReady, setCardReady] = useState(false);
+  const [takingTooLong, setTakingTooLong] = useState(false);
+
+  useEffect(() => {
+    if (sdkReady) return;
+    const timer = setTimeout(() => {
+      if (!sdkReady) setTakingTooLong(true);
+    }, 10000);
+    return () => clearTimeout(timer);
+  }, [sdkReady]);
 
   const cardRef = useRef<CardInstance | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  // Separate flag ref so it doesn't interfere with card instance
   const initializingRef = useRef(false);
 
   const useCartItems = searchParams.cart === 'true';
@@ -67,31 +75,68 @@ export default function CheckoutClient({ searchParams }: CheckoutClientProps) {
 
   const isListing = !!plan;
 
-  // Derive order data from Cart or Single Item
-  const orderName = useCartItems 
+  const orderName = useCartItems
     ? `${cartItems.length} Services`
-    : (isListing 
-        ? `${plan} Plan – ${type === 'sell' ? 'Selling' : 'Letting'}`
-        : (service || 'Property Service'));
-        
-  const orderPrice = useCartItems 
-    ? `£${cartTotal.toFixed(2)}`
-    : (isListing ? getPlanPrice(plan, type) : (price || '£0.00'));
+    : (isListing
+      ? `${plan} Plan – ${type === 'sell' ? 'Selling' : 'Letting'}`
+      : (service || 'Property Service'));
 
-  const orderDetail = useCartItems 
+  const [pricingOverrides, setPricingOverrides] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    fetch('/api/content?page=pricing')
+      .then(res => res.json())
+      .then(data => {
+        if (data.content) {
+          const mapped: Record<string, string> = {};
+          data.content.forEach((item: { section_key: string; content_value: string }) => {
+            mapped[item.section_key] = item.content_value;
+          });
+          setPricingOverrides(mapped);
+        }
+      })
+      .catch(err => console.error('Failed to fetch pricing overrides for checkout:', err));
+  }, []);
+
+  const orderPrice = useCartItems
+    ? `£${cartTotal.toFixed(2)}`
+    : (isListing
+      ? (pricingOverrides[`${type}_${plan.toLowerCase()}_price`] || getPlanPrice(plan, type))
+      : (price || '£0.00'));
+
+  const orderDetail = useCartItems
     ? cartItems.map(i => i.name).join(', ')
-    : (isListing 
-        ? `Property ${type === 'sell' ? 'selling' : 'letting'} package`
-        : 'Professional property service');
+    : (isListing
+      ? `Property ${type === 'sell' ? 'selling' : 'letting'} package`
+      : 'Professional property service');
 
   const amountNumeric = useCartItems ? cartTotal : parseAmount(orderPrice);
 
   useEffect(() => {
-    getUser().then(u => {
-      setUser(u);
-      setUserLoading(false);
-    }).catch(() => setUserLoading(false));
-  }, []);
+    if (!initialUser) {
+      getUser().then(u => {
+        setUser(u);
+        setUserLoading(false);
+      }).catch(() => setUserLoading(false));
+    }
+  }, [initialUser]);
+
+  // Fallback check for Square SDK in case onLoad is delayed
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.Square && !sdkReady) {
+      setSdkReady(true);
+    }
+
+    // Periodically check if SDK loaded but event didn't fire
+    const interval = setInterval(() => {
+      if (typeof window !== 'undefined' && window.Square && !sdkReady) {
+        setSdkReady(true);
+        clearInterval(interval);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [sdkReady]);
 
   const initSquare = useCallback(async () => {
     if (initializingRef.current || cardRef.current) return;
@@ -128,19 +173,15 @@ export default function CheckoutClient({ searchParams }: CheckoutClientProps) {
     }
   }, []);
 
-  // Run Square init once SDK is ready and user is authenticated
   useEffect(() => {
     if (!sdkReady || !user || !containerRef.current) return;
-    // Small delay to ensure the DOM container is painted before Square attaches
-    const id = setTimeout(initSquare, 50);
-    return () => clearTimeout(id);
+    initSquare();
   }, [sdkReady, user, initSquare]);
 
-  // Cleanup card on unmount
   useEffect(() => {
     return () => {
       if (cardRef.current) {
-        cardRef.current.destroy().catch(() => {});
+        cardRef.current.destroy().catch(() => { });
         cardRef.current = null;
       }
     };
@@ -148,29 +189,39 @@ export default function CheckoutClient({ searchParams }: CheckoutClientProps) {
 
   const handleConfirm = async () => {
     if (!user) { router.push('/login'); return; }
-    if (!cardRef.current) { setError('Payment form is not ready. Please wait a moment.'); return; }
+
+    // Only check for payment form if it's not a free plan
+    if (amountNumeric > 0 && !cardRef.current) {
+      setError('Payment form is not ready. Please wait a moment.');
+      return;
+    }
+
     setPayLoading(true);
     setError('');
 
     try {
-      // ── Get PDF Draft from Session storage ──
       const pdfData = typeof window !== 'undefined' ? sessionStorage.getItem('rhw_draft_pdf') : null;
       const formType = typeof window !== 'undefined' ? sessionStorage.getItem('rhw_form_type') : null;
       const formDataStr = typeof window !== 'undefined' ? sessionStorage.getItem('rhw_form_data') : null;
       const formData = formDataStr ? JSON.parse(formDataStr) : null;
 
-      const result = await cardRef.current.tokenize();
-      if (result.status !== 'OK' || !result.token) {
-        setError('Card details are invalid. Please check and try again.');
-        setPayLoading(false);
-        return;
+      let sourceId = 'FREE_PLAN';
+
+      if (amountNumeric > 0 && cardRef.current) {
+        const result = await cardRef.current.tokenize();
+        if (result.status !== 'OK' || !result.token) {
+          setError('Card details are invalid. Please check and try again.');
+          setPayLoading(false);
+          return;
+        }
+        sourceId = result.token;
       }
 
       const res = await fetch('/api/checkout/create-payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          sourceId: result.token,
+          sourceId,
           amount: amountNumeric,
           currency: 'GBP',
           pdfData: pdfData,
@@ -179,6 +230,8 @@ export default function CheckoutClient({ searchParams }: CheckoutClientProps) {
             price: orderPrice,
             detail: orderDetail,
             type: isListing ? 'listing' : 'service',
+            plan: plan,
+            listingType: type,
             formType: formType,
             formData: formData,
           },
@@ -193,12 +246,13 @@ export default function CheckoutClient({ searchParams }: CheckoutClientProps) {
       }
 
       const paymentResult = await res.json();
-      
+
       if (useCartItems) clearCart();
       if (typeof window !== 'undefined') {
         sessionStorage.removeItem('rhw_draft_pdf');
         sessionStorage.removeItem('rhw_form_data');
         sessionStorage.removeItem('rhw_form_type');
+        (window as any).__rhw_pdf_draft = null;
       }
       setPayLoading(false);
       setDone({ active: true, pdfUrl: paymentResult.pdfUrl });
@@ -216,24 +270,9 @@ export default function CheckoutClient({ searchParams }: CheckoutClientProps) {
           <div className={styles.successIcon}>✓</div>
           <h2>Order Confirmed!</h2>
           <p>Your order for <strong>{orderName}</strong> has been placed successfully.</p>
-          
-          {done.pdfUrl && (
-            <div className={styles.pdfDownloadSection}>
-              <a 
-                href={done.pdfUrl} 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className={styles.downloadBtn}
-                download
-              >
-                📥 Download Official PDF
-              </a>
-              <p className={styles.pdfHint}>Your document is ready. You can also find it in your dashboard.</p>
-            </div>
-          )}
 
           <div className={styles.successActions}>
-            <Link href="/dashboard" className={styles.primaryBtn}>Go to Dashboard</Link>
+            <Link href="/dashboard" className={styles.primaryBtn}>View Dashboard</Link>
             <Link href={isListing ? '/pricing' : '/services'} className={styles.ghostBtn}>Browse More</Link>
           </div>
         </div>
@@ -243,15 +282,6 @@ export default function CheckoutClient({ searchParams }: CheckoutClientProps) {
 
   return (
     <>
-      <Script
-        src={IS_SANDBOX
-          ? 'https://sandbox.web.squarecdn.com/v1/square.js'
-          : 'https://web.squarecdn.com/v1/square.js'}
-        strategy="afterInteractive"
-        onLoad={() => setSdkReady(true)}
-        onError={() => setError('Failed to load payment SDK. Please check your connection and refresh.')}
-      />
-
       <div className={styles.layout}>
         {/* ── Order Summary ── */}
         <div className={styles.summary}>
@@ -259,17 +289,17 @@ export default function CheckoutClient({ searchParams }: CheckoutClientProps) {
           <h2>Order Summary</h2>
 
           {useCartItems ? (
-             <div className={styles.cartItemsList}>
-               {cartItems.map(item => (
-                 <div key={item.id} className={styles.summaryCard} style={{ marginBottom: 8 }}>
-                    <div className={styles.summaryIcon}>🛠️</div>
-                    <div className={styles.summaryInfo}>
-                      <div className={styles.summaryName}>{item.name}</div>
-                    </div>
-                    <div className={styles.summaryPrice}>{item.price}</div>
-                 </div>
-               ))}
-             </div>
+            <div className={styles.cartItemsList}>
+              {cartItems.map(item => (
+                <div key={item.id} className={styles.summaryCard} style={{ marginBottom: 8 }}>
+                  <div className={styles.summaryIcon}>🛠️</div>
+                  <div className={styles.summaryInfo}>
+                    <div className={styles.summaryName}>{item.name}</div>
+                  </div>
+                  <div className={styles.summaryPrice}>{item.price}</div>
+                </div>
+              ))}
+            </div>
           ) : (
             <div className={styles.summaryCard}>
               <div className={styles.summaryIcon}>{isListing ? '🏠' : '🛠️'}</div>
@@ -316,21 +346,55 @@ export default function CheckoutClient({ searchParams }: CheckoutClientProps) {
               </div>
 
               <div className={styles.paySection}>
-                <h3>Payment Details</h3>
-
-                {/* Square card container — always mounted when user is present */}
-                <div ref={containerRef} style={{ minHeight: 89, marginBottom: 16 }} />
-
-                {!sdkReady && !error && (
-                  <p style={{ color: '#64748b', fontSize: '0.85rem' }}>
-                    Connecting to secure payment gateway…
+                <h3>Order Summary</h3>
+                <div style={{ marginBottom: 20 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600 }}>
+                    <span>{orderName}</span>
+                    <span>{orderPrice}</span>
+                  </div>
+                  <p style={{ fontSize: '0.875rem', color: '#64748b', marginTop: 4 }}>
+                    {orderDetail}
                   </p>
+                </div>
+
+                {amountNumeric > 0 ? (
+                  <>
+                    <h3 style={{ marginTop: 30 }}>Payment Details</h3>
+                    {/* Square card container */}
+                    <div ref={containerRef} style={{ minHeight: 89, marginBottom: 16 }} />
+
+                    {!sdkReady && !error && (
+                      <div style={{ marginTop: 8 }}>
+                        <p style={{ color: '#64748b', fontSize: '0.85rem' }}>
+                          Connecting to secure payment gateway…
+                        </p>
+                        {takingTooLong && (
+                          <p style={{ color: '#dc2626', fontSize: '0.8rem', marginTop: 4 }}>
+                            This is taking longer than expected. Please <a href="#" onClick={(e) => { e.preventDefault(); window.location.reload(); }} style={{ textDecoration: 'underline' }}>refresh the page</a> if it doesn't load soon.
+                          </p>
+                        )}
+                      </div>
+                    )}
+                    {sdkReady && !cardReady && !error && (
+                      <p style={{ color: '#64748b', fontSize: '0.85rem' }}>
+                        Preparing payment form…
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <div className={styles.freeNotice} style={{
+                    background: '#f0fdf4',
+                    padding: '16px',
+                    borderRadius: '8px',
+                    border: '1px solid #bbf7d0',
+                    color: '#166534',
+                    marginBottom: 20
+                  }}>
+                    <span style={{ marginRight: 8 }}>✅</span>
+                    This is a free plan. No payment information is required.
+                  </div>
                 )}
-                {sdkReady && !cardReady && !error && (
-                  <p style={{ color: '#64748b', fontSize: '0.85rem' }}>
-                    Preparing payment form…
-                  </p>
-                )}
+
                 {error && (
                   <div style={{ color: '#dc2626', marginBottom: 12, fontSize: '0.875rem' }}>
                     {error}
@@ -341,11 +405,11 @@ export default function CheckoutClient({ searchParams }: CheckoutClientProps) {
               <button
                 className={styles.confirmBtn}
                 onClick={handleConfirm}
-                disabled={payLoading || !cardReady}
+                disabled={payLoading || (amountNumeric > 0 && !cardReady)}
               >
                 {payLoading
                   ? <span className={styles.spinner} />
-                  : `Confirm & Pay ${orderPrice}`}
+                  : amountNumeric > 0 ? `Confirm & Pay ${orderPrice}` : 'Activate Free Plan'}
               </button>
 
               <p className={styles.disclaimer}>
@@ -370,8 +434,8 @@ function buildLoginRedirect(params: CheckoutClientProps['searchParams']): string
 }
 
 function getPlanPrice(plan: string, type: string): string {
-  const sellMap: Record<string, string> = { Basic: '£65', Silver: '£250', Gold: '£450', Ultimate: '1% Fee' };
-  const letMap: Record<string, string> = { Basic: '£50', Essential: '£150', Premium: '£280' };
+  const sellMap: Record<string, string> = { Basic: 'Free', Silver: '£250', Gold: '£450', Ultimate: '1% Fee' };
+  const letMap: Record<string, string> = { Basic: 'Free', Essential: '£150', Premium: '£280' };
   return type === 'sell' ? (sellMap[plan] ?? '—') : (letMap[plan] ?? '—');
 }
 

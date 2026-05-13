@@ -51,7 +51,7 @@ export const Header: React.FC = () => {
             </span>
           </div>
           <div className={styles.topBarRight}>
-            <a href="tel:08006890604" className={styles.topBarItem}>📞 0800 6890604</a>
+            <a href="tel:08006890604" className={styles.topBarItem}>📞 08006890604</a>
             <span className={styles.divider}>|</span>
             <a href="mailto:info@propertytrader1.co.uk" className={styles.topBarItem}>✉️ info@propertytrader1.co.uk</a>
           </div>
@@ -181,7 +181,7 @@ export const Header: React.FC = () => {
               </div>
             )}
             <div className={styles.mobileContactItems}>
-              <a href="tel:08006890604" className={styles.mobileContactItem}>📞 0800 6890604</a>
+              <a href="tel:08006890604" className={styles.mobileContactItem}>📞 08006890604</a>
               <a href="mailto:info@propertytrader1.co.uk" className={styles.mobileContactItem}>✉️ info@propertytrader1.co.uk</a>
             </div>
           </div>

@@ -16,10 +16,14 @@ export interface Order {
   price: string;
   detail: string;
   date: string;
-  status: 'active' | 'pending' | 'completed';
-  formData?: Record<string, string>;
+  status: 'active' | 'pending' | 'completed' | 'published' | 'expired' | 'under-review';
+  formData?: Record<string, any>;
   formType?: string;
   pdfUrl?: string;
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  expiresAt?: string;
 }
 
 export async function getUser(): Promise<User | null> {
@@ -94,6 +98,10 @@ export async function getOrders(): Promise<Order[]> {
     formType: o.form_type ?? undefined,
     formData: o.form_data ?? undefined,
     pdfUrl: o.pdf_url ?? undefined,
+    customerName: o.customer_name ?? undefined,
+    customerEmail: o.customer_email ?? undefined,
+    customerPhone: o.customer_phone ?? undefined,
+    expiresAt: o.expires_at ?? undefined,
   }));
 }
 
@@ -112,4 +120,10 @@ export async function updateOrder(id: string, updates: Partial<Order>): Promise<
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(updates),
   });
+}
+export async function getWalesForms(): Promise<any[]> {
+  const res = await fetch('/api/wales-forms?mine=true');
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data.wales ?? [];
 }

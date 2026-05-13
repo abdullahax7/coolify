@@ -2,13 +2,14 @@
 
 import React, { useState, useCallback } from 'react';
 import Link from 'next/link';
+import { Logo } from '@/components/common/Logo';
 import { useRouter } from 'next/navigation';
 import Captcha from '@/components/common/Captcha';
 import styles from './register.module.css';
 
 export default function RegisterPage() {
   const router = useRouter();
-  const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', confirm: '' });
+  const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', confirm: '', role: 'tenant' as 'tenant' | 'landlord' });
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -81,12 +82,12 @@ export default function RegisterPage() {
       <div className={styles.left}>
         <div className={styles.leftContent}>
           <Link href="/" className={styles.backLink}>← Back to site</Link>
-          <div className={styles.logo}>PROPERTY <span>TRADER</span></div>
+          <Logo className={styles.logo} showPhone={false} variant="sidebar" />
           <h1>Join us <span>today.</span></h1>
           <p>Create a free account to list your property, access services, and manage everything in one place.</p>
           <div className={styles.trustItems}>
             <div className={styles.trustItem}><span>⚡</span> Get listed in minutes</div>
-            <div className={styles.trustItem}><span>💰</span> Save on agent fees</div>
+            <div className={styles.trustItem}><span>💷</span> Save on agent fees</div>
             <div className={styles.trustItem}><span>📞</span> Dedicated support team</div>
           </div>
         </div>
@@ -98,33 +99,112 @@ export default function RegisterPage() {
           <p className={styles.sub}>Already have an account? <Link href="/login">Sign in</Link></p>
 
           <form onSubmit={handleSubmit} className={styles.form} noValidate>
+            <div className={styles.roleSelector}>
+              <button 
+                type="button" 
+                className={`${styles.roleBtn} ${form.role === 'tenant' ? styles.activeRole : ''}`}
+                onClick={() => setForm(p => ({ ...p, role: 'tenant' }))}
+              >
+                <span className={styles.roleIcon}>🔑</span>
+                <div className={styles.roleLabel}>
+                  <strong>I am a Tenant</strong>
+                  <span>Looking for a property</span>
+                </div>
+              </button>
+              <button 
+                type="button" 
+                className={`${styles.roleBtn} ${form.role === 'landlord' ? styles.activeRole : ''}`}
+                onClick={() => setForm(p => ({ ...p, role: 'landlord' }))}
+              >
+                <span className={styles.roleIcon}>🏠</span>
+                <div className={styles.roleLabel}>
+                  <strong>I am a Landlord</strong>
+                  <span>Listing my property</span>
+                </div>
+              </button>
+            </div>
+
             <div className={styles.row}>
               <div className={styles.field}>
-                <label>Full Name <span>*</span></label>
-                <input name="name" type="text" placeholder="John Doe"
-                  value={form.name} onChange={handleChange} disabled={loading} />
+                <label htmlFor="reg-name">Full Name <span>*</span></label>
+                <input
+                  id="reg-name"
+                  name="name"
+                  type="text"
+                  placeholder="John Doe"
+                  value={form.name}
+                  onChange={handleChange}
+                  disabled={loading}
+                  required
+                  autoComplete="name"
+                  maxLength={80}
+                  aria-required="true"
+                />
               </div>
               <div className={styles.field}>
-                <label>Phone</label>
-                <input name="phone" type="tel" placeholder="+44 7000 000000"
-                  value={form.phone} onChange={handleChange} disabled={loading} />
+                <label htmlFor="reg-phone">Phone</label>
+                <input
+                  id="reg-phone"
+                  name="phone"
+                  type="tel"
+                  placeholder="+44 7000 000000"
+                  value={form.phone}
+                  onChange={handleChange}
+                  disabled={loading}
+                  autoComplete="tel"
+                  inputMode="tel"
+                  pattern="[\d\s()+\-]{7,20}"
+                />
               </div>
             </div>
             <div className={styles.field}>
-              <label>Email Address <span>*</span></label>
-              <input name="email" type="email" placeholder="john@example.com"
-                value={form.email} onChange={handleChange} disabled={loading} />
+              <label htmlFor="reg-email">Email Address <span>*</span></label>
+              <input
+                id="reg-email"
+                name="email"
+                type="email"
+                placeholder="john@example.com"
+                value={form.email}
+                onChange={handleChange}
+                disabled={loading}
+                required
+                autoComplete="email"
+                inputMode="email"
+                aria-required="true"
+              />
             </div>
             <div className={styles.row}>
               <div className={styles.field}>
-                <label>Password <span>*</span></label>
-                <input name="password" type="password" placeholder="Min. 6 characters"
-                  value={form.password} onChange={handleChange} disabled={loading} />
+                <label htmlFor="reg-password">Password <span>*</span></label>
+                <input
+                  id="reg-password"
+                  name="password"
+                  type="password"
+                  placeholder="Min. 6 characters"
+                  value={form.password}
+                  onChange={handleChange}
+                  disabled={loading}
+                  required
+                  autoComplete="new-password"
+                  minLength={6}
+                  aria-required="true"
+                />
               </div>
               <div className={styles.field}>
-                <label>Confirm Password <span>*</span></label>
-                <input name="confirm" type="password" placeholder="Repeat password"
-                  value={form.confirm} onChange={handleChange} disabled={loading} />
+                <label htmlFor="reg-confirm">Confirm Password <span>*</span></label>
+                <input
+                  id="reg-confirm"
+                  name="confirm"
+                  type="password"
+                  placeholder="Repeat password"
+                  value={form.confirm}
+                  onChange={handleChange}
+                  disabled={loading}
+                  required
+                  autoComplete="new-password"
+                  minLength={6}
+                  aria-required="true"
+                />
               </div>
             </div>
 
@@ -138,7 +218,7 @@ export default function RegisterPage() {
           </form>
 
           <p className={styles.terms}>
-            By registering you agree to our <Link href="/contact">Terms of Service</Link> and <Link href="/contact">Privacy Policy</Link>.
+            By registering you agree to our <Link href="/legal/terms-and-conditions">Terms of Service</Link> and <Link href="/legal/privacy-notice-landlord">Privacy Policy</Link>.
           </p>
         </div>
       </div>

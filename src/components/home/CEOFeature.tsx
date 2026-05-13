@@ -3,12 +3,25 @@
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { STAFF } from '@/data/staff';
+import { STAFF_DEFAULTS } from '@/data/staff';
 import styles from './CEOFeature.module.css';
 
 export const CEOFeature: React.FC = () => {
-  const ceo = STAFF.find(s => s.id === 'mohammed');
+  const [dynamicImage, setDynamicImage] = React.useState<string | null>(null);
+  const ceo = STAFF_DEFAULTS.find(s => s.id === 'mohammed');
   
+  React.useEffect(() => {
+    fetch('/api/content?page=global')
+      .then(res => res.json())
+      .then(data => {
+        if (data.content) {
+          const item = data.content.find((i: { section_key: string; content_value: string }) => i.section_key === 'staff_mohammed_image');
+          if (item?.content_value) setDynamicImage(item.content_value);
+        }
+      })
+      .catch(err => console.error('Failed to fetch dynamic CEO image:', err));
+  }, []);
+
   if (!ceo) return null;
 
   return (
@@ -18,7 +31,7 @@ export const CEOFeature: React.FC = () => {
           <div className={styles.imageSide}>
             <div className={styles.imageFrame}>
               <Image 
-                src={ceo.image} 
+                src={dynamicImage || ceo.image} 
                 alt={ceo.name} 
                 width={500} 
                 height={600} 

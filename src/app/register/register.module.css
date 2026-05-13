@@ -91,6 +91,76 @@
 
 .row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 
+.roleSelector {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.roleBtn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border: 2px solid #e2e8f0;
+  border-radius: var(--radius-md);
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  text-align: left;
+}
+
+.roleBtn:hover {
+  border-color: #cbd5e1;
+  background: #fdfdfd;
+}
+
+.activeRole {
+  border-color: var(--primary);
+  background: #fff1f2;
+  box-shadow: 0 4px 12px rgba(225,29,72,0.08);
+}
+
+.roleIcon {
+  font-size: 1.5rem;
+  background: #f8fafc;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  transition: all 0.2s;
+}
+
+.activeRole .roleIcon {
+  background: white;
+  box-shadow: 0 2px 4px rgba(225,29,72,0.1);
+}
+
+.roleLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.roleLabel strong {
+  font-size: 0.9375rem;
+  color: var(--navy);
+  font-weight: 800;
+}
+
+.roleLabel span {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.activeRole .roleLabel strong {
+  color: var(--primary);
+}
+
 .field { display: flex; flex-direction: column; gap: 6px; }
 .field label { font-size: 0.875rem; font-weight: 700; color: var(--navy); }
 .field label span { color: var(--primary); }

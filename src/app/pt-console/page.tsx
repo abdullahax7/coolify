@@ -4,38 +4,51 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
-import { PROPERTIES, type Property } from '@/data/properties';
+import { useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
+import { Logo } from '@/components/common/Logo';
+import { type Property } from '@/data/properties';
 import styles from './admin.module.css';
-import { exportPDF, uint8ToBase64 } from '@/components/PSPDFKitViewer';
 import MessagesTab, { type Message } from './components/MessagesTab';
 import ConfirmModalShared from './components/ConfirmModal';
+import SiteContentTab from './components/SiteContentTab';
+import ServicesCatalogTab from './components/ServicesCatalogTab';
+import MediaTab from './components/MediaTab';
+import PricingTab from './components/PricingTab';
+import UsersTab, { type UserProfile } from './components/UsersTab';
+import StaffTab from './components/StaffTab';
+import TrashTab from './components/TrashTab';
+import WalesWizardModalV2 from './components/WalesWizardModalV2';
+import FormViewer from '@/components/wales/FormViewer';
+import { createClient } from '@/lib/supabase/client';
 
-const PSPDFKitViewer = dynamic(() => import('@/components/PSPDFKitViewer'), {
-  ssr: false,
-  loading: () => <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:500, color:'#94a3b8' }}>Loading PDF editor…</div>,
-});
 
 /* ═══════════════════════════════ TYPES ═══════════════════════════════ */
 interface Order {
   id: string; type: 'listing' | 'service'; name: string;
   price: string; detail: string; date: string; status: string;
   customerName: string; customerEmail: string; customerPhone: string;
-  formData?: Record<string, string>;
+  formData?: Record<string, any>;
   formType?: string;
+  pdfUrl?: string;
 }
-interface Submission {
-  id: string; address: string; postcode: string; type: string;
-  beds: string; baths: string; sqft: string; price: string;
-  description: string; features: string; submittedAt: string; status: string;
-  contactName: string; contactEmail: string; contactPhone: string;
-}
+
 interface PropOverride { hidden?: boolean; featured?: boolean; notes?: string; }
 interface CustomProp {
   id: string; title: string; location: string; price: string;
+  addressLine1?: string; city?: string; postcode?: string;
   beds: string; baths: string; sqft: string; type: string;
   sector: string; status: string; createdAt: string; notes: string;
   image: string; gallery: string; mapEmbedUrl: string;
   description: string; features: string;
+  user_id?: string;
+  listedByAdmin?: boolean;
+  listedByEmail?: string;
+  is_approved?: boolean;
+  is_rejected?: boolean;
+  rejection_reason?: string;
+  assigned_to_email?: string | null;
+  listingType?: 'Sale' | 'Rent';
 }
 interface PropertyDocument {
   id: string;
@@ -85,38 +98,65 @@ interface CashInquiry {
   postcode: string;
   date: string;
   status: 'new' | 'viewed' | 'contacted' | 'rejected' | 'accepted';
+  image_urls?: string[];
 }
+
 
 import { signIn as supabaseSignIn, signOut as supabaseSignOut, getUser } from '@/lib/auth';
 
-type Tab = 'overview' | 'properties' | 'submissions' | 'listing-plans' | 'services' | 'messages' | 'documents' | 'tenants' | 'appointments' | 'forms' | 'cash-buyers' | 'tenancy-form';
+type Tab = 'overview' | 'properties' | 'listing-plans' | 'services' | 'inbox' | 'documents' | 'tenants' | 'appointments' | 'forms' | 'tenancy-form' | 'site-content' | 'media-manager' | 'services-catalog' | 'pricing-manager' | 'team' | 'trash';
 
-interface TenancyFormRecord {
+
+
+interface WalesFormRecordV2 {
   id: string;
-  tenantName: string;
-  landlordName: string;
-  propertyAddress: string;
-  contractStartDate: string;
-  contractEndDate: string;
-  monthlyRent: string;
-  depositAmount: string;
-  tenantEmail: string;
-  tenantPhone: string;
-  landlordEmail: string;
-  landlordPhone: string;
-  additionalNotes: string;
-  uploadedContract?: { name: string; base64: string };
-  createdAt: string;
-  status: 'draft' | 'active' | 'ended';
+  form_type: string;
+  client_name: string;
+  client_email: string;
+  client_phone: string;
+  notes: string;
+  form_data: Record<string, any>;
+  created_at: string;
+  is_user_purchased?: boolean;
+  status?: string;
+}
+
+function uint8ToBase64(arr: Uint8Array): string {
+  let binary = '';
+  const len = arr.byteLength;
+  for (let i = 0; i < len; i++) {
+    binary += String.fromCharCode(arr[i]);
+  }
+  return btoa(binary);
 }
 
 function today() { return new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); }
 
 /* ═══════════════════════════════ ROOT ═══════════════════════════════ */
-export default function AdminPanel() {
+
+
+export default function AdminPanelWrapper() {
+  return (
+    <Suspense fallback={null}>
+      <AdminPanel />
+    </Suspense>
+  );
+}
+
+function AdminPanel() {
   const [authed, setAuthed] = useState(false);
   const [ready, setReady]   = useState(false);
-  const [tab, setTab]       = useState<Tab>('overview');
+  
+  const params = useSearchParams();
+  const initialTab = (params.get('tab') as Tab) || 'overview';
+  const [tab, setTab]       = useState<Tab>(initialTab);
+
+  const changeTab = (t: Tab) => {
+    setTab(t);
+    const url = new URL(window.location.href);
+    url.searchParams.set('tab', t);
+    window.history.replaceState(null, '', url.toString());
+  };
 
   useEffect(() => {
     getUser().then(u => {
@@ -129,7 +169,7 @@ export default function AdminPanel() {
   if (!authed) return (
     <AdminLogin onLogin={() => setAuthed(true)} />
   );
-  return <Shell tab={tab} setTab={setTab} onLogout={async () => { await supabaseSignOut(); setAuthed(false); }} />;
+  return <Shell tab={tab} setTab={changeTab} onLogout={async () => { await supabaseSignOut(); setAuthed(false); }} />;
 }
 
 /* ═══════════════════════════════ LOGIN ═══════════════════════════════ */
@@ -153,14 +193,14 @@ function AdminLogin({ onLogin }: { onLogin: () => void }) {
       <div className={styles.loginCard}>
         <div className={styles.loginBrand}>
           <span className={styles.loginLock}>🔐</span>
-          <div className={styles.loginBrandName}>PROPERTY <span>TRADER</span></div>
+          <Logo className={styles.loginBrandName} showPhone={false} variant="sidebar" />
           <p>Staff Access Only</p>
         </div>
         <form onSubmit={submit} className={styles.loginForm} noValidate>
           <div className={styles.loginField}>
             <label>Email</label>
             <input type="email" value={email} onChange={e => setEmail(e.target.value)}
-              placeholder="admin@…" disabled={busy} autoComplete="username" />
+              placeholder="info@…" disabled={busy} autoComplete="username" />
           </div>
           <div className={styles.loginField}>
             <label>Password</label>
@@ -186,42 +226,44 @@ function AdminLogin({ onLogin }: { onLogin: () => void }) {
 /* ═══════════════════════════════ SHELL ═══════════════════════════════ */
 function Shell({ tab, setTab, onLogout }: { tab: Tab; setTab: (t: Tab) => void; onLogout: () => void; }) {
   const [orders,      setOrders]      = useState<Order[]>([]);
-  const [submissions, setSubs]        = useState<Submission[]>([]);
   const [messages,    setMessages]    = useState<Message[]>([]);
   const [overrides,   setOverrides]   = useState<Record<string, PropOverride>>({});
   const [customProps, setCustomProps] = useState<CustomProp[]>([]);
+  const [allUsers,    setAllUsers]    = useState<UserProfile[]>([]);
+  const [loadingUsers,setLoadingUsers]= useState(true);
   const [documents,   setDocuments]   = useState<PropertyDocument[]>([]);
   const [tenancies,   setTenancies]   = useState<Tenancy[]>([]);
-  const [initTenancy, setInitTenancy] = useState<string | null>(null);
-  const [initDocPropId, setInitDocPropId] = useState<string | null>(null);
+  const [docToManage, setDocToManage] = useState<{ propId: string; doc?: PropertyDocument } | null>(null);
   const [viewingPropId, setViewingPropId] = useState<string | null>(null);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [cashInquiries, setCashInquiries] = useState<CashInquiry[]>([]);
-  const [tenancyForms, setTenancyForms] = useState<TenancyFormRecord[]>([]);
+  const [walesForms, setWalesForms] = useState<WalesFormRecordV2[]>([]);
   const [menuOpen, setMenuOpen]   = useState(false);
 
   useEffect(() => {
     (async () => {
       const fetchItem = async (url: string, key: string) => {
         try {
-          const res = await fetch(url);
-          if (!res.ok) throw new Error(`Failed to fetch ${key}`);
+          const res = await fetch(url, { cache: 'no-store' });
+          if (!res.ok) {
+            const body = await res.json().catch(() => ({}));
+            throw new Error(body.error || `Failed to fetch ${key}`);
+          }
           return await res.json();
-        } catch (e) {
-          console.error(`Error loading ${key}:`, e);
+        } catch (e: unknown) {
+          console.error(`Error loading ${key}:`, e instanceof Error ? e.message : e);
           return { [key]: [] }; // Return empty set on failure
         }
       };
 
-      const [oD, sD, mD, dD, tD, aD, cD, tfD, cpD, orD] = await Promise.all([
+      const [oD, mD, dD, tD, aD, cD, wfD, cpD, orD] = await Promise.all([
         fetchItem('/api/orders', 'orders'),
-        fetchItem('/api/submissions', 'submissions'),
         fetchItem('/api/messages', 'messages'),
         fetchItem('/api/documents', 'documents'),
         fetchItem('/api/tenancies', 'tenancies'),
         fetchItem('/api/appointments', 'appointments'),
         fetchItem('/api/cash-inquiries', 'inquiries'),
-        fetchItem('/api/tenancy-forms', 'forms'),
+        fetchItem('/api/wales-forms', 'wales'),
         fetchItem('/api/properties/custom', 'properties'),
         fetchItem('/api/properties/overrides', 'overrides'),
       ]);
@@ -231,13 +273,7 @@ function Shell({ tab, setTab, onLogout }: { tab: Tab; setTab: (t: Tab) => void; 
         date: o.date ?? '', status: o.status, formType: o.form_type ?? undefined,
         formData: o.form_data ?? undefined, customerName: o.customer_name ?? '',
         customerEmail: o.customer_email ?? '', customerPhone: o.customer_phone ?? '',
-      })));
-      setSubs((sD.submissions ?? []).map((s: Record<string,unknown>) => ({
-        id: s.id, address: s.address, postcode: s.postcode, type: s.type,
-        beds: s.beds, baths: s.baths, sqft: s.sqft, price: s.price,
-        description: s.description, features: s.features, status: s.status,
-        submittedAt: s.submitted_at ? new Date(s.submitted_at as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '',
-        contactName: s.contact_name, contactEmail: s.contact_email, contactPhone: s.contact_phone,
+        pdfUrl: o.pdf_url ?? undefined,
       })));
       setMessages((mD.messages ?? []).map((m: Record<string,unknown>) => ({
         id: m.id, name: m.name, email: m.email, phone: m.phone ?? '',
@@ -264,30 +300,75 @@ function Shell({ tab, setTab, onLogout }: { tab: Tab; setTab: (t: Tab) => void; 
       setCashInquiries((cD.inquiries ?? []).map((c: Record<string,unknown>) => ({
         id: c.id, name: c.name, phone: c.phone, email: c.email, price: c.price,
         address: c.address, postcode: c.postcode, date: c.date ?? '', status: c.status,
+        image_urls: c.image_urls ?? [],
       })));
-      setTenancyForms((tfD.forms ?? []).map((f: Record<string,unknown>) => ({
-        id: f.id, tenantName: f.tenant_name, landlordName: f.landlord_name,
-        propertyAddress: f.property_address, contractStartDate: f.contract_start_date,
-        contractEndDate: f.contract_end_date, monthlyRent: f.monthly_rent,
-        depositAmount: f.deposit_amount, tenantEmail: f.tenant_email, tenantPhone: f.tenant_phone,
-        landlordEmail: f.landlord_email, landlordPhone: f.landlord_phone,
-        additionalNotes: f.additional_notes ?? '',
-        uploadedContract: f.contract_file_url ? { name: '', base64: f.contract_file_url as string } : undefined,
-        createdAt: f.created_at ?? '', status: f.status,
-      })));
-      setCustomProps((cpD.properties ?? []).map((p: Record<string,unknown>) => ({
+      const userPurchasedForms = (oD.orders ?? [])
+        .filter((o: any) => !!o.form_type)
+        .map((o: any) => ({
+          id: o.id,
+          form_type: o.form_type,
+          client_name: o.customer_name || 'User',
+          client_email: o.customer_email || '',
+          client_phone: o.customer_phone || '',
+          notes: `User Purchased Form\nOrder ID: ${o.id}`,
+          form_data: o.form_data || {},
+          created_at: o.date || new Date().toISOString(),
+          is_user_purchased: true
+        }));
+
+      const walesFromDB = (wfD.wales ?? []).map((f: Record<string,any>) => ({
+        id: f.id || '', 
+        form_type: f.form_type, 
+        client_name: f.client_name,
+        client_email: f.client_email, 
+        client_phone: f.client_phone,
+        notes: f.notes, 
+        form_data: f.form_data || {},
+        created_at: f.created_at,
+        is_user_purchased: !!f.status, // Any status means it's a valid record
+        status: f.status
+      }));
+
+      // Only add orders that don't already have a corresponding record in wales_forms
+      const missingOrders = userPurchasedForms.filter((order: any) => 
+        !walesFromDB.some((wf: any) => wf.client_email === order.client_email && wf.form_type === order.form_type)
+      );
+
+      setWalesForms([
+        ...walesFromDB,
+        ...missingOrders
+      ]);
+      setCustomProps((cpD.properties ?? []).map((p: Record<string,unknown>) => {
+        const initialLoc = (p.location as string) || '';
+        const locParts = initialLoc.split(',').map(s => s.trim());
+        return {
         id: p.id, title: p.title, location: p.location, price: p.price,
+        addressLine1: locParts[0] || '', city: locParts[1] || '', postcode: locParts.slice(2).join(', ') || '',
         beds: p.beds, baths: p.baths, sqft: p.sqft, type: p.type,
         sector: p.sector, status: p.status, createdAt: p.created_at ?? '',
         notes: p.notes ?? '', image: p.image_url ?? '', gallery: p.gallery_urls ?? '',
         mapEmbedUrl: p.map_embed_url ?? '', description: p.description ?? '',
-        features: p.features ?? '', interior: p.interior ?? '', exterior: p.exterior ?? '',
-      })));
+        features: p.features ?? '',
+        user_id: p.user_id as string,
+        listedByAdmin: (p.profiles as Record<string, unknown>)?.is_admin ?? false,
+        listedByEmail: (p.profiles as Record<string, unknown>)?.email ?? '',
+        is_approved: p.is_approved as boolean,
+        is_rejected: p.is_rejected as boolean,
+        rejection_reason: p.rejection_reason as string,
+        assigned_to_email: p.assigned_to_email as string || null,
+      };
+      }));
       const overrideMap: Record<string, PropOverride> = {};
       (orD.overrides ?? []).forEach((o: Record<string,unknown>) => {
         overrideMap[o.property_id as string] = { hidden: o.hidden as boolean, featured: o.featured as boolean, notes: o.notes as string };
       });
       setOverrides(overrideMap);
+
+      // Fetch all users
+      const supabase = createClient();
+      const { data: users } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
+      setAllUsers(users || []);
+      setLoadingUsers(false);
     })();
   }, []);
 
@@ -298,10 +379,22 @@ function Shell({ tab, setTab, onLogout }: { tab: Tab; setTab: (t: Tab) => void; 
   };
 
   /* Orders CRUD */
-  const createOrder = async (o: Omit<Order, 'id' | 'date'> | Order) => {
+  const createOrder = async (o: Omit<Order, 'id' | 'date'> | Order): Promise<Order> => {
     const res = await api.post('/api/orders', o);
     const data = await res.json();
-    setOrders(prev => [{ ...o, id: data.id, date: data.date ?? today() } as Order, ...prev]);
+    if (res.ok && data.id) {
+      const saved: Order = {
+        ...(o as Order),
+        id:   data.id   ?? (o as Order).id,
+        date: data.date ?? today(),
+        pdfUrl: data.pdf_url ?? (o as Order).pdfUrl,
+      };
+      setOrders(prev => [saved, ...prev]);
+      return saved;
+    } else {
+      alert('Failed to create order: ' + (data.error || 'Unknown error'));
+      throw new Error(data.error || 'Failed to create order');
+    }
   };
   const updateOrder = async (upd: Order) => {
     await api.put(`/api/orders/${upd.id}`, upd);
@@ -312,26 +405,6 @@ function Shell({ tab, setTab, onLogout }: { tab: Tab; setTab: (t: Tab) => void; 
     setOrders(prev => prev.filter(o => o.id !== id));
   };
 
-  /* Submissions CRUD */
-  const createSub = async (s: Omit<Submission, 'id' | 'submittedAt' | 'status'>) => {
-    const res = await api.post('/api/submissions', { ...s, contactName: s.contactName, contactEmail: s.contactEmail, contactPhone: s.contactPhone });
-    const data = await res.json();
-    setSubs(prev => [{ ...s, id: data.id, submittedAt: today(), status: 'pending' as const }, ...prev]);
-  };
-  const updateSub = async (upd: Submission) => {
-    await api.put(`/api/submissions/${upd.id}`, {
-      status: upd.status,
-      address: upd.address, postcode: upd.postcode, type: upd.type,
-      beds: upd.beds, baths: upd.baths, sqft: upd.sqft, price: upd.price,
-      description: upd.description, features: upd.features,
-      contact_name: upd.contactName, contact_email: upd.contactEmail, contact_phone: upd.contactPhone,
-    });
-    setSubs(prev => prev.map(s => s.id === upd.id ? upd : s));
-  };
-  const deleteSub = async (id: string) => {
-    await api.del(`/api/submissions/${id}`);
-    setSubs(prev => prev.filter(s => s.id !== id));
-  };
 
   /* Messages CRUD */
   const markRead = async (id: string) => {
@@ -356,27 +429,41 @@ function Shell({ tab, setTab, onLogout }: { tab: Tab; setTab: (t: Tab) => void; 
 
   /* Custom properties CRUD */
   const createCustom = async (c: Omit<CustomProp, 'id' | 'createdAt'>) => {
+    const combinedLoc = [c.addressLine1, c.city, c.postcode].filter(Boolean).join(', ');
     const res = await api.post('/api/properties/custom', { 
-      title: c.title, location: c.location, price: c.price,
+      title: c.title, location: combinedLoc, price: c.price,
       beds: c.beds, baths: c.baths, sqft: c.sqft,
       type: c.type, sector: c.sector, status: c.status,
       notes: c.notes, image_url: c.image, gallery_urls: c.gallery,
-      map_embed_url: c.mapEmbedUrl, description: c.description,
+      description: c.description,
       features: c.features
     });
     const data = await res.json();
-    setCustomProps(prev => [{ ...c, id: data.id, createdAt: today() }, ...prev]);
+    if (res.ok && data.id) {
+      setCustomProps(prev => [{ ...c, id: data.id, createdAt: today(), assigned_to_email: null }, ...prev]);
+    } else {
+      alert('Failed to create property: ' + (data.error || 'Unknown error'));
+    }
   };
   const updateCustom = async (upd: CustomProp) => {
-    await api.put(`/api/properties/custom/${upd.id}`, { 
-      title: upd.title, location: upd.location, price: upd.price,
+    const combinedLoc = [upd.addressLine1, upd.city, upd.postcode].filter(Boolean).join(', ');
+    const res = await api.put(`/api/properties/custom/${upd.id}`, { 
+      title: upd.title, location: combinedLoc, price: upd.price,
       beds: upd.beds, baths: upd.baths, sqft: upd.sqft,
       type: upd.type, sector: upd.sector, status: upd.status,
       notes: upd.notes, image_url: upd.image, gallery_urls: upd.gallery,
-      map_embed_url: upd.mapEmbedUrl, description: upd.description,
-      features: upd.features
+      description: upd.description,
+      features: upd.features,
+      is_approved: upd.is_approved,
+      is_rejected: upd.is_rejected,
+      rejection_reason: upd.rejection_reason
     });
-    setCustomProps(prev => prev.map(c => c.id === upd.id ? upd : c));
+    if (res.ok) {
+      setCustomProps(prev => prev.map(c => c.id === upd.id ? upd : c));
+    } else {
+      const data = await res.json().catch(() => ({}));
+      alert('Failed to update property: ' + (data.error || 'Unknown error'));
+    }
   };
   const deleteCustom = async (id: string) => {
     await api.del(`/api/properties/custom/${id}`);
@@ -393,10 +480,22 @@ function Shell({ tab, setTab, onLogout }: { tab: Tab; setTab: (t: Tab) => void; 
     }
     const res = await fetch('/api/documents', { method: 'POST', body: fd });
     const data = await res.json();
-    setDocuments(prev => [{ ...d, id: data.id, fileUrl: data.file_url ?? undefined, dateUploaded: today() }, ...prev]);
+    if (res.ok && data.id) {
+      setDocuments(prev => [{ ...d, id: data.id, fileUrl: data.file_url ?? undefined, dateUploaded: today() }, ...prev]);
+    } else {
+      console.error('Failed to create document:', data.error || 'Unknown error');
+      alert('Failed to save document. Please try again.');
+    }
   };
   const updateDoc = async (upd: PropertyDocument) => {
-    await api.put(`/api/documents/${upd.id}`, { status: upd.status, expiry_date: upd.expiryDate });
+    // We now send full metadata so that the server can update property links, names, etc.
+    await api.put(`/api/documents/${upd.id}`, { 
+      status: upd.status, 
+      expiry_date: upd.expiryDate,
+      property_id: upd.propertyId,
+      property_name: upd.propertyName,
+      document_type: upd.documentType
+    });
     setDocuments(prev => prev.map(d => d.id === upd.id ? upd : d));
   };
   const deleteDoc = async (id: string) => {
@@ -406,12 +505,24 @@ function Shell({ tab, setTab, onLogout }: { tab: Tab; setTab: (t: Tab) => void; 
 
   /* Tenancies CRUD */
   const createTenancy = async (t: Omit<Tenancy, 'id' | 'createdAt'>) => {
-    const res = await api.post('/api/tenancies', { propertyId: t.propertyId, propertyName: t.propertyName, startDate: t.startDate, endDate: t.endDate, rentAmount: t.rentAmount, rentFrequency: t.rentFrequency, rentDay: t.rentDay, depositAmount: t.depositAmount, tenantName: t.tenantName, tenantEmail: t.tenantEmail, tenantPhone: t.tenantPhone, status: t.status });
+    const res = await api.post('/api/tenancies', {
+      propertyId: t.propertyId, propertyName: t.propertyName,
+      startDate: t.startDate, endDate: t.endDate,
+      rentAmount: t.rentAmount, rentFrequency: t.rentFrequency, rentDay: t.rentDay,
+      depositAmount: t.depositAmount,
+      tenantName: t.tenantName, tenantEmail: t.tenantEmail, tenantPhone: t.tenantPhone,
+      status: t.status
+    });
     const data = await res.json();
-    setTenancies(prev => [{ ...t, id: data.id, createdAt: today() }, ...prev]);
+    if (res.ok && data.id) {
+      setTenancies(prev => [{ ...t, id: data.id, createdAt: today() }, ...prev]);
+      alert('Tenancy created successfully!');
+    } else {
+      alert('Failed to create tenancy: ' + (data.error || 'Unknown error'));
+    }
   };
   const updateTenancy = async (upd: Tenancy) => {
-    await api.put(`/api/tenancies/${upd.id}`, { status: upd.status });
+    await api.put(`/api/tenancies/${upd.id}`, upd);
     setTenancies(prev => prev.map(t => t.id === upd.id ? upd : t));
   };
   const deleteTenancy = async (id: string) => {
@@ -444,40 +555,70 @@ function Shell({ tab, setTab, onLogout }: { tab: Tab; setTab: (t: Tab) => void; 
     setCashInquiries(prev => prev.filter(i => i.id !== id));
   };
 
-  /* Tenancy Forms CRUD */
-  const createTenancyForm = async (f: Omit<TenancyFormRecord, 'id' | 'createdAt'>) => {
-    const res = await api.post('/api/tenancy-forms', { tenantName: f.tenantName, landlordName: f.landlordName, propertyAddress: f.propertyAddress, contractStartDate: f.contractStartDate, contractEndDate: f.contractEndDate, monthlyRent: f.monthlyRent, depositAmount: f.depositAmount, tenantEmail: f.tenantEmail, tenantPhone: f.tenantPhone, landlordEmail: f.landlordEmail, landlordPhone: f.landlordPhone, additionalNotes: f.additionalNotes, status: f.status });
-    const data = await res.json();
-    setTenancyForms(prev => [{ ...f, id: data.id, createdAt: today() }, ...prev]);
-  };
-  const updateTenancyForm = async (upd: TenancyFormRecord) => {
-    await api.put(`/api/tenancy-forms/${upd.id}`, { status: upd.status });
-    setTenancyForms(prev => prev.map(f => f.id === upd.id ? upd : f));
-  };
-  const deleteTenancyForm = async (id: string) => {
-    await api.del(`/api/tenancy-forms/${id}`);
-    setTenancyForms(prev => prev.filter(f => f.id !== id));
+
+
+  /* Wales Forms V2 CRUD */
+  const createWalesForm = (f: any) => setWalesForms(prev => [f, ...prev]);
+  const updateWalesForm = (upd: any) => setWalesForms(prev => prev.map(f => f.id === upd.id ? upd : f));
+  const deleteWalesForm = async (id: string) => {
+    await api.del(`/api/wales-forms/${id}`);
+    setWalesForms(prev => prev.filter(f => f.id !== id));
   };
 
   const unread       = messages.filter(m => !m.read).length;
   const listingOrders = orders.filter(o => o.type === 'listing');
   const serviceOrders = orders.filter(o => o.type === 'service');
-  const pendingSubs   = submissions.filter(s => s.status === 'pending').length;
 
   const nav: { id: Tab; label: string; icon: string; badge?: number }[] = [
     { id: 'overview',       label: 'Overview',       icon: '📊' },
-    { id: 'properties',     label: 'Properties',     icon: '🏠', badge: PROPERTIES.length + customProps.length },
-    { id: 'submissions',    label: 'Submissions',    icon: '📝', badge: pendingSubs || undefined },
+    { id: 'properties',     label: 'Properties',     icon: '🏠', badge: customProps.length },
+
     { id: 'listing-plans',  label: 'Listing Plans',  icon: '📋', badge: listingOrders.length || undefined },
     { id: 'services',       label: 'Services',       icon: '🛠️', badge: serviceOrders.length || undefined },
     { id: 'documents',      label: 'Documents',      icon: '📂', badge: documents.filter(d => d.status === 'Expiring' || d.status === 'Expired').length || undefined },
-    { id: 'tenants',        label: 'Tenants',        icon: '👥', badge: tenancies.filter(t => t.status === 'Active').length || undefined },
-    { id: 'messages',       label: 'Messages',       icon: '✉️', badge: unread || undefined },
+    { id: 'tenants',        label: 'Users',        icon: '👥', badge: tenancies.filter(t => t.status === 'Active').length || undefined },
+    { id: 'inbox',          label: 'Inbox',          icon: '📨', badge: (unread || 0) + cashInquiries.filter(i => i.status === 'new').length || undefined },
     { id: 'appointments',   label: 'Appointments',   icon: '📅' },
-    { id: 'cash-buyers',    label: 'Cash Buyers',    icon: '💰' },
-    { id: 'forms',          label: 'Wales Forms',     icon: '🏴󠁧󠁢󠁷󠁬󠁳󠁿', badge: orders.filter(o => !!o.formType).length || undefined },
-    { id: 'tenancy-form',   label: 'Tenancy Form',    icon: '📄', badge: tenancyForms.filter(f => f.status === 'active').length || undefined },
+    { id: 'forms',          label: 'Wales Forms',     icon: '🏴󠁧󠁢󠁷󠁬󠁳󠁿', badge: walesForms.filter(f => !/Fixed Term Standard Occupation Contract|Tenancy Agreement/i.test(f.form_type)).length || undefined },
+    { id: 'tenancy-form',   label: 'Tenancy Form',    icon: '📄', badge: walesForms.filter(f => /Fixed Term Standard Occupation Contract|Tenancy Agreement/i.test(f.form_type)).length || undefined },
+    { id: 'team',           label: 'Team',           icon: '🏢' },
+    { id: 'site-content',   label: 'Site Content',    icon: '✍️' },
+    { id: 'media-manager',  label: 'Media Manager',   icon: '🖼️' },
+    { id: 'pricing-manager', label: 'Pricing Manager', icon: '💰' },
+    { id: 'services-catalog', label: 'Services Catalog', icon: '🛒' },
+    { id: 'trash',          label: 'Trash',           icon: '🗑️' },
   ];
+
+  const assignProperty = async (propId: string, email: string) => {
+    // We'll update the custom_properties table
+    const res = await api.put(`/api/properties/custom/${propId}`, { assigned_to_email: email });
+    if (res.ok) {
+      setCustomProps(prev => prev.map(p => p.id === propId ? { ...p, assigned_to_email: email } : p));
+    } else {
+      const data = await res.json().catch(() => ({}));
+      alert('Failed to assign property: ' + (data.error || 'Unknown error'));
+    }
+  };
+
+  const unassignProperty = async (propId: string) => {
+    const res = await api.put(`/api/properties/custom/${propId}`, { assigned_to_email: null });
+    if (res.ok) {
+      setCustomProps(prev => prev.map(p => p.id === propId ? { ...p, assigned_to_email: null } : p));
+    } else {
+      const data = await res.json().catch(() => ({}));
+      alert('Failed to unassign property: ' + (data.error || 'Unknown error'));
+    }
+  };
+
+  const deleteUser = async (id: string) => {
+    const res = await api.del(`/api/users/${id}`);
+    if (res.ok) {
+      setAllUsers(prev => prev.filter(u => u.id !== id));
+    } else {
+      const data = await res.json().catch(() => ({}));
+      alert('Failed to delete user: ' + (data.error || 'Unknown error'));
+    }
+  };
 
   return (
     <div className={`${styles.shell} ${menuOpen ? styles.menuOpen : ''}`}>
@@ -487,7 +628,7 @@ function Shell({ tab, setTab, onLogout }: { tab: Tab; setTab: (t: Tab) => void; 
       <aside className={`${styles.sidebar} ${menuOpen ? styles.sidebarOpen : ''}`}>
         <div className={styles.sidebarTop}>
           <div className={styles.brand}>
-            <div className={styles.brandName}>PROPERTY <span>TRADER</span></div>
+            <Logo className={styles.brandName} showPhone={false} variant="sidebar" />
             <div className={styles.brandBadge}>Admin Console</div>
           </div>
           <nav className={styles.nav}>
@@ -504,6 +645,9 @@ function Shell({ tab, setTab, onLogout }: { tab: Tab; setTab: (t: Tab) => void; 
         <div className={styles.sidebarBottom}>
           <Link href="/" target="_blank" className={styles.viewSite}>↗ View Site</Link>
           <button onClick={onLogout} className={styles.logoutBtn}>Sign Out</button>
+          <div style={{ marginTop: '15px', fontSize: '10px', color: 'rgba(255,255,255,0.3)', textAlign: 'center', fontWeight: 600 }}>
+            DEVELOPED BY <a href="https://webxoo.com" target="_blank" rel="noopener noreferrer" style={{ color: 'rgba(255,255,255,0.5)', textDecoration: 'underline' }}>WEBXOO</a>
+          </div>
         </div>
       </aside>
 
@@ -517,7 +661,7 @@ function Shell({ tab, setTab, onLogout }: { tab: Tab; setTab: (t: Tab) => void; 
           </div>
           <div className={styles.topRight}>
             <span className={styles.adminBadge}>Admin</span>
-            <span className={styles.adminEmail}>admin@propertytrader1.co.uk</span>
+            <span className={styles.adminEmail}>info@propertytrader1.co.uk</span>
           </div>
         </header>
 
@@ -531,36 +675,44 @@ function Shell({ tab, setTab, onLogout }: { tab: Tab; setTab: (t: Tab) => void; 
               tenancies={tenancies} 
               overrides={overrides}
               onUpdateNotes={(id, notes) => saveOverride(id, { notes })}
-              onAddTenancy={(id) => { setInitTenancy(id); setViewingPropId(null); setTab('tenants'); }}
-              onAddDoc={(id) => setInitDocPropId(id)}
+              onAddTenancy={() => { setViewingPropId(null); setTab('tenants'); }}
+              onManageDoc={(id, doc) => setDocToManage({ propId: id, doc })}
+              onAssign={assignProperty}
+              allUsers={allUsers}
             />
           ) : (
             <>
-              {tab === 'overview'      && <Overview orders={orders} submissions={submissions} messages={messages} setTab={setTab} documents={documents} tenancies={tenancies} />}
-              {tab === 'properties'    && <PropertiesTab overrides={overrides} onOverride={saveOverride} customProps={customProps} onCreate={createCustom} onUpdate={updateCustom} onDelete={deleteCustom} onAddTenancy={(id) => { setInitTenancy(id); setTab('tenants'); }} onAddDoc={setInitDocPropId} onViewCompliance={(id) => setInitDocPropId(id)} onViewDetails={(id) => setViewingPropId(id)} />}
-              {tab === 'submissions'   && <SubmissionsTab submissions={submissions} onCreate={createSub} onUpdate={updateSub} onDelete={deleteSub} />}
+              {tab === 'overview'      && <Overview orders={orders} messages={messages} setTab={setTab} documents={documents} tenancies={tenancies} customProps={customProps} allUsers={allUsers} />}
+              {tab === 'properties'    && <PropertiesTab overrides={overrides} onOverride={saveOverride} customProps={customProps} onCreate={createCustom} onUpdate={updateCustom} onDelete={deleteCustom} onAddTenancy={() => { setTab('tenants'); }} onManageDoc={(id, doc) => setDocToManage({ propId: id, doc })} onViewCompliance={(id) => setViewingPropId(id)} onViewDetails={(id) => setViewingPropId(id)} />}
               {tab === 'listing-plans' && <OrdersTab type="listing" orders={listingOrders} onCreate={createOrder} onUpdate={updateOrder} onDelete={deleteOrder} />}
               {tab === 'services'      && <OrdersTab type="service" orders={serviceOrders} onCreate={createOrder} onUpdate={updateOrder} onDelete={deleteOrder} />}
-              {tab === 'messages'      && <MessagesTab messages={messages} onMarkRead={markRead} onMarkAllRead={markAllRead} onDelete={deleteMsg} />}
+              {tab === 'inbox'         && <InboxTab messages={messages} inquiries={cashInquiries} onMarkRead={markRead} onMarkAllRead={markAllRead} onDeleteMsg={deleteMsg} onUpdateInquiry={updateCashInquiry} onDeleteInquiry={deleteCashInquiry} />}
               {tab === 'documents'     && <DocumentsTab documents={documents} onCreate={createDoc} onUpdate={updateDoc} onDelete={deleteDoc} customProps={customProps} />}
-              {tab === 'tenants'       && <TenantsTab tenancies={tenancies} onCreate={createTenancy} onUpdate={updateTenancy} onDelete={deleteTenancy} customProps={customProps} initialPropertyId={initTenancy} onModalClose={() => setInitTenancy(null)} />}
-              {tab === 'appointments' && <AppointmentsTab appointments={appointments} onCreate={createAppointment} onUpdate={updateAppointment} onDelete={deleteAppointment} />}
-              {tab === 'cash-buyers'  && <CashBuyersTab inquiries={cashInquiries} onUpdate={updateCashInquiry} onDelete={deleteCashInquiry} />}
-              {tab === 'forms'         && <FormsTab orders={orders} onUpdateOrder={updateOrder} onCreateOrder={createOrder} onDeleteOrder={deleteOrder} />}
-              {tab === 'tenancy-form'  && <TenancyFormTab forms={tenancyForms} onCreate={createTenancyForm} onUpdate={updateTenancyForm} onDelete={deleteTenancyForm} />}
+              {tab === 'tenants'       && <UsersTab users={allUsers} loading={loadingUsers} properties={customProps} onAssign={assignProperty} onUnassign={unassignProperty} onDelete={deleteUser} onCreateTenancy={createTenancy} />}
+              {tab === 'appointments'  && <AppointmentsTab appointments={appointments} onCreate={createAppointment} onUpdate={updateAppointment} onDelete={deleteAppointment} />}
+              {tab === 'forms'         && <FormsTab records={walesForms.filter(f => !/Fixed Term Standard Occupation Contract|Tenancy Agreement/i.test(f.form_type))} onUpdate={updateWalesForm} onCreate={createWalesForm} onDelete={deleteWalesForm} />}
+              {tab === 'tenancy-form'  && <TenancyAgreementsTab records={walesForms.filter(f => /Fixed Term Standard Occupation Contract|Tenancy Agreement/i.test(f.form_type))} onUpdate={updateWalesForm} onCreate={createWalesForm} onDelete={deleteWalesForm} />}
+              {tab === 'team'          && <StaffTab />}
+              {tab === 'site-content'  && <SiteContentTab />}
+              {tab === 'media-manager' && <MediaTab />}
+              {tab === 'pricing-manager' && <PricingTab />}
+              {tab === 'services-catalog' && <ServicesCatalogTab />}
+              {tab === 'trash'         && <TrashTab />}
             </>
           )}
         </div>
       </div>
 
-      {initDocPropId && (
+      {docToManage && (
         <DocModal
-          properties={[...PROPERTIES, ...customProps]}
-          initialPropertyId={initDocPropId}
-          onClose={() => setInitDocPropId(null)}
+        properties={customProps}
+        initialPropertyId={docToManage.propId}
+        existingDoc={docToManage.doc}
+          onClose={() => setDocToManage(null)}
           onSave={(d) => {
-            createDoc(d);
-            setInitDocPropId(null);
+            if (docToManage.doc) updateDoc({ ...docToManage.doc, ...d } as PropertyDocument);
+            else createDoc(d);
+            setDocToManage(null);
           }}
         />
       )}
@@ -571,12 +723,13 @@ function Shell({ tab, setTab, onLogout }: { tab: Tab; setTab: (t: Tab) => void; 
 /* ConfirmModal — now lives in ./components/ConfirmModal.tsx */
 const ConfirmModal = ConfirmModalShared;
 
-function Overview({ orders, submissions, messages, setTab, documents, tenancies }: {
-  orders: Order[]; submissions: Submission[]; messages: Message[];
+function Overview({ orders, messages, setTab, documents, tenancies, customProps, allUsers }: {
+  orders: Order[]; messages: Message[];
   setTab: (t: Tab) => void;
   documents: PropertyDocument[]; tenancies: Tenancy[];
+  customProps: CustomProp[];
+  allUsers: UserProfile[];
 }) {
-  const revenue = orders.reduce((s, o) => { const n = parseFloat(o.price.replace(/[^0-9.]/g, '')); return s + (isNaN(n) ? 0 : n); }, 0);
   
   const expiringDocs = documents.filter(d => d.status === 'Expiring' || d.status === 'Expired');
   const expiringTenancies = tenancies.filter(t => {
@@ -586,12 +739,10 @@ function Overview({ orders, submissions, messages, setTab, documents, tenancies 
   });
 
   const stats = [
-    { icon: '🏠', label: 'Total Listings',     value: PROPERTIES.length,  color: '#e11d48' },
-    { icon: '📝', label: 'Submissions',         value: submissions.length, color: '#f59e0b' },
-    { icon: '💼', label: 'Total Orders',        value: orders.length,      color: '#8b5cf6' },
-    { icon: '💷', label: 'Revenue',             value: `£${revenue.toLocaleString('en-GB', { minimumFractionDigits: 2 })}`, color: '#10b981' },
-    { icon: '📂', label: 'Comp. Alerts',        value: expiringDocs.length, color: '#ef4444' },
-    { icon: '👥', label: 'Active Tenants',      value: tenancies.filter(t => t.status === 'Active').length, color: '#3b82f6' },
+    { label: 'Properties', value: customProps.length, icon: '🏡', color: '#6366f1' },
+    { label: 'Active Tenancies', value: tenancies.filter(t => t.status === 'Active').length, icon: '📄', color: '#10b981' },
+    { label: 'Compliance Docs', value: documents.length, icon: '🛡️', color: '#f59e0b' },
+    { label: 'Total Users', value: allUsers.length, icon: '👥', color: '#e11d48' },
   ];
   return (
     <div>
@@ -645,9 +796,8 @@ function Overview({ orders, submissions, messages, setTab, documents, tenancies 
 
       <div className={styles.overviewSection} style={{ marginTop: 40 }}>
         <h3>📊 Activity Summary</h3>        {[
-          { title: 'Recent Submissions', tab: 'submissions'   as Tab, items: submissions.slice(0, 5).map(s => ({ key: s.id, title: s.address, sub: `${s.type} · ${s.beds} beds · ${s.price}`, right: <StatusPill status={s.status} /> })) },
           { title: 'Recent Orders',      tab: 'listing-plans' as Tab, items: orders.slice(0, 5).map(o => ({ key: o.id, title: o.name, sub: `${o.type === 'listing' ? 'Listing Plan' : 'Service'} · ${o.date}`, right: <span className={styles.miniPrice}>{o.price}</span> })) },
-          { title: 'Unread Messages',    tab: 'messages'      as Tab, items: messages.filter(m => !m.read).slice(0, 5).map(m => ({ key: m.id, title: m.name, sub: m.subject || '(no subject)', right: null })) },
+          { title: 'Unread Messages',    tab: 'inbox'         as Tab, items: messages.filter(m => !m.read).slice(0, 5).map(m => ({ key: m.id, title: m.name, sub: m.subject || '(no subject)', right: null })) },
         ].map(panel => (
           <div key={panel.title} className={styles.overviewPanel}>
             <div className={styles.panelHeader}>
@@ -675,10 +825,19 @@ function Overview({ orders, submissions, messages, setTab, documents, tenancies 
 }
 
 /* ═══════════════════════════════ PROPERTIES ═══════════════════════════════ */
-function PropertyListItem({ title, image, sector, isCustom, onEdit, onDelete, onAddTenancy, onAddDoc, onViewCompliance, isHidden, onViewDetails, onToggleVisibility }: {
+function PropertyListItem({ 
+  title, image, sector, isCustom, onEdit, onDelete, onAddTenancy, onAddDoc, 
+  onViewCompliance, isHidden, onViewDetails, onToggleVisibility,
+  isApproved, isRejected, listedByAdmin, listedByEmail, assignedToEmail, status, onApprove, onReject
+}: {
   id: string; title: string; location: string; image?: string; sector: string; isCustom: boolean;
   onEdit: () => void; onDelete: () => void; onAddTenancy: () => void; onAddDoc: () => void;
-  onViewCompliance: () => void; onViewDetails: () => void; onToggleVisibility?: () => void; isHidden?: boolean;
+  onViewCompliance: () => void; onViewDetails: () => void; onToggleVisibility?: () => void; 
+  isApproved?: boolean; isRejected?: boolean; listedByAdmin?: boolean; listedByEmail?: string;
+  assignedToEmail?: string | null;
+  status?: string;
+  onApprove?: () => void; onReject?: () => void;
+  isHidden?: boolean;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -690,10 +849,32 @@ function PropertyListItem({ title, image, sector, isCustom, onEdit, onDelete, on
       <div className={styles.propCardInfo}>
         <div className={styles.propCardTitle}>{title}</div>
         <div className={styles.propCardSub}>{sector} household</div>
+        {isCustom && (
+          <div className={styles.statusRow} style={{ marginTop: 4 }}>
+            {isApproved ? (
+              <span className={`${styles.pill} ${styles.pillGreen}`}>Live</span>
+            ) : isRejected ? (
+              <span className={`${styles.pill} ${styles.pillRed}`}>Rejected</span>
+            ) : (
+              <span className={`${styles.pill} ${styles.pillYellow}`}>Pending Approval</span>
+            )}
+            <span className={styles.pill} style={{ background: '#e2e8f0', color: '#475569' }}>
+              Listed by {listedByAdmin ? 'Admin' : (listedByEmail || 'User')}
+            </span>
+            {assignedToEmail && (
+              <span className={styles.pill} style={{ background: '#dbeafe', color: '#1e40af', marginLeft: 4 }}>
+                Assigned to {assignedToEmail}
+              </span>
+            )}
+          </div>
+        )}
         <div className={styles.propCardMeta}>Last updated 4 hours ago</div>
         {isHidden && <span className={`${styles.pill} ${styles.pillRed}`} style={{ marginTop: 8, alignSelf: 'flex-start' }}>Occupied / Hidden</span>}
       </div>
       <div className={styles.propCardActions}>
+        {(!isApproved || status === 'Inactive') && isCustom && onApprove && (
+          <button className={styles.btnPurple} style={{ background: '#16a34a' }} onClick={onApprove}>Approve</button>
+        )}
         <button className={styles.btnPurple} onClick={onAddTenancy}>Add Tenancy</button>
         <button className={styles.btnPurple} onClick={onViewDetails}>View Details</button>
         <button className={styles.btnPurple} onClick={onViewCompliance}>Manage compliance</button>
@@ -710,6 +891,7 @@ function PropertyListItem({ title, image, sector, isCustom, onEdit, onDelete, on
               {isHidden ? '👁️ Show listing' : '👻 Hide listing'}
             </button>
           )}
+          {isCustom && onReject && !isRejected && <button className={styles.menuItem} onClick={() => { setMenuOpen(false); onReject(); }}>❌ Reject listing</button>}
           {isCustom && <button className={`${styles.menuItem} ${styles.menuItemDanger}`} onClick={() => { setMenuOpen(false); onDelete(); }}>🗑️ Delete</button>}
         </div>
       )}
@@ -718,23 +900,22 @@ function PropertyListItem({ title, image, sector, isCustom, onEdit, onDelete, on
 }
 
 const EMPTY_CUSTOM: Omit<CustomProp, 'id' | 'createdAt'> = {
-  title: '', location: '', price: '', beds: '', baths: '', sqft: '',
+  title: '', location: '', addressLine1: '', city: '', postcode: '', price: '', beds: '', baths: '', sqft: '',
   type: 'Sale', sector: 'Residential', status: 'Live', notes: '',
   image: '', gallery: '', mapEmbedUrl: '',
   description: '', features: '',
 };
 
-function PropertiesTab({ overrides, onOverride, customProps, onCreate, onUpdate, onDelete, onAddTenancy, onAddDoc, onViewCompliance, onViewDetails }: {
+function PropertiesTab({ overrides, onOverride, customProps, onCreate, onUpdate, onDelete, onAddTenancy, onManageDoc, onViewCompliance, onViewDetails }: {
   overrides: Record<string, PropOverride>; onOverride: (id: string, p: Partial<PropOverride>) => void;
   customProps: CustomProp[]; onCreate: (c: Omit<CustomProp, 'id' | 'createdAt'>) => void;
   onUpdate: (c: CustomProp) => void; onDelete: (id: string) => void;
-  onAddTenancy: (id: string) => void; onAddDoc: (id: string) => void;
+  onAddTenancy: (id: string) => void; onManageDoc: (id: string, doc?: PropertyDocument) => void;
   onViewCompliance: (id: string) => void; onViewDetails: (id: string) => void;
 }) {
   const [search, setSearch]       = useState('');
-  const [ft, setFt]               = useState('All');
-  const [fs, setFs]               = useState('All');
-  const [showHidden]              = useState(false);
+  const [ft, setFt]               = useState('All Properties');
+  const [fs, setFs]               = useState('All Portfolios');
   const [editStatic, setEditStatic] = useState<Property | null>(null);
   const [editCustom, setEditCustom] = useState<CustomProp | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
@@ -742,18 +923,21 @@ function PropertiesTab({ overrides, onOverride, customProps, onCreate, onUpdate,
   const [warn, setWarn]             = useState<{ id: string; title: string } | null>(null);
   const [staticNotes, setStaticNotes] = useState('');
 
-  const staticFiltered = useMemo(() => PROPERTIES.filter(p => {
-    const q = search.toLowerCase();
-    return (!q || p.title.toLowerCase().includes(q) || p.location.toLowerCase().includes(q))
-      && (ft === 'All' || p.listingType === ft)
-      && (fs === 'All' || p.sector === fs)
-      && (showHidden ? true : !overrides[p.id]?.hidden);
-  }), [search, ft, fs, overrides, showHidden]);
+  // Static properties are removed to be 100% database-driven.
 
   const customFiltered = useMemo(() => customProps.filter(p => {
     const q = search.toLowerCase();
-    return !q || p.title.toLowerCase().includes(q) || p.location.toLowerCase().includes(q);
-  }), [search, customProps]);
+    const matchesSearch = !q || p.title.toLowerCase().includes(q) || p.location.toLowerCase().includes(q);
+    const matchesType = ft === 'All Properties' || p.type === (ft === 'Sale' ? 'Sale' : 'Rent') || p.type === ft; 
+    const matchesSector = fs === 'All Portfolios' || p.sector === fs;
+    return matchesSearch && matchesType && matchesSector;
+  }).sort((a, b) => {
+    // Show pending properties (not approved, not rejected) at the very top
+    const aPending = !a.is_approved && !a.is_rejected ? 1 : 0;
+    const bPending = !b.is_approved && !b.is_rejected ? 1 : 0;
+    return bPending - aPending;
+  }), [search, ft, fs, customProps]);
+
 
   const draftSet = (f: string, v: string) => setDraft(d => ({ ...d, [f]: v }));
   const customSet = (f: string, v: string) => setEditCustom(d => d ? { ...d, [f]: v } : d);
@@ -773,25 +957,6 @@ function PropertiesTab({ overrides, onOverride, customProps, onCreate, onUpdate,
       </div>
 
       <div className={styles.propCardList}>
-        {staticFiltered.map(p => (
-          <PropertyListItem
-            key={p.id}
-            id={p.id}
-            title={p.title}
-            location={p.location}
-            image={p.image}
-            sector={p.sector}
-            isCustom={false}
-            onEdit={() => { setEditStatic(p); setStaticNotes(overrides[p.id]?.notes ?? ''); }}
-            onDelete={() => {}}
-            onAddTenancy={() => onAddTenancy(p.id)}
-            onAddDoc={() => onAddDoc(p.id)}
-            onViewCompliance={() => onViewCompliance(p.id)}
-            onViewDetails={() => onViewDetails(p.id)}
-            onToggleVisibility={() => onOverride(p.id, { hidden: !overrides[p.id]?.hidden })}
-            isHidden={overrides[p.id]?.hidden}
-          />
-        ))}
         {customFiltered.map(p => (
           <PropertyListItem
             key={p.id}
@@ -804,9 +969,20 @@ function PropertiesTab({ overrides, onOverride, customProps, onCreate, onUpdate,
             onEdit={() => setEditCustom(p)}
             onDelete={() => setWarn({ id: p.id, title: p.title || 'this property' })}
             onAddTenancy={() => onAddTenancy(p.id)}
-            onAddDoc={() => onAddDoc(p.id)}
+            onAddDoc={() => onManageDoc(p.id)}
             onViewCompliance={() => onViewCompliance(p.id)}
             onViewDetails={() => onViewDetails(p.id)}
+            isApproved={p.is_approved}
+            isRejected={p.is_rejected}
+            listedByAdmin={p.listedByAdmin}
+            listedByEmail={p.listedByEmail}
+            assignedToEmail={p.assigned_to_email}
+            status={p.status}
+            onApprove={() => onUpdate({ ...p, is_approved: true, is_rejected: false, status: 'Live' })}
+            onReject={() => {
+              const reason = prompt('Reason for rejection:');
+              if (reason !== null) onUpdate({ ...p, is_approved: false, is_rejected: true, rejection_reason: reason });
+            }}
           />
         ))}
       </div>
@@ -955,20 +1131,52 @@ function PropForm({ draft, onChange }: {
       <div className={styles.propFormSection}><h4>Basic Info</h4></div>
       <div className={styles.editGrid}>
         {inp('title','Title')}
-        {inp('location','Location')}
+        {inp('addressLine1','First Line of Address')}
+        {inp('city','City / Town')}
+        {inp('postcode','Postcode')}
         {inp('price','Price','£250,000')}
         {inp('beds','Beds')}
         {inp('baths','Baths')}
         {inp('sqft','Sqft')}
-        <div className={styles.editField}><label>Listing Type</label>
-          <select value={draft.type} onChange={e => onChange('type', e.target.value)}><option>Sale</option><option>Rent</option></select>
+        <div className={styles.editField}>
+          <label>Property Type</label>
+          <select value={draft.type} onChange={e => onChange('type', e.target.value)}>
+            <option>House</option>
+            <option>Detached House</option>
+            <option>Semi-Detached House</option>
+            <option>Terraced House</option>
+            <option>End of Terrace House</option>
+            <option>Apartment</option>
+            <option>Flat</option>
+            <option>Studio</option>
+            <option>Maisonette</option>
+            <option>Penthouse</option>
+            <option>Duplex</option>
+            <option>Bungalow</option>
+            <option>Office</option>
+            <option>Retail</option>
+          </select>
+        </div>
+        <div className={styles.editField}>
+          <label>Listing Type</label>
+          <select value={draft.listingType || 'Sale'} onChange={e => onChange('listingType', e.target.value)}>
+            <option>Sale</option>
+            <option>Rent</option>
+          </select>
         </div>
         <div className={styles.editField}><label>Sector</label>
           <select value={draft.sector} onChange={e => onChange('sector', e.target.value)}><option>Residential</option><option>Commercial</option></select>
         </div>
         <div className={styles.editField}><label>Listing Status</label>
-          <select value={draft.status} onChange={e => onChange('status', e.target.value)}><option>Live</option><option>Draft</option><option>Archived</option></select>
+          <select value={draft.status} onChange={e => onChange('status', e.target.value)}><option value="Live">Active</option><option value="Inactive">Inactive</option></select>
         </div>
+      </div>
+
+      {/* Narrative Info */}
+      <div className={styles.propFormSection}><h4>Narrative & Details</h4></div>
+      <div className={styles.editGrid}>
+        {ta('description', 'Short Description', 3)}
+        {ta('features', 'Key Features (one per line)', 4)}
       </div>
 
       {/* Photos */}
@@ -1016,244 +1224,11 @@ function PropForm({ draft, onChange }: {
         </div>
       </div>
 
-      {/* Map */}
-      <div className={styles.propFormSection}><h4>Google Map</h4></div>
-      <div className={styles.editGrid}>
-        <div className={`${styles.editField} ${styles.editSpan2}`}>
-          <label>Google Maps Embed URL</label>
-          <input value={draft.mapEmbedUrl ?? ''} onChange={e => onChange('mapEmbedUrl', e.target.value)}
-            placeholder="Google Maps → Share → Embed a map → copy the src=&quot;…&quot; URL" />
-        </div>
-      </div>
-      {draft.mapEmbedUrl && (
-        <div className={styles.mapPreviewWrap}>
-          <iframe src={draft.mapEmbedUrl} className={styles.mapPreview} allowFullScreen loading="lazy" referrerPolicy="no-referrer-when-downgrade" />
-        </div>
-      )}
-
-      {/* Description & features */}
-      <div className={styles.propFormSection}><h4>Description &amp; Features</h4></div>
-      <div className={styles.editGrid}>
-        {ta('description','Description',4)}
-        {ta('features','Key Features (one per line)',3,'Smart Home\nPrivate Terrace\n…')}
-      </div>
-
-
       {/* Admin notes */}
       <div className={styles.propFormSection}><h4>Admin Notes</h4></div>
       <div className={styles.editGrid}>
         {ta('notes','Internal Notes',2,'Private notes…')}
       </div>
-    </div>
-  );
-}
-
-/* ═══════════════════════════════ SUBMISSIONS ═══════════════════════════════ */
-const EMPTY_SUB: Omit<Submission, 'id' | 'submittedAt' | 'status'> = {
-  address: '', postcode: '', type: 'For Sale — Detached House', beds: '', baths: '', sqft: '',
-  price: '', description: '', features: '', contactName: '', contactEmail: '', contactPhone: '',
-};
-
-function SubmissionsTab({ submissions, onCreate, onUpdate, onDelete }: {
-  submissions: Submission[];
-  onCreate: (s: Omit<Submission, 'id' | 'submittedAt' | 'status'>) => void;
-  onUpdate: (s: Submission) => void;
-  onDelete: (id: string) => void;
-}) {
-  const [selected, setSelected] = useState<Submission | null>(null);
-  const [editing, setEditing]   = useState(false);
-  const [draft, setDraft]       = useState<Submission | null>(null);
-  const [createOpen, setCreateOpen] = useState(false);
-  const [newDraft, setNewDraft] = useState<Omit<Submission, 'id' | 'submittedAt' | 'status'>>(EMPTY_SUB);
-  const [search, setSearch]     = useState('');
-  const [filter, setFilter]     = useState('All');
-  const [warn, setWarn]         = useState<Submission | null>(null);
-
-  const filtered = submissions.filter(s => {
-    const q = search.toLowerCase();
-    return (!q || s.address.toLowerCase().includes(q) || s.postcode.toLowerCase().includes(q) || (s.contactEmail || '').toLowerCase().includes(q) || (s.contactName || '').toLowerCase().includes(q))
-      && (filter === 'All' || s.status === filter);
-  });
-
-  const ndSet = (f: string, v: string) => setNewDraft(d => ({ ...d, [f]: v }));
-  const dSet  = (f: keyof Submission, v: string) => setDraft(d => d ? { ...d, [f]: v } : d);
-
-  const saveEdit = () => { if (draft) { onUpdate(draft); setSelected(draft); setEditing(false); setDraft(null); } };
-
-  const SUB_FIELDS: [keyof Submission, string][] = [
-    ['address','Address'],['postcode','Postcode'],['type','Type'],['beds','Beds'],
-    ['baths','Baths'],['sqft','Sqft'],['price','Price'],
-    ['contactName','Contact Name'],['contactEmail','Contact Email'],['contactPhone','Contact Phone'],
-  ];
-
-  return (
-    <div>
-      <div className={styles.toolbar}>
-        <input className={styles.searchInput} placeholder="Search address, name, email…" value={search} onChange={e => setSearch(e.target.value)} />
-        <select className={styles.filterSelect} value={filter} onChange={e => setFilter(e.target.value)}>
-          <option>All</option>
-          <option value="pending">Pending</option>
-          <option value="under-review">Under Review</option>
-          <option value="published">Published</option>
-        </select>
-        <div className={styles.toolbarCount}>{filtered.length} submissions</div>
-        <button className={styles.createBtn} onClick={() => { setNewDraft(EMPTY_SUB); setCreateOpen(true); }}>+ Add Submission</button>
-      </div>
-
-      <div className={styles.splitView}>
-        <div className={styles.splitLeft}>
-          {filtered.length === 0 ? (
-            <div className={styles.emptyState}><span>📝</span><p>No submissions found.</p></div>
-          ) : (
-            <div className={styles.submissionCards}>
-              {filtered.map(s => (
-                <div key={s.id}
-                  className={`${styles.submissionCard} ${selected?.id === s.id ? styles.submissionCardActive : ''}`}
-                  onClick={() => { setSelected(s); setEditing(false); setDraft(null); }}>
-                  <div className={styles.submissionCardTop}>
-                    <div>
-                      <div className={styles.submissionAddr}>{s.address}{s.postcode ? `, ${s.postcode}` : ''}</div>
-                      <div className={styles.submissionMeta}>{s.type} · {s.beds} beds · {s.price}</div>
-                    </div>
-                    <StatusPill status={s.status} />
-                  </div>
-                  <div className={styles.submissionDate}>{s.contactName || s.contactEmail || 'No contact'} · {s.submittedAt}</div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className={styles.splitRight}>
-          {!selected ? (
-            <div className={styles.emptyState}><span>👈</span><p>Select a submission to view details.</p></div>
-          ) : editing && draft ? (
-            <div className={styles.detailPanel}>
-              <div className={styles.detailHeader}>
-                <h2>Editing Submission</h2>
-                <button className={styles.btnSecondary} onClick={() => { setEditing(false); setDraft(null); }}>Cancel</button>
-              </div>
-              <div className={styles.editGrid}>
-                {SUB_FIELDS.map(([f, l]) => (
-                  <div key={f} className={styles.editField}>
-                    <label>{l}</label>
-                    <input value={draft[f] as string} onChange={e => dSet(f, e.target.value)} />
-                  </div>
-                ))}
-                <div className={`${styles.editField} ${styles.editSpan2}`}>
-                  <label>Description</label>
-                  <textarea rows={4} value={draft.description} onChange={e => dSet('description', e.target.value)} />
-                </div>
-                <div className={`${styles.editField} ${styles.editSpan2}`}>
-                  <label>Features (one per line)</label>
-                  <textarea rows={4} value={draft.features} onChange={e => dSet('features', e.target.value)} />
-                </div>
-              </div>
-              <div className={styles.crudBar}>
-                <button className={`${styles.btn} ${styles.btnSuccess}`} onClick={saveEdit}>Save Changes</button>
-                <button className={`${styles.btn} ${styles.btnSecondary}`} onClick={() => { setEditing(false); setDraft(null); }}>Cancel</button>
-              </div>
-            </div>
-          ) : (
-            <div className={styles.detailPanel}>
-              <div className={styles.detailHeader}>
-                <h2>{selected.address}{selected.postcode ? `, ${selected.postcode}` : ''}</h2>
-                <StatusPill status={selected.status} />
-              </div>
-
-              <div className={styles.contactBlock}>
-                <h4>Contact Details</h4>
-                <div className={styles.contactGrid}>
-                  <ContactItem icon="👤" label="Name"  value={selected.contactName}  />
-                  <ContactItem icon="✉️" label="Email" value={selected.contactEmail} href={`mailto:${selected.contactEmail}`} />
-                  <ContactItem icon="📞" label="Phone" value={selected.contactPhone} href={`tel:${selected.contactPhone}`} />
-                </div>
-              </div>
-
-              <div className={styles.detailGrid}>
-                <DetailRow label="Type"       value={selected.type} />
-                <DetailRow label="Beds"       value={selected.beds} />
-                <DetailRow label="Baths"      value={selected.baths} />
-                <DetailRow label="Floor Area" value={selected.sqft !== '—' ? `${selected.sqft} sq ft` : '—'} />
-                <DetailRow label="Price"      value={selected.price} />
-                <DetailRow label="Submitted"  value={selected.submittedAt} />
-              </div>
-
-              {selected.description && (
-                <div className={styles.detailSection}>
-                  <h4>Description</h4><p>{selected.description}</p>
-                </div>
-              )}
-              {selected.features && (
-                <div className={styles.detailSection}>
-                  <h4>Key Features</h4>
-                  <ul>{selected.features.split('\n').filter(Boolean).map((f, i) => <li key={i}>{f}</li>)}</ul>
-                </div>
-              )}
-
-              <div className={styles.detailActions}>
-                <h4>Update Status</h4>
-                <div className={styles.statusBtns}>
-                  {['pending', 'under-review', 'published'].map(st => (
-                    <button key={st} className={`${styles.statusBtn} ${selected.status === st ? styles.statusBtnActive : ''}`}
-                      onClick={() => { const upd = { ...selected, status: st }; onUpdate(upd); setSelected(upd); }}>
-                      {st.replace('-', ' ')}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className={styles.crudBar}>
-                <button className={`${styles.btn} ${styles.btnEdit}`} onClick={() => { setDraft({ ...selected }); setEditing(true); }}>✏️ Edit</button>
-                {selected.contactEmail && <a href={`mailto:${selected.contactEmail}`} className={`${styles.btn} ${styles.btnInfo}`}>✉️ Email</a>}
-                {selected.contactPhone && <a href={`tel:${selected.contactPhone}`} className={`${styles.btn} ${styles.btnInfo}`}>📞 Call</a>}
-                <button className={`${styles.btn} ${styles.btnDanger}`} onClick={() => setWarn(selected)}>🗑️ Delete</button>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Create modal */}
-      {createOpen && (
-        <div className={styles.modalBackdrop} onClick={() => setCreateOpen(false)}>
-          <div className={styles.modal} onClick={e => e.stopPropagation()}>
-            <div className={styles.modalHeader}><h2>Add Submission</h2><button className={styles.modalClose} onClick={() => setCreateOpen(false)}>✕</button></div>
-            <div className={styles.modalBody}>
-              <div className={styles.editGrid}>
-                {SUB_FIELDS.map(([f, l]) => (
-                  <div key={f} className={styles.editField}>
-                    <label>{l}</label>
-                    <input value={(newDraft as unknown as Record<string, string>)[f]} onChange={e => ndSet(f, e.target.value)} />
-                  </div>
-                ))}
-                <div className={`${styles.editField} ${styles.editSpan2}`}>
-                  <label>Description</label>
-                  <textarea rows={3} value={newDraft.description} onChange={e => ndSet('description', e.target.value)} />
-                </div>
-                <div className={`${styles.editField} ${styles.editSpan2}`}>
-                  <label>Features</label>
-                  <textarea rows={3} value={newDraft.features} onChange={e => ndSet('features', e.target.value)} />
-                </div>
-              </div>
-            </div>
-            <div className={styles.modalFooter}>
-              <button className={styles.modalCancel} onClick={() => setCreateOpen(false)}>Cancel</button>
-              <button className={styles.modalSave} onClick={() => { if (newDraft.address) { onCreate(newDraft); setCreateOpen(false); } }}>Create</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {warn && (
-        <ConfirmModal
-          title="Delete Submission?"
-          body={`Delete submission for "${warn.address}"? Contact: ${warn.contactName || warn.contactEmail || 'Unknown'}. This cannot be undone.`}
-          confirmLabel="Yes, Delete"
-          onConfirm={() => { onDelete(warn.id); setSelected(null); setWarn(null); }}
-          onCancel={() => setWarn(null)}
-        />
-      )}
     </div>
   );
 }
@@ -1266,7 +1241,7 @@ const EMPTY_ORDER: Omit<Order, 'id' | 'date'> = {
 
 function OrdersTab({ type, orders, onCreate, onUpdate, onDelete }: {
   type: 'listing' | 'service'; orders: Order[];
-  onCreate: (o: Omit<Order, 'id' | 'date'>) => void;
+  onCreate: (o: Omit<Order, 'id' | 'date'>) => Promise<Order>;
   onUpdate: (o: Order) => void;
   onDelete: (id: string) => void;
 }) {
@@ -1513,7 +1488,6 @@ function DocumentsTab({ documents, onCreate, onUpdate, onDelete, customProps }: 
 
   const allProperties = useMemo(() => {
     return [
-      ...PROPERTIES.map(p => ({ id: p.id, title: p.title })),
       ...customProps.map(p => ({ id: p.id, title: p.title }))
     ];
   }, [customProps]);
@@ -1539,7 +1513,7 @@ function DocumentsTab({ documents, onCreate, onUpdate, onDelete, customProps }: 
       <div className={styles.toolbar}>
         <input className={styles.searchInput} placeholder="Search documents or properties…" value={search} onChange={e => setSearch(e.target.value)} />
         <select className={styles.filterSelect} value={filterType} onChange={e => setFilterType(e.target.value)}>
-          <option>All Types</option>
+          <option key="all-types">All Types</option>
           {DOC_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
         </select>
         <div className={styles.toolbarCount}>{filtered.length} documents</div>
@@ -1560,10 +1534,10 @@ function DocumentsTab({ documents, onCreate, onUpdate, onDelete, customProps }: 
           </thead>
           <tbody>
             {filtered.length === 0 ? (
-              <tr><td colSpan={6} style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>No documents found.</td></tr>
+              <tr key="empty-docs"><td colSpan={6} style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>No documents found.</td></tr>
             ) : (
-              filtered.map(doc => (
-                <tr key={doc.id}>
+              filtered.map((doc, idx) => (
+                <tr key={doc.id || idx}>
                   <td style={{ fontWeight: 600 }}>{doc.documentType}</td>
                   <td className={styles.muted}>{doc.propertyName}</td>
                   <td style={{ fontWeight: 600, color: doc.status === 'Expiring' ? '#ea580c' : 'inherit' }}>
@@ -1629,8 +1603,14 @@ function DocModal({ properties, initialPropertyId, existingDoc, onClose, onSave 
   const [propertyId, setPropertyId] = useState(existingDoc?.propertyId || initialPropertyId || properties[0]?.id || '');
   const [type, setType] = useState(existingDoc?.documentType || DOC_TYPES[0]);
   const [expiry, setExpiry] = useState(''); // We'll handle date conversion
-  const [file, setFile] = useState<{ name: string; base64: string } | null>(
-    existingDoc?.fileBase64 ? { name: existingDoc.fileName || 'Existing Document', base64: existingDoc.fileBase64 } : null
+  
+  // Initialize file state from existing document if it has a URL or base64
+  const [file, setFile] = useState<{ name: string; base64?: string; url?: string } | null>(
+    existingDoc ? { 
+      name: existingDoc.fileName || 'Existing Document', 
+      base64: existingDoc.fileBase64,
+      url: existingDoc.fileUrl 
+    } : null
   );
 
   useEffect(() => {
@@ -1659,7 +1639,9 @@ function DocModal({ properties, initialPropertyId, existingDoc, onClose, onSave 
   };
 
   const save = () => {
-    const propName = properties.find(p => p.id === propertyId)?.title || 'Unknown';
+    // Prevent overwriting with "Unknown" if lookup fails but we have an existing name
+    const foundProp = properties.find(p => p.id === propertyId);
+    const propName = foundProp?.title || existingDoc?.propertyName || 'Unknown';
     
     let status: 'Current' | 'Expiring' | 'Expired' = 'Current';
     if (expiry) {
@@ -1695,18 +1677,34 @@ function DocModal({ properties, initialPropertyId, existingDoc, onClose, onSave 
             {!file ? (
               <label className={styles.fileDropZone}>
                 <input type="file" style={{ display: 'none' }} onChange={handleFile} />
-                <i>📄</i>
-                <p>Upload document file</p>
-                <span>Select a PDF, JPG or PNG to associate with this property.</span>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '24px', marginBottom: '8px' }}>📁</div>
+                  <div style={{ fontWeight: 600 }}>Click to upload PDF</div>
+                  <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>Max size: 10MB</div>
+                </div>
               </label>
             ) : (
-              <div className={styles.filePreview}>
-                <span className={styles.fileIcon}>📄</span>
-                <div className={styles.fileInfo}>
-                  <div className={styles.fileName}>{file.name}</div>
-                  <div className={styles.fileSize}>Ready for management</div>
+              <div className={styles.fileUploadedCard}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ fontSize: '24px' }}>📄</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {file.name}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#10b981' }}>
+                      {file.base64 ? 'Ready to upload' : 'Already on server'}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <label className={styles.fileReplaceBtn} title="Replace File">
+                      Replace
+                      <input type="file" style={{ display: 'none' }} onChange={handleFile} />
+                    </label>
+                    {!existingDoc && (
+                      <button className={styles.fileRemoveBtn} onClick={() => setFile(null)}>Remove</button>
+                    )}
+                  </div>
                 </div>
-                <button className={styles.removeFile} onClick={() => setFile(null)} title="Remove file">✕</button>
               </div>
             )}
           </div>
@@ -1742,296 +1740,26 @@ function DocModal({ properties, initialPropertyId, existingDoc, onClose, onSave 
   );
 }
 
-/* ═══════════════════════════════ TENANTS ═══════════════════════════════ */
-function TenantsTab({ tenancies, onCreate, onUpdate, onDelete, customProps, initialPropertyId, onModalClose }: {
-  tenancies: Tenancy[];
-  onCreate: (t: Omit<Tenancy, 'id' | 'createdAt'>) => void;
-  onUpdate: (t: Tenancy) => void;
-  onDelete: (id: string) => void;
-  customProps: CustomProp[];
-  initialPropertyId?: string | null;
-  onModalClose?: () => void;
-}) {
-  const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState('All');
-  const [createOpen, setCreateOpen] = useState(false);
-  const [editTen, setEditTen] = useState<Tenancy | null>(null);
-  const [warn, setWarn] = useState<Tenancy | null>(null);
-
-  useEffect(() => {
-    if (initialPropertyId) {
-      requestAnimationFrame(() => setCreateOpen(true));
-    }
-  }, [initialPropertyId]);
-
-  const allProperties = useMemo(() => {
-    return [
-      ...PROPERTIES.map(p => ({ id: p.id, title: p.title })),
-      ...customProps.map(p => ({ id: p.id, title: p.title }))
-    ];
-  }, [customProps]);
-
-  const filtered = tenancies.filter(t => {
-    const q = search.toLowerCase();
-    const matchesSearch = !q || t.tenantName.toLowerCase().includes(q) || t.propertyName.toLowerCase().includes(q);
-    const matchesFilter = filter === 'All' || t.status === filter;
-    return matchesSearch && matchesFilter;
-  });
-
-  return (
-    <div>
-      <div className={styles.toolbar}>
-        <input className={styles.searchInput} placeholder="Search tenants or properties…" value={search} onChange={e => setSearch(e.target.value)} />
-        <select className={styles.filterSelect} value={filter} onChange={e => setFilter(e.target.value)}>
-          <option value="All">All Statuses</option>
-          <option value="Active">Active</option>
-          <option value="Pending">Pending</option>
-          <option value="Ended">Ended</option>
-        </select>
-        <div className={styles.toolbarCount}>{filtered.length} tenancies</div>
-        <button className={styles.createBtn} onClick={() => setCreateOpen(true)}>+ Add Tenancy</button>
-      </div>
-
-      <div className={styles.tableWrap}>
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th>Tenant</th>
-              <th>Property</th>
-              <th>Rent</th>
-              <th>Term Dates</th>
-              <th>Status</th>
-              <th style={{ textAlign: 'right' }}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.length === 0 ? (
-              <tr><td colSpan={6} style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>No tenancies found.</td></tr>
-            ) : (
-              filtered.map(ten => (
-                <tr key={ten.id}>
-                  <td>
-                    <div style={{ fontWeight: 700 }}>{ten.tenantName}</div>
-                    <div className={styles.muted} style={{ fontSize: '0.75rem' }}>{ten.tenantEmail}</div>
-                  </td>
-                  <td className={styles.muted}>{ten.propertyName}</td>
-                  <td>
-                    <div style={{ fontWeight: 700 }}>£{ten.rentAmount}</div>
-                    <div className={styles.muted} style={{ fontSize: '0.75rem' }}>{ten.rentFrequency}</div>
-                  </td>
-                  <td>
-                    <div style={{ fontSize: '0.8125rem' }}>{ten.startDate}</div>
-                    <div className={styles.muted} style={{ fontSize: '0.75rem' }}>Exp: {ten.endDate}</div>
-                  </td>
-                  <td>
-                    <span className={`${styles.pill} ${ten.status === 'Active' ? styles.pillGreen : ten.status === 'Pending' ? styles.pillAmber : styles.pillGray}`}>
-                      {ten.status}
-                    </span>
-                  </td>
-                  <td style={{ textAlign: 'right' }}>
-                    <div className={styles.actionGroup} style={{ justifyContent: 'flex-end' }}>
-                      <button className={styles.docActionIcon} title="Edit" onClick={() => setEditTen(ten)}>✏️</button>
-                      <button className={styles.docActionIcon} title="Delete" onClick={() => setWarn(ten)}>🗑️</button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {(createOpen || editTen) && (
-        <TenancyModal
-          properties={allProperties}
-          existing={editTen || undefined}
-          initialPropertyId={editTen ? undefined : (initialPropertyId || undefined)}
-          onClose={() => { setCreateOpen(false); setEditTen(null); onModalClose?.(); }}
-          onSave={(t) => {
-            if (editTen) onUpdate({ ...editTen, ...t } as Tenancy);
-            else onCreate(t);
-            setCreateOpen(false); setEditTen(null); onModalClose?.();
-          }}
-        />
-      )}
-
-      {warn && (
-        <ConfirmModal
-          title="Delete Tenancy?"
-          body={`Are you sure you want to delete the tenancy for ${warn.tenantName} at ${warn.propertyName}?`}
-          onConfirm={() => { onDelete(warn.id); setWarn(null); }}
-          onCancel={() => setWarn(null)}
-        />
-      )}
-    </div>
-  );
-}
-
-function TenancyModal({ properties, existing, initialPropertyId, onClose, onSave }: {
-  properties: { id: string; title: string }[];
-  existing?: Tenancy;
-  initialPropertyId?: string;
-  onClose: () => void;
-  onSave: (t: Omit<Tenancy, 'id' | 'createdAt'>) => void;
-}) {
-  const [propertyId, setPropertyId] = useState(existing?.propertyId || initialPropertyId || properties[0]?.id || '');
-  const [startDate, setStartDate] = useState(existing?.startDate || '');
-  const [endDate, setEndDate] = useState(existing?.endDate || '');
-  const [rentAmount, setRentAmount] = useState(existing?.rentAmount || '');
-  const [rentFrequency, setRentFrequency] = useState(existing?.rentFrequency || 'Monthly');
-  const [rentDay, setRentDay] = useState(existing?.rentDay || '1');
-  const [depositAmount, setDepositAmount] = useState(existing?.depositAmount || '');
-  const [tenantName, setTenantName] = useState(existing?.tenantName || '');
-  const [tenantEmail, setTenantEmail] = useState(existing?.tenantEmail || '');
-  const [tenantPhone, setTenantPhone] = useState(existing?.tenantPhone || '');
-  const [agreement, setAgreement] = useState<{ name: string; base64: string } | null>(existing?.agreementFile || null);
-
-  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    const reader = new FileReader();
-    reader.onload = () => setAgreement({ name: f.name, base64: reader.result as string });
-    reader.readAsDataURL(f);
-  };
-
-  const save = () => {
-    const propName = properties.find(p => p.id === propertyId)?.title || 'Unknown';
-    onSave({
-      propertyId,
-      propertyName: propName,
-      startDate,
-      endDate,
-      rentAmount,
-      rentFrequency: rentFrequency as 'Monthly' | 'Weekly' | 'Quarterly',
-      rentDay,
-      depositAmount,
-      tenantName,
-      tenantEmail,
-      tenantPhone,
-      agreementFile: agreement || undefined,
-      status: 'Active'
-    });
-  };
-
-  return (
-    <div className={styles.modalBackdrop} onClick={onClose}>
-      <div className={styles.modal} style={{ maxWidth: 640 }} onClick={e => e.stopPropagation()}>
-        <div className={styles.modalHeader}>
-          <h2>{existing ? 'Edit Tenancy' : 'Add an existing tenancy'}</h2>
-          <button className={styles.modalClose} onClick={onClose}>✕</button>
-        </div>
-        <div className={styles.modalBody}>
-          {!existing && (
-            <div className={styles.modalNote} style={{ marginBottom: 24 }}>
-              If you wish to create a new tenancy agreement and send for e-signing, <a href="#" style={{ color: '#e11d48', fontWeight: 700, textDecoration: 'underline' }}>follow the link below</a>
-            </div>
-          )}
-
-          <div className={styles.propFormSection} style={{ marginTop: 0 }}><h4>Property Association</h4></div>
-          <div className={styles.editField}>
-            <label>Search for a listed property</label>
-            <select className={styles.filterSelect} style={{ width: '100%' }} value={propertyId} onChange={e => setPropertyId(e.target.value)}>
-              {properties.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
-            </select>
-          </div>
-
-          <div className={styles.propFormSection}><h4>Tenancy Dates</h4></div>
-          <div className={styles.editGrid}>
-            <div className={styles.editField}>
-              <label>Tenancy start date</label>
-              <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
-            </div>
-            <div className={styles.editField}>
-              <label>Tenancy fixed-term end date</label>
-              <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
-            </div>
-          </div>
-
-          <div className={styles.propFormSection}><h4>Rent Collection (Optional)</h4></div>
-          <div className={styles.editGrid}>
-            <div className={styles.editField}>
-              <label>Rent amount (£)</label>
-              <input type="number" placeholder="0.00" value={rentAmount} onChange={e => setRentAmount(e.target.value)} />
-            </div>
-            <div className={styles.editField}>
-              <label>Collection frequency</label>
-              <select className={styles.filterSelect} value={rentFrequency} onChange={(e) => setRentFrequency(e.target.value as 'Monthly' | 'Weekly' | 'Quarterly')}>
-                <option>Monthly</option>
-                <option>Weekly</option>
-                <option>Quarterly</option>
-              </select>
-            </div>
-            <div className={styles.editField}>
-              <label>Collection day</label>
-              <input type="number" min="1" max="31" value={rentDay} onChange={e => setRentDay(e.target.value)} />
-            </div>
-            <div className={styles.editField}>
-              <label>Deposit amount (£)</label>
-              <input type="number" placeholder="0.00" value={depositAmount} onChange={e => setDepositAmount(e.target.value)} />
-            </div>
-          </div>
-
-          <div className={styles.propFormSection}><h4>Tenant 1 Details</h4></div>
-          <div className={styles.editGrid}>
-            <div className={styles.editField}>
-              <label>Full Name</label>
-              <input value={tenantName} onChange={e => setTenantName(e.target.value)} />
-            </div>
-            <div className={styles.editField}>
-              <label>Email Address</label>
-              <input type="email" value={tenantEmail} onChange={e => setTenantEmail(e.target.value)} />
-            </div>
-            <div className={`${styles.editField} ${styles.editSpan2}`}>
-              <label>Phone Number</label>
-              <input value={tenantPhone} onChange={e => setTenantPhone(e.target.value)} />
-            </div>
-          </div>
-
-          <div className={styles.propFormSection}><h4>Existing Tenancy Agreement (Optional)</h4></div>
-          <div className={styles.editField}>
-            {!agreement ? (
-              <label className={styles.fileDropZone}>
-                <input type="file" style={{ display: 'none' }} onChange={handleFile} />
-                <i>📄</i>
-                <p>Drop file here or click to upload</p>
-                <span>Upload signed PDF or photos of the agreement.</span>
-              </label>
-            ) : (
-              <div className={styles.filePreview}>
-                <span className={styles.fileIcon}>📄</span>
-                <div className={styles.fileInfo}>
-                  <div className={styles.fileName}>{agreement.name}</div>
-                  <div className={styles.fileSize}>Attached Agreement</div>
-                </div>
-                <button className={styles.removeFile} onClick={() => setAgreement(null)}>✕</button>
-              </div>
-            )}
-          </div>
-        </div>
-        <div className={styles.modalFooter}>
-          <button className={styles.modalCancel} onClick={onClose}>Cancel</button>
-          <button className={styles.modalSave} onClick={save}>
-            {existing ? 'Update Tenancy' : 'Save Tenancy'}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ═══════════════════════════════ PROPERTY DETAIL VIEW ═══════════════════════════════ */
-function PropertyDetailView({ id, onBack, customProps, documents, tenancies, overrides, onUpdateNotes, onAddTenancy, onAddDoc }: {
+function PropertyDetailView({ id, onBack, customProps, documents, tenancies, overrides, onUpdateNotes, onAddTenancy, onManageDoc, onAssign, allUsers }: {
   id: string; onBack: () => void; customProps: CustomProp[];
   documents: PropertyDocument[]; tenancies: Tenancy[];
   overrides: Record<string, PropOverride>;
   onUpdateNotes: (id: string, notes: string) => void;
   onAddTenancy: (id: string) => void;
-  onAddDoc: (id: string) => void;
+  onManageDoc: (id: string, doc?: PropertyDocument) => void;
+  onAssign: (id: string, email: string) => void;
+  allUsers: UserProfile[];
 }) {
-  const prop = PROPERTIES.find(p => p.id === id) || customProps.find(p => p.id === id);
+  const prop = customProps.find(p => p.id === id);
   const propDocs = documents.filter(d => d.propertyId === id);
   const propTens = tenancies.filter(t => t.propertyId === id);
   const notes = overrides[id]?.notes || '';
+
+  const [assignEmail, setAssignEmail] = useState(prop?.assigned_to_email || '');
+  const [assignBusy, setAssignBusy] = useState(false);
+
+  const assignedUser = allUsers.find(u => u.email === prop?.assigned_to_email);
+  const assignRole = assignedUser?.role || null;
 
   if (!prop) return <div className={styles.emptyState}><span>❓</span><p>Property not found.</p><button onClick={onBack} className={styles.btnSecondary}>Back to list</button></div>;
 
@@ -2096,7 +1824,8 @@ function PropertyDetailView({ id, onBack, customProps, documents, tenancies, ove
                   <p style={{ color: '#64748b', fontSize: '0.9375rem', marginBottom: 20 }}>{prop.location}</p>
                 </div>
                 <div className={styles.checklistStatus}>
-                  Status <span>Unknown</span> <span style={{ fontSize: '1rem' }}>❓</span>
+                  Status <span>{prop.status === 'Live' ? 'Active' : prop.is_rejected ? 'Rejected' : 'Pending'}</span> 
+                  <span style={{ fontSize: '1rem', marginLeft: 6 }}>{prop.status === 'Live' ? '✅' : prop.is_rejected ? '❌' : '⏳'}</span>
                 </div>
               </div>
               
@@ -2157,21 +1886,38 @@ function PropertyDetailView({ id, onBack, customProps, documents, tenancies, ove
                   )}
                 </div>
               ) : (
-                <div className={styles.checklistItems}>
+                <div className={styles.checklistPanel}>
                   {cat.items?.map((item, i) => {
                     const doc = getDoc(item.type);
+                    const isExpired = doc?.expiryDate && new Date(doc.expiryDate) < new Date();
+                    const status = !doc ? 'missing' : isExpired ? 'expired' : 'ok';
+                    
                     return (
-                      <div key={i} className={styles.checklistItem}>
-                        <div className={`${styles.itemIcon} ${doc ? styles.itemIconChecked : ''}`}>
-                          {doc ? '✅' : '❓'}
+                      <div key={i} className={styles.checklistCard}>
+                        <div className={`${styles.checkCircle} ${
+                          status === 'ok' ? styles.checkCircleOk : 
+                          status === 'expired' ? styles.checkCircleExpired : 
+                          styles.checkCircleMissing
+                        }`}>
+                          {status === 'ok' ? '✓' : status === 'expired' ? '⏳' : '!'}
                         </div>
-                        <div className={styles.itemInfo}>
-                          <div className={styles.itemTitle}>{item.label}</div>
-                          {doc && <div className={styles.itemExpiry}>Expires on {doc.expiryDate || 'N/A'}</div>}
+                        <div className={styles.checkLabel}>
+                          <div className={styles.checkTitle}>{item.label}</div>
+                          <div className={styles.checkMeta}>
+                            <span>{status === 'ok' ? 'Compliant' : status === 'expired' ? 'Expired' : 'Action Required'}</span>
+                            {doc?.expiryDate && (
+                              <>
+                                <span>•</span>
+                                <span style={{ color: isExpired ? '#e11d48' : '#16a34a' }}>
+                                  Expires: {doc.expiryDate}
+                                </span>
+                              </>
+                            )}
+                          </div>
                         </div>
                         <button 
                           className={styles.itemAction} 
-                          onClick={() => doc ? onAddDoc(id)/* This should ideally be an edit, but using onAddDoc for now since we don't have direct edit prop here */ : onAddDoc(id)}
+                          onClick={() => onManageDoc(id, doc)}
                         >
                           {doc ? 'Update' : 'Add'} 
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
@@ -2187,6 +1933,58 @@ function PropertyDetailView({ id, onBack, customProps, documents, tenancies, ove
       </div>
 
       <div className={styles.detailRight}>
+        <div className={styles.assignBox}>
+          <div className={styles.assignHeader}>
+            <h3>👥 Assign User (Landlord/Tenant)</h3>
+            <p style={{ fontSize: '0.8125rem', color: '#64748b', marginTop: 4 }}>
+              Link a registered user to this property to grant them access.
+            </p>
+          </div>
+          
+          <div className={styles.userInputGroup}>
+            <select 
+              className={styles.filterSelect} 
+              style={{ flex: 1, height: 44 }}
+              value={assignEmail}
+              onChange={(e) => setAssignEmail(e.target.value)}
+            >
+              <option value="">-- Select Registered User --</option>
+              {allUsers.map(u => (
+                <option key={u.id} value={u.email}>
+                  {u.name || 'Anonymous'} ({u.role}) - {u.email}
+                </option>
+              ))}
+            </select>
+            <button 
+              className={styles.btnInfo} 
+              style={{ height: 44, width: 120 }}
+              disabled={assignBusy || !assignEmail}
+              onClick={async () => {
+                setAssignBusy(true);
+                await onAssign(id, assignEmail);
+                setAssignBusy(false);
+              }}
+            >
+              {assignBusy ? '...' : 'Assign'}
+            </button>
+          </div>
+
+          { prop.assigned_to_email && (
+            <div className={styles.assignedBadge}>
+              <div className={styles.assignedIcon}>👤</div>
+              <div className={styles.assignedDetails}>
+                <div className={styles.assignedRole}>Current Member</div>
+                <div className={styles.assignedName}>{prop.assigned_to_email}</div>
+              </div>
+              {assignRole && (
+                <span className={styles.pillBlue} style={{ textTransform: 'uppercase', fontStyle: 'normal' }}>
+                  {assignRole}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+
         <div className={styles.detailCard}>
           <div className={styles.detailCardHeader}><h3>📌 Admin Private Notes</h3></div>
           <div className={styles.detailCardBody}>
@@ -2235,146 +2033,127 @@ const WALES_FORMS = [
   'Form RHW32', 'Form RHW33', 'Form RHW34', 'Form RHW35', 'Form RHW36', 'Form RHW37', 'Form RHW38'
 ];
 
-function FormsTab({ orders, onUpdateOrder, onCreateOrder, onDeleteOrder }: {
-  orders: Order[];
-  onUpdateOrder: (o: Order) => void;
-  onCreateOrder: (o: Order) => void;
-  onDeleteOrder: (id: string) => void;
+function TenancyAgreementsTab({ records, onUpdate, onCreate, onDelete }: {
+  records: WalesFormRecordV2[];
+  onUpdate: (r: WalesFormRecordV2) => void;
+  onCreate: (r: WalesFormRecordV2) => void;
+  onDelete: (id: string) => void;
 }) {
-  const [selected,    setSelected]    = useState<Order | null>(null);
-  const [createOpen,  setCreateOpen]  = useState(false);
-  const [editOpen,    setEditOpen]    = useState(false);
-  const [pdfEditorOpen, setPdfEditorOpen] = useState(false);
-  const [warnDelete,  setWarnDelete]  = useState<Order | null>(null);
-  const [search,      setSearch]      = useState('');
-
-  const formOrders = orders.filter(o =>
-    !!o.formType &&
-    (!search ||
-      o.formType.toLowerCase().includes(search.toLowerCase()) ||
-      o.customerName.toLowerCase().includes(search.toLowerCase()))
+  return (
+    <div className="tenancy-agreements-wrapper">
+      <div style={{ marginBottom: '20px', padding: '15px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+        <h3 style={{ margin: 0, color: '#1e293b', fontSize: '1rem' }}>Tenancy Agreements</h3>
+        <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: '0.8rem' }}>Manage and generate high-fidelity occupation contracts and tenancy agreements.</p>
+      </div>
+      <FormsTab 
+        records={records} 
+        onUpdate={onUpdate} 
+        onCreate={onCreate} 
+        onDelete={onDelete} 
+        fixedType="Fixed Term Standard Occupation Contract"
+      />
+    </div>
   );
+}
 
-  const downloadPDF = (order: Order) => {
-    const b64  = order.formData?.pdfBase64;
-    const name = order.formData?.pdfName || `${order.formType}.pdf`;
-    if (!b64) { alert('No PDF uploaded for this record.'); return; }
-    const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
-    const blob  = new Blob([bytes], { type: 'application/pdf' });
-    const url   = URL.createObjectURL(blob);
-    const a     = Object.assign(document.createElement('a'), { href: url, download: name });
-    document.body.appendChild(a); a.click();
-    document.body.removeChild(a); URL.revokeObjectURL(url);
-  };
+function FormsTab({ records, onUpdate, onCreate, onDelete, fixedType }: {
+  records: WalesFormRecordV2[];
+  onUpdate: (r: WalesFormRecordV2) => void;
+  onCreate: (r: WalesFormRecordV2) => void;
+  onDelete: (id: string) => void;
+  fixedType?: string;
+}) {
+  const [selected, setSelected] = useState<WalesFormRecordV2 | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [printOpen, setPrintOpen] = useState(false);
+  const [formTypeFilter, setFormTypeFilter] = useState('All Forms');
+  const [search, setSearch] = useState('');
+  const [warnDelete, setWarnDelete] = useState<WalesFormRecordV2 | null>(null);
 
-  const handleSaveNew = (data: {
-    formType: string; clientName: string; clientEmail: string;
-    clientPhone: string; notes: string; pdfBase64: string; pdfName: string;
-  }) => {
-    const newOrder: Order = {
-      id: `ORD-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      date: today(),
-      type: 'service',
-      name: data.formType,
-      price: '£0.00 (Admin)',
-      detail: data.notes || 'Admin Wales Form',
-      status: 'active',
-      customerName:  data.clientName  || 'Admin',
-      customerEmail: data.clientEmail || 'admin@propertytrader1.co.uk',
-      customerPhone: data.clientPhone,
-      formType: data.formType,
-      formData: { pdfBase64: data.pdfBase64, pdfName: data.pdfName, notes: data.notes },
-    };
-    onCreateOrder(newOrder);
-    setCreateOpen(false);
-    setSelected(newOrder);
-    // If no PDF was uploaded, immediately open the PSPDFKit editor
-    if (!data.pdfBase64) setPdfEditorOpen(true);
-  };
-
-  const handleSaveEdit = (data: {
-    formType: string; clientName: string; clientEmail: string;
-    clientPhone: string; notes: string; pdfBase64: string; pdfName: string;
-  }) => {
-    if (!selected) return;
-    const updated: Order = {
-      ...selected,
-      name:          data.formType,
-      customerName:  data.clientName  || selected.customerName,
-      customerEmail: data.clientEmail || selected.customerEmail,
-      customerPhone: data.clientPhone,
-      detail:        data.notes || selected.detail,
-      formType:      data.formType,
-      formData: {
-        ...selected.formData,
-        pdfBase64: data.pdfBase64 || selected.formData?.pdfBase64 || '',
-        pdfName:   data.pdfName   || selected.formData?.pdfName   || '',
-        notes:     data.notes,
-      },
-    };
-    onUpdateOrder(updated);
-    setSelected(updated);
-    setEditOpen(false);
-  };
+  const filtered = records.filter(r => {
+    const matchesSearch = !search || 
+      r.form_type.toLowerCase().includes(search.toLowerCase()) ||
+      r.client_name.toLowerCase().includes(search.toLowerCase());
+    
+    const matchesType = formTypeFilter === 'All Forms' || r.form_type === formTypeFilter;
+    
+    return matchesSearch && matchesType;
+  });
 
   return (
     <div>
       <div className={styles.toolbar}>
         <input className={styles.searchInput} placeholder="Search form type or client…" value={search} onChange={e => setSearch(e.target.value)} />
-        <div className={styles.toolbarCount}>{formOrders.length} records</div>
-        <button className={styles.createBtn} onClick={() => setCreateOpen(true)}>+ Add Form Record</button>
+        <select 
+          className={styles.filterSelect} 
+          value={formTypeFilter} 
+          onChange={e => setFormTypeFilter(e.target.value)}
+          disabled={!!fixedType}
+        >
+          <option>All Forms</option>
+          {(fixedType ? [fixedType] : WALES_FORMS).map(f => <option key={f} value={f}>{f}</option>)}
+        </select>
+        <div className={styles.toolbarCount}>{filtered.length} records</div>
+        <button className={styles.createBtn} onClick={() => setCreateOpen(true)}>+ Add {fixedType ? 'Agreement' : 'Form Record'}</button>
       </div>
 
       <div className={styles.splitView}>
-        {/* ── Left: list ── */}
         <div className={styles.splitLeft}>
-          {formOrders.length === 0 ? (
-            <div className={styles.emptyState}><span>🏴󠁧󠁢󠁷󠁬󠁳󠁿</span><p>No Wales Form records yet.</p></div>
+          {filtered.length === 0 ? (
+            <div className={styles.emptyState}>
+              <span>{fixedType ? '📄' : '🏴󠁧󠁢󠁷󠁬󠁳󠁿'}</span>
+              <p>No {fixedType ? 'Tenancy Agreements' : 'Wales Form records'} yet.</p>
+            </div>
           ) : (
             <div className={styles.submissionCards}>
-              {formOrders.map(o => (
-                <div key={o.id}
-                  className={`${styles.submissionCard} ${selected?.id === o.id ? styles.submissionCardActive : ''}`}
-                  onClick={() => setSelected(o)}>
+              {filtered.map(r => (
+                <div key={r.id}
+                  className={`${styles.submissionCard} ${selected?.id === r.id ? styles.submissionCardActive : ''}`}
+                  onClick={() => setSelected(r)}>
                   <div className={styles.submissionCardTop}>
-                    <div>
-                      <div className={styles.submissionAddr}>{o.formType}</div>
-                      <div className={styles.submissionMeta}>{o.customerName}</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div className={styles.submissionAddr} style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.form_type}</div>
+                      <div className={styles.submissionMeta}>{r.client_name}</div>
+                      {r.is_user_purchased && (
+                        <div style={{ fontSize: '0.7rem', color: '#6366f1', fontWeight: 600, marginTop: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          📧 {r.client_email}
+                        </div>
+                      )}
                     </div>
-                    <span style={{
-                      fontSize: '0.7rem', padding: '3px 8px', borderRadius: 6,
-                      background: o.formData?.pdfBase64 ? '#dcfce7' : '#fef9c3',
-                      color: o.formData?.pdfBase64 ? '#166534' : '#854d0e', fontWeight: 700,
+                    <span style={{ 
+                      fontSize: '0.65rem', 
+                      padding: '2px 6px', 
+                      borderRadius: 4, 
+                      background: r.is_user_purchased ? '#eef2ff' : '#f1f5f9', 
+                      color: r.is_user_purchased ? '#4f46e5' : '#475569', 
+                      fontWeight: 800,
+                      border: `1px solid ${r.is_user_purchased ? '#c7d2fe' : '#e2e8f0'}`,
+                      height: 'fit-content'
                     }}>
-                      {o.formData?.pdfBase64 ? '📄 PDF' : '⚠ No PDF'}
+                      {r.is_user_purchased ? 'USER' : 'ADMIN'}
                     </span>
                   </div>
-                  <div className={styles.submissionDate}>{o.date}</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
+                    <div className={styles.submissionDate}>{new Date(r.created_at).toLocaleDateString('en-GB')}</div>
+                  </div>
                 </div>
               ))}
             </div>
           )}
         </div>
 
-        {/* ── Right: detail ── */}
         <div className={styles.splitRight}>
           {!selected ? (
             <div className={styles.emptyState}><span>👈</span><p>Select a record to view.</p></div>
           ) : (
             <div className={styles.detailPanel}>
               <div className={styles.detailHeader}>
-                <h2>{selected.formType}</h2>
-                <div className={styles.actions}>
-                  <button className={styles.btnEdit}   onClick={() => setEditOpen(true)}>✏️ Edit</button>
-                  <button
-                    className={styles.btnInfo}
-                    onClick={() => setPdfEditorOpen(true)}
-                    title="Open in PSPDFKit editor"
-                  >
-                    📝 PSPDFKit
-                  </button>
-                  <button className={styles.btnInfo}   onClick={() => downloadPDF(selected)} disabled={!selected.formData?.pdfBase64}>📥 Download PDF</button>
-                  <button className={styles.btnDanger} onClick={() => setWarnDelete(selected)}>🗑️</button>
+                <h2>{selected.form_type}</h2>
+                <div className={styles.actions} style={{ display: 'flex', gap: 10, marginTop: 4 }}>
+                  <button className={`${styles.btn} ${styles.btnSuccess}`} onClick={() => setPrintOpen(true)}>🖨️ View & Print</button>
+                  <button className={`${styles.btn} ${styles.btnEdit}`}   onClick={() => setEditOpen(true)}>✏️ Edit Data</button>
+                  <button className={`${styles.btn} ${styles.btnDanger}`} onClick={() => setWarnDelete(selected)} style={{ padding: '8px 12px' }}>🗑️</button>
                 </div>
               </div>
 
@@ -2382,40 +2161,27 @@ function FormsTab({ orders, onUpdateOrder, onCreateOrder, onDeleteOrder }: {
                 <div className={styles.editGrid}>
                   <div className={styles.editField}>
                     <label>Client Name</label>
-                    <div className={styles.readVal}>{selected.customerName || '—'}</div>
+                    <div className={styles.readVal}>{selected.client_name || '—'}</div>
                   </div>
                   <div className={styles.editField}>
                     <label>Client Email</label>
-                    <div className={styles.readVal}>{selected.customerEmail || '—'}</div>
+                    <div className={styles.readVal}>{selected.client_email || '—'}</div>
                   </div>
                   <div className={styles.editField}>
                     <label>Client Phone</label>
-                    <div className={styles.readVal}>{selected.customerPhone || '—'}</div>
+                    <div className={styles.readVal}>{selected.client_phone || '—'}</div>
                   </div>
                   <div className={styles.editField}>
                     <label>Date Added</label>
-                    <div className={styles.readVal}>{selected.date}</div>
+                    <div className={styles.readVal}>{new Date(selected.created_at).toLocaleDateString('en-GB')}</div>
                   </div>
+
                   <div className={`${styles.editField} ${styles.editSpan2}`}>
                     <label>Notes</label>
-                    <div className={styles.readVal} style={{ whiteSpace: 'pre-wrap' }}>{selected.formData?.notes || '—'}</div>
+                    <div className={styles.readVal} style={{ whiteSpace: 'pre-wrap' }}>{selected.notes || '—'}</div>
                   </div>
-                  <div className={`${styles.editField} ${styles.editSpan2}`}>
-                    <label>Uploaded PDF</label>
-                    {selected.formData?.pdfBase64 ? (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4 }}>
-                        <span style={{ fontSize: '1.4rem' }}>📄</span>
-                        <div>
-                          <div style={{ fontWeight: 700, color: '#1e293b' }}>{selected.formData.pdfName}</div>
-                          <button className={styles.btnInfo} style={{ marginTop: 4, fontSize: '0.8rem', padding: '4px 12px' }} onClick={() => downloadPDF(selected)}>
-                            Download
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div style={{ color: '#f59e0b', fontWeight: 600, marginTop: 4 }}>⚠ No PDF uploaded — click Edit to upload one.</div>
-                    )}
-                  </div>
+                  
+
                 </div>
               </div>
             </div>
@@ -2423,50 +2189,49 @@ function FormsTab({ orders, onUpdateOrder, onCreateOrder, onDeleteOrder }: {
         </div>
       </div>
 
-      {/* ── Create modal ── */}
       {createOpen && (
-        <WalesFormModal
-          title="Add Wales Form Record"
+        <WalesWizardModalV2
+          title={fixedType ? "Add Tenancy Agreement" : "Add Wales Form Record"}
           existing={null}
           onClose={() => setCreateOpen(false)}
-          onSave={handleSaveNew}
+          onSave={onCreate}
+          fixedType={fixedType}
         />
       )}
 
-      {/* ── Edit modal ── */}
       {editOpen && selected && (
-        <WalesFormModal
-          title="Edit Wales Form Record"
+        <WalesWizardModalV2
+          title={fixedType ? "Edit Tenancy Agreement" : "Edit Wales Form Record"}
           existing={selected}
           onClose={() => setEditOpen(false)}
-          onSave={handleSaveEdit}
+          onSave={onUpdate}
+          fixedType={fixedType}
         />
       )}
 
-      {/* ── PSPDFKit editor modal ── */}
-      {pdfEditorOpen && selected && (
-        <PSPDFKitEditorModal
-          order={selected}
-          onClose={() => setPdfEditorOpen(false)}
-          onSave={(pdfBase64, pdfName) => {
-            const updated: Order = {
-              ...selected,
-              formData: { ...selected.formData, pdfBase64, pdfName },
-            };
-            onUpdateOrder(updated);
-            setSelected(updated);
-            setPdfEditorOpen(false);
-          }}
-        />
+      {printOpen && selected && (
+        <div className={styles.modalBackdrop} onClick={() => setPrintOpen(false)}>
+          <div className={styles.modal} style={{ maxWidth: 1000, width: '95vw', padding: 0, overflow: 'auto', background: '#d0d0d0', height: '95vh' }} onClick={e => e.stopPropagation()}>
+            <div className={styles.modalHeader} style={{ background: '#fff', borderBottom: '1px solid #ddd', position: 'sticky', top: 0, zIndex: 10 }}>
+              <h2>Print Preview - {selected.form_type}</h2>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button className={`${styles.btn} ${styles.btnSuccess}`} onClick={() => window.print()}>🖨️ Print and Download</button>
+                <button className={styles.modalClose} onClick={() => setPrintOpen(false)}>✕</button>
+              </div>
+            </div>
+            <div className={styles.modalBody} style={{ padding: 0, background: '#525659', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <FormViewer formType={selected.form_type} data={selected.form_data} />
+            </div>
+          </div>
+        </div>
       )}
 
-      {/* ── Delete confirm ── */}
       {warnDelete && (
         <ConfirmModal
           title="Delete Form Record?"
-          body={`Delete "${warnDelete.formType}" for ${warnDelete.customerName}? This cannot be undone.`}
+          body={`Delete "${warnDelete.form_type}" for ${warnDelete.client_name}? This cannot be undone.`}
           confirmLabel="Delete"
-          onConfirm={() => { onDeleteOrder(warnDelete.id); setSelected(null); setWarnDelete(null); }}
+          onConfirm={() => { onDelete(warnDelete.id); setSelected(null); setWarnDelete(null); }}
           onCancel={() => setWarnDelete(null)}
         />
       )}
@@ -2474,335 +2239,7 @@ function FormsTab({ orders, onUpdateOrder, onCreateOrder, onDeleteOrder }: {
   );
 }
 
-/* ── PSPDFKit editor modal (admin) ── */
-function PSPDFKitEditorModal({ order, onClose, onSave }: {
-  order: Order;
-  onClose: () => void;
-  onSave: (pdfBase64: string, pdfName: string) => void;
-}) {
-  const instanceRef = useRef<unknown>(null);
-  const [saving,  setSaving]  = useState(false);
-  const [sharing, setSharing] = useState(false);
-  const [shareEmail, setShareEmail] = useState(order.customerEmail || '');
-  const [shareNote,  setShareNote]  = useState('');
-  const [shareOk,    setShareOk]    = useState(false);
-  const [shareErr,   setShareErr]   = useState('');
-  const [showShare,  setShowShare]  = useState(false);
-
-  /** Build the document URL for PSPDFKit:
-   *  - If a filled PDF is already stored, create a blob URL from it.
-   *  - Otherwise fall back to the template in /forms/. */
-  const documentUrl = React.useMemo(() => {
-    const b64 = order.formData?.pdfBase64;
-    if (b64) {
-      const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
-      const blob  = new Blob([bytes], { type: 'application/pdf' });
-      return URL.createObjectURL(blob);
-    }
-    // Fall back to public template
-    const match = order.formType?.match(/RHW(\d+)/i);
-    if (!match) return null;
-    const padded = String(parseInt(match[1], 10)).padStart(2, '0');
-    return `/forms/form-RHW${padded}.pdf`;
-  }, [order.formData?.pdfBase64, order.formType]);
-
-  const handleSave = async () => {
-    if (!instanceRef.current) return;
-    setSaving(true);
-    try {
-      const bytes  = await exportPDF(instanceRef.current);
-      const base64 = uint8ToBase64(bytes);
-      onSave(base64, order.formData?.pdfName || `${order.formType}.pdf`);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleDownload = async () => {
-    let bytes: Uint8Array;
-    if (instanceRef.current) {
-      bytes = await exportPDF(instanceRef.current);
-    } else if (order.formData?.pdfBase64) {
-      bytes = Uint8Array.from(atob(order.formData.pdfBase64), c => c.charCodeAt(0));
-    } else return;
-    const blob = new Blob([bytes.buffer as ArrayBuffer], { type: 'application/pdf' });
-    const url  = URL.createObjectURL(blob);
-    const a    = Object.assign(document.createElement('a'), {
-      href: url,
-      download: order.formData?.pdfName || `${order.formType}.pdf`,
-    });
-    document.body.appendChild(a); a.click();
-    document.body.removeChild(a); URL.revokeObjectURL(url);
-  };
-
-  const handleShare = async () => {
-    if (!shareEmail.trim()) { setShareErr('Please enter a recipient email.'); return; }
-    setSharing(true); setShareErr(''); setShareOk(false);
-
-    let base64 = order.formData?.pdfBase64 || '';
-    if (instanceRef.current) {
-      const bytes = await exportPDF(instanceRef.current);
-      base64 = uint8ToBase64(bytes);
-    }
-
-    try {
-      const res = await fetch('/api/share-form', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          recipientEmail: shareEmail,
-          recipientName:  order.customerName,
-          formType:  order.formType,
-          pdfBase64: base64,
-          pdfName:   order.formData?.pdfName || `${order.formType}.pdf`,
-          senderNote: shareNote,
-        }),
-      });
-      if (!res.ok) throw new Error(await res.text());
-      setShareOk(true);
-      setShowShare(false);
-    } catch (err) {
-      console.error(err);
-      setShareErr('Failed to send email. Please try again.');
-    } finally {
-      setSharing(false);
-    }
-  };
-
-  if (!documentUrl) {
-    return (
-      <div className={styles.modalBackdrop} onClick={onClose}>
-        <div className={styles.modal} style={{ maxWidth: 480, textAlign: 'center' }} onClick={e => e.stopPropagation()}>
-          <div className={styles.modalHeader}>
-            <h2>PSPDFKit Editor</h2>
-            <button className={styles.modalClose} onClick={onClose}>✕</button>
-          </div>
-          <div className={styles.modalBody}>
-            <p style={{ color: '#92400e', background: '#fef9c3', borderRadius: 8, padding: 16 }}>
-              ⚠️ Could not determine the form template. Please check the form type is set correctly.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className={styles.modalBackdrop} onClick={onClose}>
-      <div
-        className={styles.modal}
-        style={{ width: '95vw', maxWidth: 1020, display: 'flex', flexDirection: 'column', overflowY: 'auto', maxHeight: '95vh' }}
-        onClick={e => e.stopPropagation()}
-      >
-        {/* Modal header */}
-        <div className={styles.modalHeader} style={{ flexShrink: 0 }}>
-          <h2>🏴󠁧󠁢󠁷󠁬󠁳󠁿 {order.formType} — PSPDFKit Editor</h2>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            {shareOk && <span style={{ fontSize: '0.8rem', color: '#16a34a', fontWeight: 700 }}>✅ Email sent!</span>}
-            <button
-              onClick={() => setShowShare(s => !s)}
-              style={{ background: '#0ea5e9', color: '#fff', border: 'none', borderRadius: 7, padding: '7px 14px', fontWeight: 700, cursor: 'pointer', fontSize: '0.8rem' }}
-            >
-              ✉️ Share
-            </button>
-            <button
-              onClick={handleDownload}
-              style={{ background: '#475569', color: '#fff', border: 'none', borderRadius: 7, padding: '7px 14px', fontWeight: 700, cursor: 'pointer', fontSize: '0.8rem' }}
-            >
-              📥 Download
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              style={{ background: '#6366f1', color: '#fff', border: 'none', borderRadius: 7, padding: '7px 16px', fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', fontSize: '0.8rem', opacity: saving ? 0.6 : 1 }}
-            >
-              {saving ? 'Saving…' : '💾 Save'}
-            </button>
-            <button className={styles.modalClose} onClick={onClose}>✕</button>
-          </div>
-        </div>
-
-        {/* Share panel */}
-        {showShare && (
-          <div style={{ padding: '12px 24px', background: '#f0f9ff', borderBottom: '1px solid #bae6fd', flexShrink: 0 }}>
-            <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap' }}>
-              <div style={{ flex: 1, minWidth: 220 }}>
-                <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#0369a1', display: 'block', marginBottom: 4 }}>Recipient Email</label>
-                <input
-                  type="email"
-                  value={shareEmail}
-                  onChange={e => setShareEmail(e.target.value)}
-                  placeholder="client@example.com"
-                  style={{ width: '100%', padding: '8px 10px', border: '1px solid #bae6fd', borderRadius: 7, fontSize: '0.875rem' }}
-                />
-              </div>
-              <div style={{ flex: 2, minWidth: 200 }}>
-                <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#0369a1', display: 'block', marginBottom: 4 }}>Note (optional)</label>
-                <input
-                  value={shareNote}
-                  onChange={e => setShareNote(e.target.value)}
-                  placeholder="Any message to include in the email…"
-                  style={{ width: '100%', padding: '8px 10px', border: '1px solid #bae6fd', borderRadius: 7, fontSize: '0.875rem' }}
-                />
-              </div>
-              <button
-                onClick={handleShare}
-                disabled={sharing}
-                style={{ background: '#0ea5e9', color: '#fff', border: 'none', borderRadius: 7, padding: '9px 18px', fontWeight: 700, cursor: sharing ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap', opacity: sharing ? 0.6 : 1 }}
-              >
-                {sharing ? 'Sending…' : '✉️ Send Email'}
-              </button>
-            </div>
-            {shareErr && <p style={{ color: '#b91c1c', fontSize: '0.8rem', marginTop: 6 }}>{shareErr}</p>}
-          </div>
-        )}
-
-        {/* PSPDFKit */}
-        <div style={{ height: 620, flexShrink: 0 }}>
-          <PSPDFKitViewer
-            document={documentUrl}
-            onLoad={(inst) => { instanceRef.current = inst; }}
-            style={{ height: 620 }}
-          />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ── Wales Form create/edit modal ── */
-function WalesFormModal({ title, existing, onClose, onSave }: {
-  title: string;
-  existing: Order | null;
-  onClose: () => void;
-  onSave: (data: {
-    formType: string; clientName: string; clientEmail: string;
-    clientPhone: string; notes: string; pdfBase64: string; pdfName: string;
-  }) => void;
-}) {
-  const [formType,    setFormType]    = useState(existing?.formType    || WALES_FORMS[0]);
-  const [clientName,  setClientName]  = useState(existing?.customerName  || '');
-  const [clientEmail, setClientEmail] = useState(existing?.customerEmail || '');
-  const [clientPhone, setClientPhone] = useState(existing?.customerPhone || '');
-  const [notes,       setNotes]       = useState(existing?.formData?.notes || '');
-  const [pdfBase64,   setPdfBase64]   = useState(existing?.formData?.pdfBase64 || '');
-  const [pdfName,     setPdfName]     = useState(existing?.formData?.pdfName   || '');
-  const [err,         setErr]         = useState('');
-
-  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (!file.name.toLowerCase().endsWith('.pdf')) { setErr('Only PDF files are accepted.'); return; }
-    const reader = new FileReader();
-    reader.onload = ev => {
-      const b64 = (ev.target?.result as string).split(',')[1];
-      setPdfBase64(b64);
-      setPdfName(file.name);
-      setErr('');
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!clientName.trim()) { setErr('Client name is required.'); return; }
-    onSave({ formType, clientName, clientEmail, clientPhone, notes,
-      pdfBase64: pdfBase64 || existing?.formData?.pdfBase64 || '',
-      pdfName:   pdfName   || existing?.formData?.pdfName   || '',
-    });
-  };
-
-  return (
-    <div className={styles.modalBackdrop} onClick={onClose}>
-      <div className={styles.modal} style={{ maxWidth: 560 }} onClick={e => e.stopPropagation()}>
-        <div className={styles.modalHeader}>
-          <h2>🏴󠁧󠁢󠁷󠁬󠁳󠁿 {title}</h2>
-          <button className={styles.modalClose} onClick={onClose}>✕</button>
-        </div>
-        <form onSubmit={handleSubmit}>
-          <div className={styles.modalBody}>
-            <div className={styles.editGrid}>
-
-              {/* Form type */}
-              <div className={`${styles.editField} ${styles.editSpan2}`}>
-                <label>Wales Form Type <span style={{ color: '#e11d48' }}>*</span></label>
-                <select className={styles.filterSelect} style={{ width: '100%' }} value={formType} onChange={e => setFormType(e.target.value)}>
-                  {WALES_FORMS.map(f => <option key={f} value={f}>{f}</option>)}
-                </select>
-              </div>
-
-              {/* Client info */}
-              <div className={styles.editField}>
-                <label>Client Name <span style={{ color: '#e11d48' }}>*</span></label>
-                <input value={clientName} onChange={e => setClientName(e.target.value)} placeholder="Full name" />
-              </div>
-              <div className={styles.editField}>
-                <label>Client Email</label>
-                <input type="email" value={clientEmail} onChange={e => setClientEmail(e.target.value)} placeholder="email@example.com" />
-              </div>
-              <div className={styles.editField}>
-                <label>Client Phone</label>
-                <input value={clientPhone} onChange={e => setClientPhone(e.target.value)} placeholder="07xxx xxxxxx" />
-              </div>
-              <div className={styles.editField}>
-                <label>Date</label>
-                <div className={styles.readVal} style={{ paddingTop: 8, color: '#64748b' }}>{today()}</div>
-              </div>
-
-              {/* Notes */}
-              <div className={`${styles.editField} ${styles.editSpan2}`}>
-                <label>Notes <span style={{ color: '#94a3b8', fontWeight: 400 }}>(optional)</span></label>
-                <textarea rows={3} value={notes} onChange={e => setNotes(e.target.value)} placeholder="Any additional notes about this form…" />
-              </div>
-
-              {/* Optional PDF upload */}
-              <div className={`${styles.editField} ${styles.editSpan2}`}>
-                <label>
-                  Upload PDF{' '}
-                  <span style={{ color: '#94a3b8', fontWeight: 400 }}>
-                    (optional — leave blank to edit the template in PSPDFKit after saving)
-                  </span>
-                  {existing?.formData?.pdfBase64 && !pdfBase64 && (
-                    <span style={{ marginLeft: 8, color: '#16a34a', fontWeight: 400 }}>
-                      (current: {existing.formData.pdfName})
-                    </span>
-                  )}
-                </label>
-                <label style={{
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                  border: '2px dashed #cbd5e1', borderRadius: 10, padding: '16px', cursor: 'pointer',
-                  background: pdfBase64 ? '#f0fdf4' : '#f8fafc', transition: 'background 0.2s',
-                }}>
-                  <span style={{ fontSize: '1.8rem', marginBottom: 4 }}>{pdfBase64 ? '✅' : '📤'}</span>
-                  <span style={{ fontWeight: 600, color: pdfBase64 ? '#16a34a' : '#475569', fontSize: '0.875rem' }}>
-                    {pdfBase64 ? pdfName : 'Click to upload a PDF (optional)'}
-                  </span>
-                  <span style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: 2 }}>PDF files only</span>
-                  <input type="file" accept=".pdf,application/pdf" style={{ display: 'none' }} onChange={handleFile} />
-                </label>
-              </div>
-
-            </div>
-
-            {err && (
-              <div style={{ marginTop: 12, padding: '10px 14px', background: '#fee2e2', border: '1px solid #fca5a5', borderRadius: 8, color: '#b91c1c', fontSize: '0.85rem' }}>
-                ⚠️ {err}
-              </div>
-            )}
-          </div>
-          <div className={styles.modalFooter}>
-            <button type="button" className={styles.modalCancel} onClick={onClose}>Cancel</button>
-            <button type="submit" className={styles.modalSave}>
-              {existing ? 'Save Changes' : (pdfBase64 ? 'Save Record' : 'Save & Open Editor')}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}
+/* ── Wales Form Wizard Modal logic moved to components/WalesWizardModalV2.tsx ── */
 
 /* ═══════════════════════════════ APPOINTMENTS ═══════════════════════════════ */
 function AppointmentsTab({ appointments, onCreate, onUpdate, onDelete }: {
@@ -2845,7 +2282,7 @@ function AppointmentsTab({ appointments, onCreate, onUpdate, onDelete }: {
           </thead>
           <tbody>
             {filtered.length === 0 ? (
-              <tr><td colSpan={6} style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>No appointments found.</td></tr>
+              <tr key="empty-appointments"><td colSpan={6} style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>No appointments found.</td></tr>
             ) : (
               filtered.map(a => (
                 <tr key={a.id}>
@@ -2964,7 +2401,43 @@ function AppointmentModal({ existing, onClose, onSave }: {
   );
 }
 
+/* ═══════════════════════════════ INBOX (Combined) ═══════════════════════════════ */
+function InboxTab({ 
+  messages, inquiries, onMarkRead, onMarkAllRead, onDeleteMsg, onUpdateInquiry, onDeleteInquiry 
+}: {
+  messages: Message[]; inquiries: CashInquiry[];
+  onMarkRead: (id: string) => void;
+  onMarkAllRead: () => void;
+  onDeleteMsg: (id: string) => void;
+  onUpdateInquiry: (i: CashInquiry) => void;
+  onDeleteInquiry: (id: string) => void;
+}) {
+  const [sub, setSub] = useState<'messages' | 'cash'>('messages');
+
+  return (
+    <div>
+      <div className={styles.tabHeader}>
+        <button onClick={() => setSub('messages')} 
+          className={`${styles.tabBtn} ${sub === 'messages' ? styles.tabBtnActive : ''}`}>
+          General Messages ({messages.length})
+        </button>
+        <button onClick={() => setSub('cash')} 
+          className={`${styles.tabBtn} ${sub === 'cash' ? styles.tabBtnActive : ''}`}>
+          Cash Inquiries ({inquiries.length})
+        </button>
+      </div>
+
+      {sub === 'messages' ? (
+        <MessagesTab messages={messages} onMarkRead={onMarkRead} onMarkAllRead={onMarkAllRead} onDelete={onDeleteMsg} />
+      ) : (
+        <CashBuyersTab inquiries={inquiries} onUpdate={onUpdateInquiry} onDelete={onDeleteInquiry} />
+      )}
+    </div>
+  );
+}
+
 /* ═══════════════════════════════ CASH BUYERS ═══════════════════════════════ */
+
 function CashBuyersTab({ inquiries, onUpdate, onDelete }: {
   inquiries: CashInquiry[];
   onUpdate: (inc: CashInquiry) => void;
@@ -2991,7 +2464,7 @@ function CashBuyersTab({ inquiries, onUpdate, onDelete }: {
       <div className={styles.splitView}>
         <div className={styles.splitLeft}>
           {filtered.length === 0 ? (
-            <div className={styles.emptyState}><span>💰</span><p>No cash inquiries found.</p></div>
+            <div className={styles.emptyState}><span>💷</span><p>No cash inquiries found.</p></div>
           ) : (
             <div className={styles.submissionCards}>
               {filtered.map(i => (
@@ -3048,6 +2521,30 @@ function CashBuyersTab({ inquiries, onUpdate, onDelete }: {
                 <DetailRow label="Inquiry ID"   value={selected.id} />
               </div>
 
+              {selected.image_urls && selected.image_urls.length > 0 && (
+                <div style={{ marginTop: '24px' }}>
+                  <h4 style={{ marginBottom: '12px', fontSize: '0.875rem', fontWeight: 700, color: '#1e293b' }}>Property Photos</h4>
+                  <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', 
+                    gap: '12px' 
+                  }}>
+                    {selected.image_urls.map((url, idx) => (
+                      <a key={idx} href={url} target="_blank" rel="noopener noreferrer" style={{ 
+                        display: 'block', 
+                        aspectRatio: '1', 
+                        borderRadius: '8px', 
+                        overflow: 'hidden',
+                        border: '1px solid #e2e8f0',
+                        position: 'relative'
+                      }}>
+                        <Image src={url} alt={`Property ${idx + 1}`} fill style={{ objectFit: 'cover' }} unoptimized />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className={styles.crudBar} style={{ marginTop: 'auto' }}>
                 <a href={`mailto:${selected.email}?subject=Property Inquiry: ${selected.address}`} className={`${styles.btn} ${styles.btnInfo}`}>✉️ Reply</a>
                 <button className={`${styles.btn} ${styles.btnDanger}`} onClick={() => setWarn(selected)}>🗑️ Delete</button>
@@ -3066,361 +2563,6 @@ function CashBuyersTab({ inquiries, onUpdate, onDelete }: {
           onCancel={() => setWarn(null)}
         />
       )}
-    </div>
-  );
-}
-
-/* ═══════════════════════════════ TENANCY FORM TAB ═══════════════════════════════ */
-const BLANK_TENANCY_FORM: Omit<TenancyFormRecord, 'id' | 'createdAt'> = {
-  tenantName: '', tenantEmail: '', tenantPhone: '',
-  landlordName: '', landlordEmail: '', landlordPhone: '',
-  propertyAddress: '', contractStartDate: '', contractEndDate: '',
-  monthlyRent: '', depositAmount: '', additionalNotes: '',
-  uploadedContract: undefined,
-  status: 'draft',
-};
-
-function TenancyFormTab({ forms, onCreate, onUpdate, onDelete }: {
-  forms: TenancyFormRecord[];
-  onCreate: (f: Omit<TenancyFormRecord, 'id' | 'createdAt'>) => void;
-  onUpdate: (f: TenancyFormRecord) => void;
-  onDelete: (id: string) => void;
-}) {
-  const [selected, setSelected] = useState<TenancyFormRecord | null>(null);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editing, setEditing] = useState<TenancyFormRecord | null>(null);
-  const [warn, setWarn] = useState<TenancyFormRecord | null>(null);
-  const [search, setSearch] = useState('');
-
-  const filtered = forms.filter(f =>
-    !search ||
-    f.tenantName.toLowerCase().includes(search.toLowerCase()) ||
-    f.landlordName.toLowerCase().includes(search.toLowerCase()) ||
-    f.propertyAddress.toLowerCase().includes(search.toLowerCase())
-  );
-
-  const downloadContract = (f: TenancyFormRecord) => {
-    if (!f.uploadedContract) return;
-    const a = document.createElement('a');
-    a.href = f.uploadedContract.base64;
-    a.download = f.uploadedContract.name;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  };
-
-  const statusColor = (s: TenancyFormRecord['status']) =>
-    s === 'active' ? styles.pillGreen : s === 'ended' ? styles.pillGray : styles.pillAmber;
-
-  return (
-    <div>
-      <div className={styles.toolbar}>
-        <input
-          className={styles.searchInput}
-          placeholder="Search by tenant, landlord or address…"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-        />
-        <div className={styles.toolbarCount}>{filtered.length} form{filtered.length !== 1 ? 's' : ''}</div>
-        <button className={styles.createBtn} onClick={() => { setEditing(null); setModalOpen(true); }}>
-          + Add Form
-        </button>
-      </div>
-
-      <div className={styles.splitView}>
-        <div className={styles.splitLeft}>
-          {filtered.length === 0 ? (
-            <div className={styles.emptyState}>
-              <span>📄</span>
-              <p>No tenancy forms yet. Click &quot;Add Form&quot; to create one.</p>
-            </div>
-          ) : (
-            <div className={styles.submissionCards}>
-              {filtered.map(f => (
-                <div
-                  key={f.id}
-                  className={`${styles.submissionCard} ${selected?.id === f.id ? styles.submissionCardActive : ''}`}
-                  onClick={() => setSelected(f)}
-                >
-                  <div className={styles.submissionCardTop}>
-                    <div>
-                      <div className={styles.submissionAddr}>
-                        📄 {f.tenantName || '(No name)'}
-                        {f.uploadedContract && <span style={{ marginLeft: 6, fontSize: '0.7rem', color: '#16a34a', fontWeight: 800 }}>● PDF</span>}
-                      </div>
-                      <div className={styles.submissionMeta}>{f.propertyAddress || '—'}</div>
-                    </div>
-                    <span className={`${styles.pill} ${statusColor(f.status)}`}>{f.status.toUpperCase()}</span>
-                  </div>
-                  <div className={styles.submissionDate}>Created: {f.createdAt}</div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className={styles.splitRight}>
-          {!selected ? (
-            <div className={styles.emptyState}><span>👈</span><p>Select a form to view details.</p></div>
-          ) : (
-            <div className={styles.detailPanel}>
-              <div className={styles.detailHeader}>
-                <div>
-                  <h2>{selected.tenantName || 'Tenancy Form'}</h2>
-                  <div style={{ marginTop: 4 }}>
-                    <span className={`${styles.pill} ${statusColor(selected.status)}`}>{selected.status.toUpperCase()}</span>
-                  </div>
-                </div>
-                <button className={`${styles.btn} ${styles.btnEdit}`} onClick={() => { setEditing(selected); setModalOpen(true); }}>✏️ Edit</button>
-              </div>
-
-              {/* Uploaded contract */}
-              <div style={{ marginBottom: 16 }}>
-                {selected.uploadedContract ? (
-                  <div className={styles.filePreview}>
-                    <span className={styles.fileIcon}>📄</span>
-                    <div className={styles.fileInfo}>
-                      <div className={styles.fileName}>{selected.uploadedContract.name}</div>
-                      <div className={styles.fileSize}>Uploaded Contract</div>
-                    </div>
-                    <button className={`${styles.btn} ${styles.btnSuccess}`} style={{ flexShrink: 0 }} onClick={() => downloadContract(selected)}>📥 Download</button>
-                    <button className={`${styles.btn} ${styles.btnInfo}`} style={{ flexShrink: 0 }} onClick={() => selected.uploadedContract && window.open(selected.uploadedContract.base64)}>👁️ View</button>
-                  </div>
-                ) : (
-                  <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '12px 16px', fontSize: '0.875rem', color: '#92400e', fontWeight: 600 }}>
-                    ⚠️ No contract PDF uploaded yet. Click <strong>Edit</strong> to attach one.
-                  </div>
-                )}
-              </div>
-
-              <div className={styles.contactBlock}>
-                <h4>Tenant Details</h4>
-                <div className={styles.contactGrid}>
-                  <ContactItem icon="👤" label="Name"  value={selected.tenantName} />
-                  <ContactItem icon="✉️" label="Email" value={selected.tenantEmail} href={`mailto:${selected.tenantEmail}`} />
-                  <ContactItem icon="📞" label="Phone" value={selected.tenantPhone} href={`tel:${selected.tenantPhone}`} />
-                </div>
-              </div>
-
-              <div className={styles.contactBlock} style={{ marginTop: 12 }}>
-                <h4>Landlord Details</h4>
-                <div className={styles.contactGrid}>
-                  <ContactItem icon="🏢" label="Name"  value={selected.landlordName} />
-                  <ContactItem icon="✉️" label="Email" value={selected.landlordEmail} href={`mailto:${selected.landlordEmail}`} />
-                  <ContactItem icon="📞" label="Phone" value={selected.landlordPhone} href={`tel:${selected.landlordPhone}`} />
-                </div>
-              </div>
-
-              <div className={styles.detailGrid} style={{ marginTop: 12 }}>
-                <DetailRow label="Property Address" value={selected.propertyAddress || '—'} />
-                <DetailRow label="Start Date"       value={selected.contractStartDate || '—'} />
-                <DetailRow label="End Date"         value={selected.contractEndDate || '—'} />
-                <DetailRow label="Monthly Rent"     value={selected.monthlyRent ? `£${selected.monthlyRent}` : '—'} />
-                <DetailRow label="Deposit Amount"   value={selected.depositAmount ? `£${selected.depositAmount}` : '—'} />
-                <DetailRow label="Created"          value={selected.createdAt} />
-              </div>
-
-              {selected.additionalNotes && (
-                <div className={styles.detailSection} style={{ marginTop: 12 }}>
-                  <h4>Additional Notes</h4>
-                  <p>{selected.additionalNotes}</p>
-                </div>
-              )}
-
-              <div className={styles.detailActions} style={{ marginTop: 20 }}>
-                <h4>Contract Status</h4>
-                <div className={styles.statusBtns}>
-                  {(['draft', 'active', 'ended'] as TenancyFormRecord['status'][]).map(s => (
-                    <button
-                      key={s}
-                      className={`${styles.statusBtn} ${selected.status === s ? styles.statusBtnActive : ''}`}
-                      onClick={() => { const upd = { ...selected, status: s }; onUpdate(upd); setSelected(upd); }}
-                    >
-                      {s.charAt(0).toUpperCase() + s.slice(1)}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className={styles.crudBar}>
-                <button className={`${styles.btn} ${styles.btnDanger}`} onClick={() => setWarn(selected)}>🗑️ Delete Form</button>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {modalOpen && (
-        <TenancyFormModal
-          existing={editing}
-          onClose={() => setModalOpen(false)}
-          onSave={(data) => {
-            if (editing) {
-              const upd = { ...editing, ...data };
-              onUpdate(upd);
-              setSelected(upd);
-            } else {
-              onCreate(data);
-            }
-            setModalOpen(false);
-          }}
-        />
-      )}
-
-      {warn && (
-        <ConfirmModal
-          title="Delete Tenancy Form?"
-          body={`Delete the tenancy form for "${warn.tenantName}"? This cannot be undone.`}
-          confirmLabel="Delete"
-          onConfirm={() => { onDelete(warn.id); setSelected(null); setWarn(null); }}
-          onCancel={() => setWarn(null)}
-        />
-      )}
-    </div>
-  );
-}
-
-function TenancyFormModal({ existing, onClose, onSave }: {
-  existing: TenancyFormRecord | null;
-  onClose: () => void;
-  onSave: (data: Omit<TenancyFormRecord, 'id' | 'createdAt'>) => void;
-}) {
-  const [form, setForm] = useState<Omit<TenancyFormRecord, 'id' | 'createdAt'>>(
-    existing
-      ? {
-          tenantName: existing.tenantName, tenantEmail: existing.tenantEmail, tenantPhone: existing.tenantPhone,
-          landlordName: existing.landlordName, landlordEmail: existing.landlordEmail, landlordPhone: existing.landlordPhone,
-          propertyAddress: existing.propertyAddress, contractStartDate: existing.contractStartDate,
-          contractEndDate: existing.contractEndDate, monthlyRent: existing.monthlyRent,
-          depositAmount: existing.depositAmount, additionalNotes: existing.additionalNotes,
-          uploadedContract: existing.uploadedContract,
-          status: existing.status,
-        }
-      : { ...BLANK_TENANCY_FORM }
-  );
-
-  const set = (key: string, val: string) => setForm(f => ({ ...f, [key]: val }));
-
-  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    const reader = new FileReader();
-    reader.onload = () => setForm(prev => ({ ...prev, uploadedContract: { name: f.name, base64: reader.result as string } }));
-    reader.readAsDataURL(f);
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form.tenantName || !form.propertyAddress) return;
-    onSave(form);
-  };
-
-  return (
-    <div className={styles.modalBackdrop} onClick={onClose}>
-      <div className={styles.modal} style={{ maxWidth: 700 }} onClick={e => e.stopPropagation()}>
-        <div className={styles.modalHeader}>
-          <h2>{existing ? 'Edit Tenancy Form' : 'Add Tenancy Form'}</h2>
-          <button className={styles.modalClose} onClick={onClose}>✕</button>
-        </div>
-        <form onSubmit={handleSubmit}>
-          <div className={styles.modalBody}>
-
-            <div className={styles.propFormSection} style={{ marginTop: 0 }}><h4>Tenant Information</h4></div>
-            <div className={styles.editGrid}>
-              <div className={`${styles.editField} ${styles.editSpan2}`}>
-                <label>Tenant Name *</label>
-                <input required value={form.tenantName} onChange={e => set('tenantName', e.target.value)} placeholder="Full legal name of tenant" />
-              </div>
-              <div className={styles.editField}>
-                <label>Tenant Email</label>
-                <input type="email" value={form.tenantEmail} onChange={e => set('tenantEmail', e.target.value)} placeholder="tenant@email.com" />
-              </div>
-              <div className={styles.editField}>
-                <label>Tenant Phone</label>
-                <input type="tel" value={form.tenantPhone} onChange={e => set('tenantPhone', e.target.value)} placeholder="07xxx xxxxxx" />
-              </div>
-            </div>
-
-            <div className={styles.propFormSection} style={{ marginTop: 16 }}><h4>Landlord Information</h4></div>
-            <div className={styles.editGrid}>
-              <div className={`${styles.editField} ${styles.editSpan2}`}>
-                <label>Landlord Name *</label>
-                <input required value={form.landlordName} onChange={e => set('landlordName', e.target.value)} placeholder="Full legal name of landlord" />
-              </div>
-              <div className={styles.editField}>
-                <label>Landlord Email</label>
-                <input type="email" value={form.landlordEmail} onChange={e => set('landlordEmail', e.target.value)} placeholder="landlord@email.com" />
-              </div>
-              <div className={styles.editField}>
-                <label>Landlord Phone</label>
-                <input type="tel" value={form.landlordPhone} onChange={e => set('landlordPhone', e.target.value)} placeholder="07xxx xxxxxx" />
-              </div>
-            </div>
-
-            <div className={styles.propFormSection} style={{ marginTop: 16 }}><h4>Contract Details</h4></div>
-            <div className={styles.editGrid}>
-              <div className={`${styles.editField} ${styles.editSpan2}`}>
-                <label>Property Address *</label>
-                <input required value={form.propertyAddress} onChange={e => set('propertyAddress', e.target.value)} placeholder="Full property address including postcode" />
-              </div>
-              <div className={styles.editField}>
-                <label>Contract Start Date</label>
-                <input type="date" value={form.contractStartDate} onChange={e => set('contractStartDate', e.target.value)} />
-              </div>
-              <div className={styles.editField}>
-                <label>Contract End Date</label>
-                <input type="date" value={form.contractEndDate} onChange={e => set('contractEndDate', e.target.value)} />
-              </div>
-              <div className={styles.editField}>
-                <label>Monthly Rent (£)</label>
-                <input type="text" value={form.monthlyRent} onChange={e => set('monthlyRent', e.target.value)} placeholder="e.g. 950.00" />
-              </div>
-              <div className={styles.editField}>
-                <label>Deposit Amount (£)</label>
-                <input type="text" value={form.depositAmount} onChange={e => set('depositAmount', e.target.value)} placeholder="e.g. 1425.00" />
-              </div>
-              <div className={styles.editField}>
-                <label>Status</label>
-                <select value={form.status} onChange={e => set('status', e.target.value)} className={styles.filterSelect} style={{ width: '100%' }}>
-                  <option value="draft">Draft</option>
-                  <option value="active">Active</option>
-                  <option value="ended">Ended</option>
-                </select>
-              </div>
-              <div className={`${styles.editField} ${styles.editSpan2}`}>
-                <label>Additional Notes</label>
-                <textarea rows={3} value={form.additionalNotes} onChange={e => set('additionalNotes', e.target.value)} placeholder="Any special conditions, clauses, or notes…" />
-              </div>
-            </div>
-
-            <div className={styles.propFormSection} style={{ marginTop: 16 }}><h4>Contract PDF</h4></div>
-            <div className={styles.editField}>
-              {!form.uploadedContract ? (
-                <label className={styles.fileDropZone}>
-                  <input type="file" accept=".pdf,.doc,.docx" style={{ display: 'none' }} onChange={handleFile} />
-                  <i>📄</i>
-                  <p>Drop file here or click to upload</p>
-                  <span>Upload the signed Property Trader Contract PDF or any agreement document.</span>
-                </label>
-              ) : (
-                <div className={styles.filePreview}>
-                  <span className={styles.fileIcon}>📄</span>
-                  <div className={styles.fileInfo}>
-                    <div className={styles.fileName}>{form.uploadedContract.name}</div>
-                    <div className={styles.fileSize}>Contract attached</div>
-                  </div>
-                  <button type="button" className={styles.removeFile} onClick={() => setForm(f => ({ ...f, uploadedContract: undefined }))}>✕</button>
-                </div>
-              )}
-            </div>
-
-          </div>
-          <div className={styles.modalFooter}>
-            <button type="button" className={styles.modalCancel} onClick={onClose}>Cancel</button>
-            <button type="submit" className={styles.modalSave}>{existing ? 'Save Changes' : 'Create Form'}</button>
-          </div>
-        </form>
-      </div>
     </div>
   );
 }

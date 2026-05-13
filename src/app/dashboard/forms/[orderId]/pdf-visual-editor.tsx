@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as pdfjs from 'pdfjs-dist';
 import { FORM_SCHEMAS } from '@/data/form_schemas';
+import SignaturePad from '@/components/SignaturePad';
 import styles from './visual-editor.module.css';
 
 // Set worker source to local file for stability
@@ -58,7 +59,6 @@ export default function PDFVisualEditor({ pdfUrl, formType, initialData, onDataC
         const renderContext = {
           canvasContext: context,
           viewport: viewport,
-          canvas: canvas,
         };
         
         currentRenderTask = page.render(renderContext);
@@ -153,24 +153,42 @@ export default function PDFVisualEditor({ pdfUrl, formType, initialData, onDataC
                  return (
                    <div key={field.key} className={styles.unmappedField} style={{ top: `${85 + (idx * 4)}%` }}>
                      <label>{field.label}:</label>
-                     <input 
-                       value={initialData[field.key] || ''} 
-                       onChange={e => handleChange(field.key, e.target.value)}
-                       placeholder={`Set ${field.label}...`}
-                     />
+                     {field.type === 'signature' ? (
+                       <SignaturePad 
+                         value={initialData[field.key] || ''} 
+                         onChange={val => handleChange(field.key, val)}
+                         width={250}
+                         height={100}
+                       />
+                     ) : (
+                       <input 
+                         value={initialData[field.key] || ''} 
+                         onChange={e => handleChange(field.key, e.target.value)}
+                         placeholder={`Set ${field.label}...`}
+                       />
+                     )}
                    </div>
                  );
               }
 
               return (
                 <div key={field.key} style={style} className={styles.inputWrap}>
-                  {field.type === 'textarea' || style.height! > '3%' ? (
+                  {field.type === 'textarea' || (style.height && parseFloat(style.height.toString()) > 3) ? (
                     <textarea 
                       value={initialData[field.key] || ''}
                       onChange={e => handleChange(field.key, e.target.value)}
                       className={styles.pdfInput}
                       placeholder="..."
                     />
+                  ) : field.type === 'signature' ? (
+                    <div style={{ transform: 'scale(0.5)', transformOrigin: 'top left', width: '200%' }}>
+                      <SignaturePad 
+                        value={initialData[field.key] || ''} 
+                        onChange={val => handleChange(field.key, val)}
+                        width={300}
+                        height={120}
+                      />
+                    </div>
                   ) : (
                     <input 
                       type="text"

@@ -26,7 +26,7 @@ const FORM_COORDS: Record<string, FormMap> = {
     tenantName:      { x: 367, y: 615 },
     dwellingAddress: { x: 77,  y: 490, maxLines: 2 },
     // schedule3Para handled by FORM_CHECKBOXES
-    signedBy:        { x: 78,  y: 631, isSig: true, page: 1 },
+    signedBy:        { x: 105, y: 618, isSig: true, page: 1 },
     signatureDate:   { x: 321, y: 631, page: 1 },
   },
 
@@ -47,7 +47,7 @@ const FORM_COORDS: Record<string, FormMap> = {
     dwellingAddress:       { x: 77,  y: 464, maxLines: 2 },
     newLandlordName:       { x: 112, y: 346 },
     newLandlordAddress:    { x: 77,  y: 306, maxLines: 2 },
-    signedBy:              { x: 77,  y: 189, isSig: true },
+    signedBy:              { x: 105, y: 172, isSig: true },
     signatureDate:         { x: 304, y: 189 },
   },
 
@@ -59,6 +59,17 @@ const FORM_COORDS: Record<string, FormMap> = {
     newAddress:      { x: 77,  y: 372, maxLines: 2 },
     signedBy:        { x: 77,  y: 243, isSig: true },
     signatureDate:   { x: 304, y: 243 },
+  },
+
+  'Form RHW5': {
+    formerLandlordName:    { x: 112, y: 589 },
+    formerLandlordAddress: { x: 77,  y: 550, maxLines: 2 },
+    contractHolderName:    { x: 366, y: 589 },
+    dwellingAddress:       { x: 77,  y: 464, maxLines: 2 },
+    newLandlordName:       { x: 112, y: 346 },
+    newLandlordAddress:    { x: 77,  y: 306, maxLines: 2 },
+    signedBy:              { x: 105, y: 172, isSig: true },
+    signatureDate:         { x: 304, y: 189 },
   },
 
   'Form RHW6': {
@@ -77,11 +88,11 @@ const FORM_COORDS: Record<string, FormMap> = {
     headLandlordAddress:  { x: 77,  y: 552, maxLines: 2 },
     subHolderName:        { x: 366, y: 589 },
     contractHolderName:   { x: 132, y: 471 },
-    contractHolderAddress:{ x: 77,  y: 452, maxLines: 2 },
-    dwellingAddress:      { x: 311, y: 458, maxLines: 2 },
-    possessionGrounds:    { x: 77,  y: 358, maxLines: 4 },
-    signedBy:             { x: 77,  y: 157, isSig: true },
-    signatureDate:        { x: 304, y: 157 },
+    contractHolderAddress:{ x: 75,  y: 420, maxLines: 2 },
+    dwellingAddress:      { x: 311, y: 443, maxLines: 2 },
+    possessionGrounds:    { x: 75,  y: 285, maxLines: 6 },
+    signedBy:             { x: 77,  y: 145, isSig: true },
+    signatureDate:        { x: 304, y: 145 },
   },
 
   'Form RHW8': {
@@ -93,6 +104,36 @@ const FORM_COORDS: Record<string, FormMap> = {
     dwellingAddress:      { x: 311, y: 468, maxLines: 2 },
     signedBy:             { x: 77,  y: 239, isSig: true },
     signatureDate:        { x: 304, y: 239 },
+  },
+
+  'Form RHW9': {
+    landlordName:      { x: 112, y: 615 },
+    landlordAddress:   { x: 77,  y: 576, maxLines: 2 },
+    tenantName:        { x: 366, y: 615 },
+    dwellingAddress:   { x: 77,  y: 490, maxLines: 2 },
+    statementDeadline: { x: 77,  y: 410 },
+    signedBy:          { x: 105, y: 275, isSig: true },
+    signatureDate:     { x: 304, y: 293 },
+  },
+
+  'Form RHW10': {
+    landlordName:      { x: 112, y: 615 },
+    landlordAddress:   { x: 77,  y: 576, maxLines: 2 },
+    tenantName:        { x: 366, y: 615 },
+    dwellingAddress:   { x: 77,  y: 490, maxLines: 2 },
+    statementDeadline: { x: 77,  y: 410 },
+    signedBy:          { x: 105, y: 275, isSig: true },
+    signatureDate:     { x: 304, y: 293 },
+  },
+
+  'Form RHW11': {
+    landlordName:      { x: 112, y: 615 },
+    landlordAddress:   { x: 77,  y: 576, maxLines: 2 },
+    tenantName:        { x: 366, y: 615 },
+    dwellingAddress:   { x: 77,  y: 490, maxLines: 2 },
+    statementDeadline: { x: 77,  y: 410 },
+    signedBy:          { x: 105, y: 275, isSig: true },
+    signatureDate:     { x: 304, y: 293 },
   },
 
   'Form RHW12': {
@@ -108,6 +149,28 @@ const FORM_COORDS: Record<string, FormMap> = {
     currentRentPeriod:  { x: 345, y: 371 },
     signedBy:           { x: 77,  y: 241, isSig: true },
     signatureDate:      { x: 304, y: 241 },
+  },
+
+  'Form RHW13': {
+    landlordName:       { x: 112, y: 615 },
+    landlordAddress:    { x: 77,  y: 576, maxLines: 2 },
+    tenantName:         { x: 366, y: 615 },
+    dwellingAddress:    { x: 77,  y: 490, maxLines: 2 },
+    effectiveDate:      { x: 205, y: 408 },
+    newRent:            { x: 323, y: 408 },
+    signedBy:           { x: 77,  y: 293, isSig: true },
+    signatureDate:      { x: 304, y: 293 },
+  },
+
+  'Form RHW14': {
+    landlordName:       { x: 112, y: 615 },
+    landlordAddress:    { x: 77,  y: 576, maxLines: 2 },
+    tenantName:         { x: 366, y: 615 },
+    dwellingAddress:    { x: 77,  y: 490, maxLines: 2 },
+    effectiveDate:      { x: 205, y: 408 },
+    newRent:            { x: 323, y: 408 },
+    signedBy:           { x: 77,  y: 293, isSig: true },
+    signatureDate:      { x: 304, y: 293 },
   },
 
   'Form RHW15': {
@@ -175,7 +238,7 @@ const FORM_COORDS: Record<string, FormMap> = {
     tenantName:      { x: 364, y: 550 },
     dwellingAddress: { x: 77,  y: 442, maxLines: 2 },
     // arrearsType handled via ARREARS_BOXES (legacy) / FORM_CHECKBOXES
-    signedBy:        { x: 77,  y: 180, isSig: true },
+    signedBy:        { x: 105, y: 168, isSig: true },
     signatureDate:   { x: 304, y: 180 },
   },
 
@@ -186,7 +249,7 @@ const FORM_COORDS: Record<string, FormMap> = {
     dwellingAddress: { x: 83,  y: 469, maxLines: 2 },
     // arrearsType handled by FORM_CHECKBOXES
     reviewDate:      { x: 316, y: 325 },
-    signedBy:        { x: 83,  y:  89, isSig: true },
+    signedBy:        { x: 120, y: 94, isSig: true },
     signatureDate:   { x: 305, y:  89 },
   },
 
@@ -294,6 +357,16 @@ const FORM_COORDS: Record<string, FormMap> = {
     signatureDate:              { x: 304, y: 138 },
   },
 
+  'Form RHW31': {
+    landlordName:               { x: 112, y: 551 },
+    landlordAddress:            { x: 77,  y: 512, maxLines: 2 },
+    jointContractHolderName:    { x: 346, y: 551 },
+    dwellingAddress:            { x: 77,  y: 428, maxLines: 2 },
+    contractEndDate:            { x: 318, y: 294 },
+    signedBy:                   { x: 77,  y: 138, isSig: true },
+    signatureDate:              { x: 304, y: 138 },
+  },
+
   'Form RHW32': {
     landlordName:             { x: 112, y: 537 },
     landlordAddress:          { x: 77,  y: 498, maxLines: 2 },
@@ -388,22 +461,22 @@ const FORM_CHECKBOXES: Record<string, Record<string, CheckboxEntry[]>> = {
     //   Right tick column: rect x:496.4 w:29.4 → checkmark center x ≈ 507
     // Row y values (bottom of each row) + row heights used to center vertically.
     schedule3Para: [
-      { keyword: 'Paragraph 1',  x: 286, y: 344 },
-      { keyword: 'Paragraph 2',  x: 286, y: 313 },
-      { keyword: 'Paragraph 3',  x: 286, y: 284 },
-      { keyword: 'Paragraph 4',  x: 286, y: 254 },
-      { keyword: 'Paragraph 5',  x: 286, y: 224 },
-      { keyword: 'Paragraph 6',  x: 286, y: 194 },
-      { keyword: 'Paragraph 7',  x: 286, y: 163 },
-      { keyword: 'Paragraph 8',  x: 286, y: 135 },
-      { keyword: 'Paragraph 9',  x: 507, y: 344 },
-      { keyword: 'Paragraph 10', x: 507, y: 313 },
-      { keyword: 'Paragraph 11', x: 507, y: 284 },
-      { keyword: 'Paragraph 12', x: 507, y: 254 },
-      { keyword: 'Paragraph 13', x: 507, y: 224 },
-      { keyword: 'Paragraph 14', x: 507, y: 194 },
-      { keyword: 'Paragraph 15', x: 507, y: 163 },
-      { keyword: 'Paragraph 16', x: 507, y: 135 },
+      { keyword: 'Paragraph 1',  x: 282, y: 350 },
+      { keyword: 'Paragraph 2',  x: 282, y: 320 },
+      { keyword: 'Paragraph 3',  x: 282, y: 290 },
+      { keyword: 'Paragraph 4',  x: 282, y: 260 },
+      // Paragraph 5 is repealed and has no box in the official PDF
+      { keyword: 'Paragraph 6',  x: 282, y: 200 },
+      { keyword: 'Paragraph 7',  x: 286, y: 170 },
+      { keyword: 'Paragraph 8',  x: 282, y: 140 },
+      { keyword: 'Paragraph 9',  x: 504, y: 350 },
+      { keyword: 'Paragraph 10', x: 504, y: 320 },
+      { keyword: 'Paragraph 11', x: 504, y: 290 },
+      { keyword: 'Paragraph 12', x: 504, y: 260 },
+      { keyword: 'Paragraph 13', x: 504, y: 230 },
+      { keyword: 'Paragraph 14', x: 504, y: 200 },
+      { keyword: 'Paragraph 15', x: 504, y: 170 },
+      { keyword: 'Paragraph 16', x: 504, y: 140 },
     ],
   },
 
@@ -475,25 +548,22 @@ const ARREARS_BOXES: { keyword: string; x: number; y: number }[] = [
 ];
 
 /* ─── Main export ─── */
-export async function fillAndDownloadPDF(
+/* ─── NEW: Returns modified bytes instead of triggering a download ─── */
+export async function generateFilledPdfBytes(
   pdfUrl: string,
-  data: Record<string, string>,
-  fileName: string,
-) {
+  data: Record<string, any>,
+  formName: string,
+): Promise<Uint8Array | null> {
   if (!pdfUrl.toLowerCase().endsWith('.pdf')) {
-    window.open(pdfUrl, '_blank');
-    return;
+    return null;
   }
 
   try {
-    /* 1. Fetch */
     const response = await fetch(pdfUrl);
     const pdfBytes = await response.arrayBuffer();
-
-    /* 2. Load */
     const pdfDoc = await PDFDocument.load(pdfBytes);
 
-    /* 3. Try native PDF form fields first */
+    /* Native fields fallback */
     const form = pdfDoc.getForm();
     const nativeFields = form.getFields();
     let filledAny = false;
@@ -513,7 +583,7 @@ export async function fillAndDownloadPDF(
           try {
             const f = form.getTextField(alias);
             if (f) { f.setText(value); filledAny = true; break; }
-          } catch { /* field doesn't exist */ }
+          } catch { }
         }
         if (!filledAny) {
           const partial = nativeFields.find(f =>
@@ -527,14 +597,13 @@ export async function fillAndDownloadPDF(
       }
     }
 
-    /* 4. Coordinate-based drawing fallback */
+    /* Coordinate-based fallback */
     if (!filledAny) {
       const pages       = pdfDoc.getPages();
       const regularFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
       const italicFont  = await pdfDoc.embedFont(StandardFonts.HelveticaOblique);
 
-      /* Determine form name from file name */
-      const numMatch = fileName.match(/RHW(\d+)/i);
+      const numMatch = formName.match(/RHW(\d+)/i);
       const formKey  = numMatch ? `Form RHW${numMatch[1]}` : '';
       const coords   = FORM_COORDS[formKey];
       const checkboxMap = FORM_CHECKBOXES[formKey];
@@ -543,7 +612,6 @@ export async function fillAndDownloadPDF(
         for (const [key, value] of Object.entries(data)) {
           if (!value) continue;
 
-          /* ── RHW20 legacy arrearsType → tick appropriate checkbox ── */
           if (key === 'arrearsType' && formKey === 'Form RHW20') {
             const lower = value.toLowerCase();
             const page0 = pages[0];
@@ -556,64 +624,78 @@ export async function fillAndDownloadPDF(
             continue;
           }
 
-          /* ── Generic checkbox handling via FORM_CHECKBOXES ── */
           if (checkboxMap?.[key]) {
-            const lower = value.toLowerCase();
-            for (const box of checkboxMap[key]) {
-              if (lower.includes(box.keyword.toLowerCase())) {
-                const pageIndex = box.page ?? 0;
-                const targetPage = pages[pageIndex] ?? pages[0];
-                drawVectorCheckmark(targetPage, box.x, box.y);
-                break;
+            let selections: string[] = [];
+            if (Array.isArray(value)) {
+              selections = value.map(v => v.toLowerCase().trim());
+            } else {
+              selections = String(value).toLowerCase().split(',').map(s => s.trim()).filter(Boolean);
+            }
+            
+            const sortedCheckboxes = [...checkboxMap[key]].sort((a, b) => b.keyword.length - a.keyword.length);
+            
+            // For each distinct selection made by the user, find the best matching checkbox
+            for (const selection of selections) {
+              for (const box of sortedCheckboxes) {
+                if (selection.includes(box.keyword.toLowerCase())) {
+                  const pageIndex = box.page ?? 0;
+                  const targetPage = pages[pageIndex] ?? pages[0];
+                  drawVectorCheckmark(targetPage, box.x, box.y);
+                  break; // Found the best match for THIS specific selection
+                }
               }
             }
             continue;
           }
 
-          /* ── Text field drawing ── */
           const c = coords[key];
           if (!c) continue;
-
           const pageIndex  = c.page ?? 0;
           const targetPage = pages[pageIndex] ?? pages[0];
-          drawField(targetPage, value, c, regularFont, italicFont);
-        }
-      } else {
-        /* Generic fallback: annotate bottom of first page */
-        const page0 = pages[0];
-        let ty = 60;
-        page0.drawText('— Submitted Data —', { x: 50, y: ty, size: 8, font: regularFont, color: rgb(0.4, 0.4, 0.4) });
-        ty -= 12;
-        for (const [key, val] of Object.entries(data)) {
-          if (!val) continue;
-          page0.drawText(`${key}: ${val.substring(0, 70)}`, { x: 50, y: ty, size: 8, font: regularFont, color: rgb(0.2, 0.2, 0.2) });
-          ty -= 11;
-          if (ty < 10) break;
+          await drawField(pdfDoc, targetPage, value, c, regularFont, italicFont);
         }
       }
     }
 
-    /* 5. Save & download */
-    const modified = await pdfDoc.save();
-    const blob = new Blob([new Uint8Array(modified)], { type: 'application/pdf' });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href     = url;
-    a.download = fileName;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-
+    return await pdfDoc.save();
   } catch (error) {
-    console.error('Error filling PDF:', error);
-    window.open(pdfUrl, '_blank');
+    console.error('Error in generateFilledPdfBytes:', error);
+    return null;
   }
+}
+
+export async function fillAndDownloadPDF(
+  pdfUrl: string,
+  data: Record<string, any>,
+  fileName: string,
+) {
+  const modified = await generateFilledPdfBytes(pdfUrl, data, fileName);
+  if (!modified) {
+    window.open(pdfUrl, '_blank');
+    return;
+  }
+
+  const blob = new Blob([new Uint8Array(modified)], { type: 'application/pdf' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  
+  // Use a safer removal method to avoid "removeChild of null" errors
+  if (a.parentNode) {
+    a.parentNode.removeChild(a);
+  } else {
+    a.remove();
+  }
+  URL.revokeObjectURL(url);
 }
 
 /* ─── Helpers ─── */
 
-function drawField(
+async function drawField(
+  pdfDoc: PDFDocument,
   page: PDFPage,
   value: string,
   coord: Coord,
@@ -625,15 +707,29 @@ function drawField(
   const color = isSig ? rgb(0.05, 0.05, 0.45) : rgb(0.05, 0.05, 0.05);
   const size  = isSig ? 11 : 10;
 
-  /* For signatures: paint over the existing dotted line */
-  if (isSig) {
-    page.drawRectangle({
-      x:      x - 1,
-      y:      y - 3,
-      width:  210,
-      height: 15,
-      color:  rgb(1, 1, 1),
-    });
+  /* For signatures: no longer painting over the existing line to avoid cropping borders */
+
+  // Check if value is a base64 signature image
+  if (isSig && value.startsWith('data:image/')) {
+    try {
+      const base64Data = value.split(',')[1];
+      const imageBytes = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+      const image = await pdfDoc.embedPng(imageBytes);
+      
+      // Smaller scale to fit better in tight signature boxes
+      const dims = image.scaleToFit(140, 35);
+      
+      page.drawImage(image, {
+        x: x, 
+        y: y,
+        width: dims.width,
+        height: dims.height,
+      });
+      return;
+    } catch (err) {
+      console.error('Failed to embed signature image:', err);
+      // Fallback to text if image fails
+    }
   }
 
   /* Split into lines (honouring newlines + word-wrap) */

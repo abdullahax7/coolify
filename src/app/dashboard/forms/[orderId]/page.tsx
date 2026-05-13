@@ -1,17 +1,11 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import dynamic from 'next/dynamic';
 import { getOrders, getUser, type Order, type User } from '@/lib/auth';
-import { exportPDF } from '@/components/PSPDFKitViewer';
+import FormViewer from '@/components/wales/FormViewer';
 import styles from './form-editor.module.css';
-
-const PSPDFKitViewer = dynamic(() => import('@/components/PSPDFKitViewer'), {
-  ssr: false,
-  loading: () => <div className={styles.pdfLoading}>Loading PDF editor…</div>,
-});
 
 export default function FormStatusPage() {
   const params  = useParams();
@@ -20,10 +14,14 @@ export default function FormStatusPage() {
 
   const [user, setUser]           = useState<User  | null>(null);
   const [order, setOrder]         = useState<Order | null>(null);
-  const [viewMode, setViewMode]   = useState<'status' | 'editor'>('status');
-  const [saving,   setSaving]     = useState(false);
-  const [saveOk,   setSaveOk]     = useState(false);
-  const instanceRef = useRef<unknown>(null);
+
+  // Share modal
+  const [showShare, setShowShare]   = useState(false);
+  const [shareEmail, setShareEmail] = useState('');
+  const [shareNote,  setShareNote]  = useState('');
+  const [sharing,    setSharing]    = useState(false);
+  const [shareOk,    setShareOk]    = useState(false);
+  const [shareErr,   setShareErr]   = useState('');
 
   useEffect(() => {
     (async () => {
@@ -32,42 +30,51 @@ export default function FormStatusPage() {
       setUser(u);
       const orders = await getOrders();
       const found = orders.find(ord => ord.id === orderId) || null;
-      if (!found || !found.formType) { router.push('/dashboard'); return; }
+      if (!found) { router.push('/dashboard'); return; }
       setOrder(found);
     })();
   }, [router, orderId]);
 
   const documentUrl = order?.pdfUrl ?? null;
 
-  const downloadPDF = async () => {
-    if (!instanceRef.current) { if (documentUrl) window.open(documentUrl); return; }
-    const bytes = await exportPDF(instanceRef.current);
-    const blob  = new Blob([bytes.buffer as ArrayBuffer], { type: 'application/pdf' });
-    const url   = URL.createObjectURL(blob);
-    const a     = Object.assign(document.createElement('a'), { href: url, download: `${order?.formType ?? 'form'}.pdf` });
-    document.body.appendChild(a); a.click();
-    document.body.removeChild(a); URL.revokeObjectURL(url);
+  const downloadSaved = () => {
+    if (documentUrl) window.open(documentUrl, '_blank');
   };
 
-  const handleSave = async () => {
-    if (!instanceRef.current || !order) return;
-    setSaving(true);
+  const handleShare = async () => {
+    if (!order || !shareEmail.trim()) { setShareErr('Email is required'); return; }
+    setSharing(true); setShareErr('');
     try {
-      const bytes = await exportPDF(instanceRef.current);
-      const fd = new FormData();
-      fd.append('file', new Blob([bytes.buffer as ArrayBuffer], { type: 'application/pdf' }), `${order.formType}.pdf`);
-      const res = await fetch(`/api/orders/${order.id}/pdf`, { method: 'PUT', body: fd });
-      if (res.ok) {
-        const { pdfUrl } = await res.json();
-        setOrder({ ...order, pdfUrl });
-        setSaveOk(true);
-        setTimeout(() => setSaveOk(false), 3000);
-        setViewMode('status');
-      }
+      if (!documentUrl) throw new Error('PDF not available');
+      const res = await fetch(documentUrl);
+      const bytes = new Uint8Array(await res.arrayBuffer());
+      
+      // We need a helper to convert uint8 to base64 since we removed PdfEditor's export
+      const base64 = btoa(
+        new Uint8Array(bytes)
+          .reduce((data, byte) => data + String.fromCharCode(byte), '')
+      );
+
+      const send = await fetch('/api/share-form', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          recipientEmail: shareEmail.trim(),
+          recipientName:  user?.name ?? '',
+          formType:       order.formType,
+          pdfBase64:      base64,
+          pdfName:        `${order.formType}.pdf`,
+          senderNote:     shareNote.trim() || undefined,
+        }),
+      });
+      if (!send.ok) throw new Error((await send.json()).error || 'Failed to send');
+      setShareOk(true);
+      setShareEmail(''); setShareNote('');
+      setTimeout(() => { setShareOk(false); setShowShare(false); }, 1800);
     } catch (err) {
-      console.error(err);
+      setShareErr(err instanceof Error ? err.message : 'Failed to send email');
     } finally {
-      setSaving(false);
+      setSharing(false);
     }
   };
 
@@ -75,66 +82,6 @@ export default function FormStatusPage() {
 
   const isReady = !!order.pdfUrl;
 
-  /* ── PDF Editor view ── */
-  if (viewMode === 'editor' && documentUrl) {
-    return (
-      <div style={{ minHeight: '100vh', background: '#f8fafc', fontFamily: 'Inter, system-ui, sans-serif' }}>
-        {/* Sticky editor header */}
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: '1rem',
-          padding: '0.875rem 1.5rem', background: '#fff',
-          borderBottom: '1.5px solid #e2e8f0', position: 'sticky', top: 0, zIndex: 50,
-          flexWrap: 'wrap',
-        }}>
-          <button
-            onClick={() => setViewMode('status')}
-            style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontWeight: 600, fontSize: '0.875rem' }}
-          >
-            ← Back
-          </button>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '1rem' }}>🏴󠁧󠁢󠁷󠁬󠁳󠁿 {order.formType}</div>
-            <div style={{ fontSize: '0.78rem', color: '#64748b' }}>Edit your form, then save to update your copy.</div>
-          </div>
-          {saveOk && (
-            <span style={{ background: '#dcfce7', color: '#166534', borderRadius: 6, padding: '6px 12px', fontSize: '0.8rem', fontWeight: 700 }}>
-              ✅ Saved
-            </span>
-          )}
-          <button
-            onClick={downloadPDF}
-            style={{
-              background: '#fff', color: '#1e293b', border: '1.5px solid #e2e8f0',
-              borderRadius: 8, padding: '9px 18px', fontWeight: 700, fontSize: '0.875rem', cursor: 'pointer',
-            }}
-          >
-            📥 Download
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            style={{
-              background: 'linear-gradient(135deg,#6366f1,#4f46e5)', color: '#fff', border: 'none',
-              borderRadius: 8, padding: '9px 20px', fontWeight: 700, fontSize: '0.875rem',
-              cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1,
-            }}
-          >
-            {saving ? 'Saving…' : '💾 Save Changes'}
-          </button>
-        </div>
-
-        <div style={{ padding: '1.5rem' }}>
-          <PSPDFKitViewer
-            document={documentUrl!}
-            onLoad={(inst) => { instanceRef.current = inst; }}
-            style={{ height: 800 }}
-          />
-        </div>
-      </div>
-    );
-  }
-
-  /* ── Status / overview view ── */
   return (
     <div className={styles.page}>
       <div className={styles.container} style={{ maxWidth: 680 }}>
@@ -159,7 +106,7 @@ export default function FormStatusPage() {
               {isReady ? '✅' : '🏴󠁧󠁢󠁷󠁬󠁳󠁿'}
             </div>
             <h1 style={{ fontSize: '1.4rem', fontWeight: 800, margin: 0 }}>
-              {order.formType}
+              {order.formType || order.name}
             </h1>
             <p style={{ opacity: 0.85, marginTop: 4, fontSize: '0.9rem' }}>
               {isReady ? 'Your document is ready to download' : 'Request received — we\'ll be in touch soon'}
@@ -192,17 +139,46 @@ export default function FormStatusPage() {
               <div style={{ marginBottom: 24 }}>
                 <p style={{ color: '#334155', lineHeight: 1.7, margin: 0 }}>
                   Thank you for your request. Our team has received your order for{' '}
-                  <strong>{order.formType}</strong> and will review the details.
+                  <strong>{order.formType || order.name}</strong> and will review the details.
+                </p>
+                
+                {(Object.keys(order.formData || {}).length === 0 || !order.formData) && /Form RHW|Tenancy Agreement/i.test(order.formType || order.name) && (
+                  <div style={{
+                    marginTop: 20,
+                    padding: 20,
+                    background: '#fffbeb',
+                    border: '1.5px solid #fef3c7',
+                    borderRadius: 12,
+                  }}>
+                    <p style={{ margin: '0 0 12px 0', fontSize: '0.9rem', color: '#92400e', fontWeight: 600 }}>
+                      Action Required: You haven&apos;t filled out the details for this document yet.
+                    </p>
+                    <Link 
+                      href={`/forms/preview?form=${encodeURIComponent(order.formType || order.name)}&price=${encodeURIComponent(order.price || '£40.00')}&orderId=${order.id}`}
+                      style={{
+                        display: 'inline-block',
+                        background: '#d97706',
+                        color: '#fff',
+                        padding: '10px 20px',
+                        borderRadius: 8,
+                        textDecoration: 'none',
+                        fontWeight: 700,
+                        fontSize: '0.85rem'
+                      }}
+                    >
+                      ✍️ Fill Out Details Now
+                    </Link>
+                  </div>
+                )}
+
+                <p style={{ color: '#64748b', fontSize: '0.85rem', marginTop: 12 }}>
                   An admin will contact you shortly — please check your email{' '}
                   <strong>{user?.email}</strong> for updates.
-                </p>
-                <p style={{ color: '#64748b', fontSize: '0.85rem', marginTop: 12 }}>
-                  If you have any questions in the meantime, please contact us directly.
                 </p>
               </div>
             )}
 
-            {/* PDF ready — download + re-edit */}
+            {/* PDF ready — action buttons */}
             {isReady && (
               <div style={{
                 padding: '16px 20px',
@@ -210,37 +186,37 @@ export default function FormStatusPage() {
                 border: '1.5px solid #bbf7d0',
                 borderRadius: 12, marginBottom: 24,
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 14 }}>
                   <span style={{ fontSize: '2.5rem' }}>📄</span>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 700, color: '#15803d' }}>
-                      {order.formData?.pdfName || `${order.formType}.pdf`}
+                      {order.formData?.pdfName || `${order.formType || order.name}.pdf`}
                     </div>
                     <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: 2 }}>
                       Your completed Wales form
                     </div>
                   </div>
                 </div>
-                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   <button
-                    onClick={() => setViewMode('editor')}
-                    style={{
-                      background: '#6366f1', color: '#fff', border: 'none',
-                      borderRadius: 8, padding: '10px 20px',
-                      fontWeight: 700, cursor: 'pointer', fontSize: '0.875rem',
-                    }}
-                  >
-                    ✏️ Edit in PSPDFKit
-                  </button>
-                  <button
-                    onClick={downloadPDF}
+                    onClick={downloadSaved}
                     style={{
                       background: '#16a34a', color: '#fff', border: 'none',
-                      borderRadius: 8, padding: '10px 20px',
-                      fontWeight: 700, cursor: 'pointer', fontSize: '0.875rem',
+                      borderRadius: 8, padding: '10px 18px',
+                      fontWeight: 700, cursor: 'pointer', fontSize: '0.85rem',
                     }}
                   >
-                    📥 Download PDF
+                    📥 Download
+                  </button>
+                  <button
+                    onClick={() => { setShowShare(true); setShareErr(''); }}
+                    style={{
+                      background: '#0ea5e9', color: '#fff', border: 'none',
+                      borderRadius: 8, padding: '10px 18px',
+                      fontWeight: 700, cursor: 'pointer', fontSize: '0.85rem',
+                    }}
+                  >
+                    ✉️ Share
                   </button>
                 </div>
               </div>
@@ -252,7 +228,7 @@ export default function FormStatusPage() {
               paddingTop: 20, borderTop: '1px solid #f1f5f9',
             }}>
               {[
-                { label: 'Form Type',  value: order.formType },
+                { label: 'Service',    value: order.formType || order.name },
                 { label: 'Status',     value: order.status },
                 { label: 'Your Name',  value: user?.name },
                 { label: 'Your Email', value: user?.email },
@@ -269,6 +245,30 @@ export default function FormStatusPage() {
                 </div>
               ))}
             </div>
+
+            {/* Live Preview of the Document Data */}
+            {order.formData && Object.keys(order.formData).length > 0 && (
+              <div style={{ marginTop: 32 }}>
+                <h3 style={{ fontSize: '0.9rem', fontWeight: 800, color: '#0f172a', marginBottom: 16, borderBottom: '2px solid #f1f5f9', paddingBottom: 8 }}>
+                  📝 Document Preview
+                </h3>
+                <div style={{ 
+                  background: '#f8fafc', 
+                  borderRadius: 12, 
+                  border: '1.5px solid #e2e8f0',
+                  padding: '24px',
+                  maxHeight: '400px',
+                  overflowY: 'auto',
+                  transform: 'scale(0.95)',
+                  transformOrigin: 'top center'
+                }}>
+                  <FormViewer formType={order.formType || order.name} data={order.formData} />
+                </div>
+                <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: 12, textAlign: 'center' }}>
+                  This is a preview of the information you provided. The official PDF will be formatted for printing.
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Footer */}
@@ -294,6 +294,95 @@ export default function FormStatusPage() {
         </div>
 
       </div>
+
+      {/* Share modal */}
+      {showShare && (
+        <div
+          onClick={() => !sharing && setShowShare(false)}
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.55)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 1000, padding: 20,
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: '#fff', borderRadius: 14, width: '100%', maxWidth: 480,
+              boxShadow: '0 20px 60px rgba(0,0,0,0.25)', overflow: 'hidden',
+            }}
+          >
+            <div style={{ padding: '18px 22px', background: '#0ea5e9', color: '#fff' }}>
+              <div style={{ fontWeight: 800, fontSize: '1.05rem' }}>✉️ Share via email</div>
+              <div style={{ fontSize: '0.78rem', opacity: 0.9, marginTop: 2 }}>
+                The recipient will get an email with the PDF attached.
+              </div>
+            </div>
+            <div style={{ padding: 22 }}>
+              <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#334155', marginBottom: 6 }}>
+                Recipient email
+              </label>
+              <input
+                type="email"
+                value={shareEmail}
+                onChange={e => setShareEmail(e.target.value)}
+                placeholder="name@example.com"
+                style={{
+                  width: '100%', padding: '10px 12px', border: '1.5px solid #e2e8f0',
+                  borderRadius: 8, fontSize: '0.9rem', outline: 'none',
+                }}
+              />
+              <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#334155', marginTop: 14, marginBottom: 6 }}>
+                Message <span style={{ color: '#94a3b8', fontWeight: 400 }}>(optional)</span>
+              </label>
+              <textarea
+                value={shareNote}
+                onChange={e => setShareNote(e.target.value)}
+                rows={3}
+                placeholder="Add a short note…"
+                style={{
+                  width: '100%', padding: '10px 12px', border: '1.5px solid #e2e8f0',
+                  borderRadius: 8, fontSize: '0.9rem', outline: 'none', resize: 'vertical', fontFamily: 'inherit',
+                }}
+              />
+              {shareErr && (
+                <div style={{ marginTop: 10, color: '#b91c1c', fontSize: '0.82rem', fontWeight: 600 }}>
+                  {shareErr}
+                </div>
+              )}
+              {shareOk && (
+                <div style={{ marginTop: 10, color: '#15803d', fontSize: '0.82rem', fontWeight: 700 }}>
+                  ✅ Email sent!
+                </div>
+              )}
+            </div>
+            <div style={{ padding: '14px 22px', borderTop: '1px solid #f1f5f9', display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setShowShare(false)}
+                disabled={sharing}
+                style={{
+                  padding: '9px 16px', borderRadius: 8, border: '1.5px solid #e2e8f0',
+                  background: '#fff', color: '#475569', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleShare}
+                disabled={sharing || !shareEmail.trim()}
+                style={{
+                  padding: '9px 20px', borderRadius: 8, border: 'none',
+                  background: '#0ea5e9', color: '#fff', fontWeight: 700,
+                  cursor: sharing || !shareEmail.trim() ? 'not-allowed' : 'pointer', fontSize: '0.85rem',
+                  opacity: sharing || !shareEmail.trim() ? 0.6 : 1,
+                }}
+              >
+                {sharing ? 'Sending…' : 'Send email'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

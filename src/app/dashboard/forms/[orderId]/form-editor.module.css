@@ -267,7 +267,7 @@
   width: 100%;
 }
 
-:global(.textLayer) {
+.visualLayout :global(.textLayer) {
   position: absolute;
   text-align: initial;
   inset: 0;
@@ -276,7 +276,7 @@
   text-rendering: optimizeLegibility;
 }
 
-:global(.textLayer span), :global(.textLayer br) {
+.visualLayout :global(.textLayer span), .visualLayout :global(.textLayer br) {
   color: transparent;
   position: absolute;
   white-space: pre;
@@ -284,6 +284,6 @@
   transform-origin: 0% 0%;
 }
 
-:global(.textLayer ::selection) {
+.visualLayout :global(.textLayer ::selection) {
   background: rgba(0, 0, 255, 0.2);
 }

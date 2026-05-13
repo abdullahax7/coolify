@@ -13,7 +13,7 @@ const BENEFITS = [
     desc: 'Sell or let quickly. We will help you advertise on our portal and help do everything for you. Our network of local experts stretches out across the entire UK.'
   },
   {
-    icon: '💰',
+    icon: '💷',
     title: 'Fixed Fees',
     desc: 'No surprises and commission. You will only pay one fee, and it is fixed from the beginning. Simply select the advertising period and pay for the service.'
   },
@@ -34,16 +34,25 @@ const BENEFITS = [
   }
 ];
 
-export const ListingBenefits = () => {
+export const ListingBenefits = ({ content }: { content?: Record<string, string> }) => {
+  const dynamicBenefits = [
+    { icon: '👔', title: content?.benefit_1_title || BENEFITS[0].title, desc: content?.benefit_1_desc || BENEFITS[0].desc },
+    { icon: '🛠️', title: content?.benefit_2_title || BENEFITS[1].title, desc: content?.benefit_2_desc || BENEFITS[1].desc },
+    { icon: '💷', title: content?.benefit_3_title || BENEFITS[2].title, desc: content?.benefit_3_desc || BENEFITS[2].desc },
+    { icon: '👀', title: content?.benefit_4_title || BENEFITS[3].title, desc: content?.benefit_4_desc || BENEFITS[3].desc },
+    { icon: '🕒', title: content?.benefit_5_title || BENEFITS[4].title, desc: content?.benefit_5_desc || BENEFITS[4].desc },
+    { icon: '🏠', title: content?.benefit_6_title || BENEFITS[5].title, desc: content?.benefit_6_desc || BENEFITS[5].desc },
+  ];
+
   return (
     <section className={styles.section}>
       <div className={styles.container}>
         <div className={styles.grid}>
-          {BENEFITS.map((b, i) => (
+          {dynamicBenefits.map((b, i) => (
             <div key={i} className={styles.card}>
               <div className={styles.icon}>{b.icon}</div>
-              <h3>{b.title}</h3>
-              <p>{b.desc}</p>
+              <h3 dangerouslySetInnerHTML={{__html: b.title}} />
+              <p dangerouslySetInnerHTML={{__html: b.desc}} />
             </div>
           ))}
         </div>

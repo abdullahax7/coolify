@@ -100,3 +100,25 @@
   font-weight: 700;
   font-size: 0.9375rem;
 }
+
+.unavailableCard {
+  filter: grayscale(0.5);
+  opacity: 0.85;
+  cursor: default;
+}
+
+.unavailableBadge {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: #e11d48;
+  color: white;
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  z-index: 2;
+  box-shadow: 0 4px 12px rgba(225, 29, 72, 0.3);
+}

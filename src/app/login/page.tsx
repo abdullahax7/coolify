@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback, Suspense } from 'react';
 import Link from 'next/link';
+import { Logo } from '@/components/common/Logo';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn } from '@/lib/auth';
 import Captcha from '@/components/common/Captcha';
@@ -38,17 +39,38 @@ function LoginForm() {
   return (
     <form onSubmit={handleSubmit} className={styles.form} noValidate>
       <div className={styles.field}>
-        <label>Email Address</label>
-        <input name="email" type="email" placeholder="john@example.com"
-          value={form.email} onChange={handleChange} disabled={loading} />
+        <label htmlFor="login-email">Email Address</label>
+        <input
+          id="login-email"
+          name="email"
+          type="email"
+          placeholder="john@example.com"
+          value={form.email}
+          onChange={handleChange}
+          disabled={loading}
+          required
+          autoComplete="email"
+          inputMode="email"
+          aria-required="true"
+        />
       </div>
       <div className={styles.field}>
         <div className={styles.fieldLabelRow}>
-          <label>Password</label>
+          <label htmlFor="login-password">Password</label>
           <Link href="/forgot-password" className={styles.forgotLink}>Forgot password?</Link>
         </div>
-        <input name="password" type="password" placeholder="••••••••"
-          value={form.password} onChange={handleChange} disabled={loading} />
+        <input
+          id="login-password"
+          name="password"
+          type="password"
+          placeholder="••••••••"
+          value={form.password}
+          onChange={handleChange}
+          disabled={loading}
+          required
+          autoComplete="current-password"
+          aria-required="true"
+        />
       </div>
 
       <Captcha onChange={handleCaptcha} />
@@ -68,7 +90,7 @@ export default function LoginPage() {
       <div className={styles.left}>
         <div className={styles.leftContent}>
           <Link href="/" className={styles.backLink}>← Back to site</Link>
-          <div className={styles.logo}>PROPERTY <span>TRADER</span></div>
+          <Logo className={styles.logo} showPhone={false} variant="sidebar" />
           <h1>Welcome <span>back.</span></h1>
           <p>Sign in to manage your listings, track orders, and access your dashboard.</p>
           <div className={styles.trustItems}>

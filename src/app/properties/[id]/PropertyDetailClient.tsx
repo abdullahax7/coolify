@@ -101,6 +101,12 @@ export default function PropertyDetailClient({ property: initialProperty, allPro
     touchStartX.current = null;
   };
 
+  const handleBrochure = () => {
+    // Simple high-quality brochure via window.print()
+    // In a real app, this could generate a custom PDF on the server
+    window.print();
+  };
+
   return (
     <div className={styles.page}>
       <Header />
@@ -116,12 +122,13 @@ export default function PropertyDetailClient({ property: initialProperty, allPro
                 <Image
                   key={current}
                   src={images[current]}
-                  alt={`${property.title} – photo ${current + 1}`}
+                  alt={`${property.title} — photo ${current + 1} of ${total}`}
                   className={`${styles.slideImg} ${isAnimating ? styles.fadeIn : ''}`}
                   width={1200}
                   height={800}
-                  priority
-                  unoptimized
+                  sizes="(max-width: 768px) 100vw, (max-width: 1280px) 80vw, 1200px"
+                  priority={current === 0}
+                  fetchPriority={current === 0 ? 'high' : 'auto'}
                 />
                 <div className={styles.counter}>{current + 1} / {total}</div>
               </div>
@@ -136,7 +143,7 @@ export default function PropertyDetailClient({ property: initialProperty, allPro
               <div className={styles.thumbStrip} ref={thumbsRef}>
                 {images.map((img: string, i: number) => (
                   <button key={i} className={`${styles.thumb} ${i === current ? styles.thumbActive : ''}`} onClick={() => goTo(i)} aria-label={`Go to image ${i + 1}`}>
-                    <Image src={img} alt={`Thumbnail ${i + 1}`} width={100} height={100} unoptimized />
+                    <Image src={img} alt={`Property thumbnail ${i + 1}`} width={100} height={100} sizes="100px" loading="lazy" />
                   </button>
                 ))}
               </div>
@@ -157,8 +164,10 @@ export default function PropertyDetailClient({ property: initialProperty, allPro
             <div className={styles.infoRight}>
               <div className={styles.price}>{property.price}</div>
               <div className={styles.actions} style={{ marginTop: '24px' }}>
-                <a href="tel:08006890604"><Button variant="primary" size="lg" className={styles.cta}>Book a Viewing</Button></a>
-                <Button variant="outline" size="lg" className={styles.cta}>Brochure</Button>
+                <Link href={`/contact?subject=Viewing Request&message=I would like to book a viewing for ${property.title} (ID: ${property.id}). Please contact me with available times.`}>
+                  <Button variant="primary" size="lg" className={styles.cta}>Book a Viewing</Button>
+                </Link>
+                <Button variant="outline" size="lg" className={styles.cta} onClick={handleBrochure}>Brochure</Button>
               </div>
             </div>
           </section>
@@ -207,7 +216,7 @@ export default function PropertyDetailClient({ property: initialProperty, allPro
                 <div className={styles.agentCard}>
                   <h3>Listing Agent</h3>
                   <div className={styles.agentInfo}>
-                    <Image src={agent.image} alt={agent.name} className={styles.agentImg} width={64} height={64} />
+                    <Image src={agent.image} alt={`${agent.name} — ${agent.role}`} className={styles.agentImg} width={64} height={64} sizes="64px" loading="lazy" />
                     <div>
                       <div className={styles.agentName}>{agent.name}</div>
                       <div className={styles.agentRole}>{agent.role}</div>
@@ -258,7 +267,7 @@ export default function PropertyDetailClient({ property: initialProperty, allPro
             <button className={`${styles.lbArrow} ${styles.lbArrowLeft}`} onClick={() => setLightboxIndex(i => (i - 1 + total) % total)} aria-label="Previous">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
             </button>
-            <Image src={images[lightboxIndex]} alt={`View ${lightboxIndex + 1}`} className={styles.lightboxImage} width={1600} height={1000} unoptimized />
+            <Image src={images[lightboxIndex]} alt={`${property.title} — full view ${lightboxIndex + 1}`} className={styles.lightboxImage} width={1600} height={1000} sizes="100vw" />
             <button className={`${styles.lbArrow} ${styles.lbArrowRight}`} onClick={() => setLightboxIndex(i => (i + 1) % total)} aria-label="Next">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
             </button>

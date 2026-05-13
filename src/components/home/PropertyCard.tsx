@@ -12,6 +12,7 @@ interface PropertyCardProps {
   baths: number;
   sqft: number;
   type: string;
+  isUnavailable?: boolean;
 }
 
 export const PropertyCard: React.FC<PropertyCardProps> = ({
@@ -23,13 +24,23 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
   beds,
   baths,
   sqft,
-  type
+  type,
+  isUnavailable = false
 }) => {
   return (
-    <Link href={`/properties/${id}`} className={styles.card}>
+    <Link href={`/properties/${id}`} className={`${styles.card} ${isUnavailable ? styles.unavailableCard : ''}`}>
       <div className={styles.imageWrapper}>
         <div className={styles.badge}>{type}</div>
-        <Image src={image} alt={title} className={styles.image} width={400} height={300} />
+        {isUnavailable && <div className={styles.unavailableBadge}>Unavailable</div>}
+        <Image
+          src={image}
+          alt={`${title} — ${location}`}
+          className={styles.image}
+          width={400}
+          height={300}
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 400px"
+          loading="lazy"
+        />
       </div>
       <div className={styles.content}>
         <div className={styles.header}>

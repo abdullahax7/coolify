@@ -39,14 +39,8 @@
 .backLink:hover { color: white; }
 
 .logo {
-  font-size: 1rem;
-  font-weight: 900;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: rgba(255,255,255,0.5);
   margin-bottom: 32px;
 }
-.logo span { color: var(--primary); }
 
 .leftContent h1 {
   font-size: 2.75rem;

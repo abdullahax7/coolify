@@ -1,3 +1,5 @@
+import { SupabaseClient } from '@supabase/supabase-js';
+
 export interface StaffMember {
   id: string;
   name: string;
@@ -6,13 +8,13 @@ export interface StaffMember {
   image: string;
 }
 
-export const STAFF: StaffMember[] = [
+export const STAFF_DEFAULTS: StaffMember[] = [
   {
     id: 'mohammed',
     name: "Mohammed Athar Rashid",
     role: "Property Manager - CEO",
     description: "Expert property manager with over 25 years of experience in the UK property market.",
-    image: "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=800"
+    image: "/uk_properties_hero_v2.png" // Using the branded asset as default if needed
   },
   {
     id: 'zarqa',
@@ -36,3 +38,40 @@ export const STAFF: StaffMember[] = [
     image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=800"
   }
 ];
+
+interface StaffRecord {
+  id: string;
+  id_slug?: string;
+  name: string;
+  role: string;
+  description: string;
+  image_url?: string;
+}
+
+export const getStaff = async (supabase?: SupabaseClient): Promise<StaffMember[]> => {
+  try {
+    let client = supabase;
+    if (!client) {
+      const { createClient } = await import('@/lib/supabase/client');
+      client = createClient() as SupabaseClient;
+    }
+
+    const { data, error } = await client
+      .from('staff')
+      .select('*')
+      .order('order_index', { ascending: true });
+
+    if (error || !data || data.length === 0) return STAFF_DEFAULTS;
+
+    return (data as StaffRecord[]).map((m: StaffRecord) => ({
+      id: m.id_slug || m.id,
+      name: m.name,
+      role: m.role,
+      description: m.description,
+      image: m.image_url || STAFF_DEFAULTS.find(d => d.id === m.id_slug)?.image || ''
+    }));
+  } catch (err) {
+    console.warn('Staff fetch failed, using defaults:', err);
+    return STAFF_DEFAULTS;
+  }
+};

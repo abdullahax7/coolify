@@ -4,6 +4,17 @@ import React, { useState, useEffect } from 'react';
 import { SERVICE_CATALOG } from '@/data/pricing_data';
 import styles from './Services.module.css';
 
+interface CatalogItem {
+  name: string;
+  price: string;
+  desc: string;
+}
+
+interface CatalogCategory {
+  category: string;
+  items: CatalogItem[];
+}
+
 interface Service {
   title: string;
   description: string;
@@ -35,9 +46,10 @@ const SERVICES: Service[] = [
   }
 ];
 
-export const Services: React.FC = () => {
+export const Services: React.FC<{ initialCatalog?: CatalogCategory[] }> = ({ initialCatalog }) => {
   const [showCatalog, setShowCatalog] = useState(false);
-  const [activeCategory, setActiveCategory] = useState(SERVICE_CATALOG[0].category);
+  const [catalog] = useState<CatalogCategory[]>(initialCatalog || SERVICE_CATALOG);
+  const [activeCategory, setActiveCategory] = useState((initialCatalog || SERVICE_CATALOG)[0]?.category || '');
 
   useEffect(() => {
     if (showCatalog) {
@@ -86,7 +98,7 @@ export const Services: React.FC = () => {
             <div className={styles.catalogLayout}>
               {/* Category Sidebar */}
               <div className={styles.catalogSidebar}>
-                {SERVICE_CATALOG.map((cat) => (
+                {catalog.map((cat) => (
                   <button 
                     key={cat.category}
                     className={`${styles.catButton} ${activeCategory === cat.category ? styles.catActive : ''}`}
@@ -99,7 +111,7 @@ export const Services: React.FC = () => {
 
               {/* Items Grid */}
               <div className={styles.catalogGrid}>
-                {SERVICE_CATALOG.find(c => c.category === activeCategory)?.items.map((item, idx) => (
+                {catalog.find(c => c.category === activeCategory)?.items.map((item, idx) => (
                   <div key={idx} className={styles.catalogCard}>
                     <div className={styles.cardHeader}>
                       <h4>{item.name}</h4>
@@ -108,9 +120,16 @@ export const Services: React.FC = () => {
                     <p>{item.desc}</p>
                     <button 
                       className={styles.selectBtn}
-                      onClick={() => window.location.href = `/checkout?service=${encodeURIComponent(item.name)}&price=${encodeURIComponent(item.price)}`}
+                      onClick={() => {
+                        const isForm = /Form RHW|Tenancy Agreement/i.test(item.name);
+                        if (isForm) {
+                          window.location.href = `/forms/preview?form=${encodeURIComponent(item.name)}&price=${encodeURIComponent(item.price)}`;
+                        } else {
+                          window.location.href = `/checkout?service=${encodeURIComponent(item.name)}&price=${encodeURIComponent(item.price)}`;
+                        }
+                      }}
                     >
-                      SELECT SERVICE
+                      {/Form RHW|Tenancy Agreement/i.test(item.name) ? 'EDIT & PAY' : 'SELECT SERVICE'}
                     </button>
                   </div>
                 ))}

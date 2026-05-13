@@ -3,7 +3,7 @@ import styles from './QuickStart.module.css';
 
 export const QuickStartSection: React.FC = () => {
   const sellFeatures = [
-    'Advertise your property from only £65 for 3 months',
+    'Advertise your property for FREE for 3 months',
     'Listing on OntheMarket for free',
     'For Sale board or banners',
     'Professional advert including photos and floorplan',
@@ -14,7 +14,7 @@ export const QuickStartSection: React.FC = () => {
   ];
 
   const letFeatures = [
-    'Let your own property from £50',
+    'Let your own property for FREE',
     'Listing on OntheMarket & Property Trader',
     'To Let board',
     'Professional advert including photos and floorplan',
@@ -40,7 +40,7 @@ export const QuickStartSection: React.FC = () => {
 
       <div className={styles.splitGrid}>
         <div className={styles.sellCol}>
-          <h3>Sell your property online from just <span>£65</span></h3>
+          <h3>Sell your property online for <span>FREE</span></h3>
           <ul className={styles.featureList}>
             {sellFeatures.map((f, i) => (
               <li key={i}>
@@ -55,7 +55,7 @@ export const QuickStartSection: React.FC = () => {
         </div>
 
         <div className={styles.letCol}>
-          <h3>Let your property online from just <span>£50</span></h3>
+          <h3>Let your property online for <span>FREE</span></h3>
           <ul className={styles.featureList}>
             {letFeatures.map((f, i) => (
               <li key={i}>

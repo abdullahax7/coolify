@@ -28,7 +28,8 @@ export const FeaturedProperties: React.FC = () => {
       .then(res => res.json())
       .then(data => {
         const properties = data.properties ?? [];
-        setFeatured(properties.slice(0, 3));
+        const activeProperties = properties.filter((p: Record<string, unknown>) => p.status === 'Live');
+        setFeatured(activeProperties.slice(0, 3));
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -56,11 +57,12 @@ export const FeaturedProperties: React.FC = () => {
               key={prop.id}
               id={prop.id}
               image={(() => {
+                if (prop.image_url) return prop.image_url;
                 if (prop.gallery_urls) {
                   const list = Array.isArray(prop.gallery_urls) ? prop.gallery_urls : prop.gallery_urls.split('|DELIM|').filter(Boolean);
                   if (list.length > 0) return list[0];
                 }
-                return prop.image_url || '/placeholder-property.jpg';
+                return '/images/prop_1.png';
               })()}
               title={prop.title}
               location={prop.location}

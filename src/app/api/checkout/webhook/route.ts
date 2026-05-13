@@ -30,7 +30,12 @@ export async function POST(req: NextRequest) {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? `https://${req.headers.get('x-forwarded-host') ?? req.nextUrl.host}`;
   const webhookUrl = `${appUrl}/api/checkout/webhook`;
 
-  if (sigKey && !verifySquareSignature(rawBody, signature, sigKey, webhookUrl)) {
+  if (!sigKey) {
+    console.error('CRITICAL: SQUARE_WEBHOOK_SIGNATURE_KEY is missing');
+    return NextResponse.json({ error: 'System configuration error' }, { status: 500 });
+  }
+
+  if (!verifySquareSignature(rawBody, signature, sigKey, webhookUrl)) {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
   }
 

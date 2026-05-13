@@ -36,7 +36,6 @@ export default function PDFPreview({ pdfUrl }: Props) {
         const renderContext = {
           canvasContext: context,
           viewport: viewport,
-          canvas: canvas,
         };
         const task = page.render(renderContext);
         renderTask = task;

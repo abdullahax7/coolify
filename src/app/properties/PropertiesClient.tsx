@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { PropertyCard } from '@/components/home/PropertyCard';
 import { type Property } from '@/data/properties';
 import styles from './properties.module.css';
@@ -13,9 +14,14 @@ interface PropertiesClientProps {
 }
 
 export default function PropertiesClient({ initialProperties }: PropertiesClientProps) {
-  const [listingType, setListingType] = useState<ListingType>('All');
-  const [sector, setSector] = useState<SectorType>('All');
-  const [sortBy, setSortBy] = useState('Price: High to Low');
+  const searchParams = useSearchParams();
+  
+  const [listingType, setListingType] = useState<ListingType>(() => (searchParams.get('listingType') as ListingType) || 'All');
+  const [sector, setSector] = useState<SectorType>(() => (searchParams.get('sector') as SectorType) || 'All');
+  const [sortBy, setSortBy] = useState('Newest Listed');
+  const [searchQuery, setSearchQuery] = useState(() => searchParams.get('location') || '');
+  const [minPrice] = useState(() => searchParams.get('minPrice') || '');
+  const [maxPrice] = useState(() => searchParams.get('maxPrice') || '');
 
   const filteredProperties = useMemo(() => {
     return initialProperties
@@ -23,33 +29,76 @@ export default function PropertiesClient({ initialProperties }: PropertiesClient
         const matchesType =
           listingType === 'All' ||
           (prop.listingType ?? '').toLowerCase() === listingType.toLowerCase();
+        
         const matchesSector =
           sector === 'All' ||
           (prop.sector ?? '').toLowerCase() === sector.toLowerCase();
-        return matchesType && matchesSector;
+
+        const searchLower = searchQuery.toLowerCase();
+        const matchesSearch = 
+          !searchQuery || 
+          (prop.title ?? '').toLowerCase().includes(searchLower) ||
+          (prop.location ?? '').toLowerCase().includes(searchLower) ||
+          (prop.description ?? '').toLowerCase().includes(searchLower) ||
+          (prop.type ?? '').toLowerCase().includes(searchLower);
+
+        // Price filtering
+        const priceValue = parseInt(String(prop.price ?? '0').replace(/[^0-9]/g, '')) || 0;
+        const matchesMin = !minPrice || priceValue >= (parseInt(minPrice.replace(/[^0-9]/g, '')) || 0);
+        const matchesMax = !maxPrice || priceValue <= (parseInt(maxPrice.replace(/[^0-9]/g, '')) || 0);
+
+        return matchesType && matchesSector && matchesSearch && matchesMin && matchesMax;
       })
       .sort((a: Property, b: Property) => {
-        const priceA = parseInt(String(a.price ?? '0').replace(/[^0-9]/g, '')) || 0;
-        const priceB = parseInt(String(b.price ?? '0').replace(/[^0-9]/g, '')) || 0;
-        if (sortBy === 'Price: High to Low') return priceB - priceA;
-        if (sortBy === 'Price: Low to High') return priceA - priceB;
+        if (sortBy === 'Price: High to Low') {
+          const priceA = parseInt(String(a.price ?? '0').replace(/[^0-9]/g, '')) || 0;
+          const priceB = parseInt(String(b.price ?? '0').replace(/[^0-9]/g, '')) || 0;
+          return priceB - priceA;
+        }
+        if (sortBy === 'Price: Low to High') {
+          const priceA = parseInt(String(a.price ?? '0').replace(/[^0-9]/g, '')) || 0;
+          const priceB = parseInt(String(b.price ?? '0').replace(/[^0-9]/g, '')) || 0;
+          return priceA - priceB;
+        }
+        if (sortBy === 'Bedrooms: High to Low') {
+          return (b.beds ?? 0) - (a.beds ?? 0);
+        }
+        if (sortBy === 'Area: Largest First') {
+          return (b.sqft ?? 0) - (a.sqft ?? 0);
+        }
+        if (sortBy === 'Newest Listed') {
+          // Fallback to ID comparison if date isn't available, or assuming higher ID is newer
+          return b.id.localeCompare(a.id);
+        }
         return 0;
       });
-  }, [initialProperties, listingType, sector, sortBy]);
+  }, [initialProperties, listingType, sector, sortBy, searchQuery, minPrice, maxPrice]);
 
   return (
     <section className={styles.content}>
       <div className={styles.container}>
-        <div className={styles.categoryTabs}>
-          {(['All', 'Sale', 'Rent'] as ListingType[]).map((type) => (
-            <button
-              key={type}
-              className={`${styles.tab} ${listingType === type ? styles.activeTab : ''}`}
-              onClick={() => setListingType(type)}
-            >
-              {type === 'All' ? 'View All Listings' : `For ${type}`}
-            </button>
-          ))}
+        <div className={styles.filterSection}>
+          <div className={styles.categoryTabs}>
+            {(['All', 'Sale', 'Rent'] as ListingType[]).map((type) => (
+              <button
+                key={type}
+                className={`${styles.tab} ${listingType === type ? styles.activeTab : ''}`}
+                onClick={() => setListingType(type)}
+              >
+                {type === 'All' ? 'View All Listings' : `For ${type}`}
+              </button>
+            ))}
+          </div>
+
+          <div className={styles.searchWrapper}>
+            <input 
+              type="text" 
+              placeholder="Search by location, title, or type..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className={styles.searchInput}
+            />
+          </div>
         </div>
 
         <div className={styles.subFilters}>
@@ -70,8 +119,11 @@ export default function PropertiesClient({ initialProperties }: PropertiesClient
             <div className={styles.sort}>
               <label>Order by:</label>
               <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+                <option>Newest Listed</option>
                 <option>Price: High to Low</option>
                 <option>Price: Low to High</option>
+                <option>Bedrooms: High to Low</option>
+                <option>Area: Largest First</option>
               </select>
             </div>
           </div>
@@ -82,9 +134,11 @@ export default function PropertiesClient({ initialProperties }: PropertiesClient
                 key={prop.id}
                 id={prop.id}
                 image={
-                  Array.isArray(prop.gallery) && prop.gallery.length > 0
-                    ? prop.gallery[0]
-                    : prop.image ?? '/placeholder-property.jpg'
+                  prop.image 
+                    ? prop.image 
+                    : (Array.isArray(prop.gallery) && prop.gallery.length > 0
+                        ? prop.gallery[0]
+                        : '/images/prop_1.png')
                 }
                 title={prop.title ?? ''}
                 location={prop.location ?? ''}
@@ -93,14 +147,59 @@ export default function PropertiesClient({ initialProperties }: PropertiesClient
                 baths={prop.baths ?? 0}
                 sqft={prop.sqft ?? 0}
                 type={prop.type ?? ''}
+                isUnavailable={(prop as Property & { isUnavailable?: boolean }).isUnavailable}
               />
             ))}
           </div>
 
           {filteredProperties.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '100px 0', borderTop: '1px solid var(--border-light)' }}>
-              <h3 style={{ color: 'var(--text-muted)' }}>No properties match your exact criteria.</h3>
-              <p>Try adjusting your sector or listing filters.</p>
+            <div style={{ textAlign: 'center', padding: '80px 24px', borderTop: '1px solid var(--border-light)' }}>
+              <h3 style={{ color: 'var(--foreground)', marginBottom: '0.5rem', fontSize: '1.4rem' }}>
+                {initialProperties.length === 0 ? 'No live listings yet' : 'No properties match your filters'}
+              </h3>
+              <p style={{ color: 'var(--text-muted)', marginBottom: '1.75rem', maxWidth: 460, marginLeft: 'auto', marginRight: 'auto' }}>
+                {initialProperties.length === 0
+                  ? 'New properties are added every week. Check back soon or browse our services in the meantime.'
+                  : 'Try widening your search, removing some filters, or browsing the full portfolio.'}
+              </p>
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                {initialProperties.length > 0 && (
+                  <button
+                    onClick={() => {
+                      setListingType('All');
+                      setSector('All');
+                      setSearchQuery('');
+                    }}
+                    style={{
+                      padding: '0.75rem 1.5rem',
+                      borderRadius: 'var(--radius-md)',
+                      background: 'var(--primary)',
+                      color: '#fff',
+                      fontWeight: 600,
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontFamily: 'inherit',
+                      fontSize: '0.95rem',
+                    }}
+                  >
+                    Clear filters
+                  </button>
+                )}
+                <a
+                  href="/contact"
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    borderRadius: 'var(--radius-md)',
+                    border: '1px solid var(--border)',
+                    color: 'var(--foreground)',
+                    fontWeight: 600,
+                    textDecoration: 'none',
+                    display: 'inline-block',
+                  }}
+                >
+                  Speak to an agent
+                </a>
+              </div>
             </div>
           )}
         </div>
@@ -108,3 +207,4 @@ export default function PropertiesClient({ initialProperties }: PropertiesClient
     </section>
   );
 }
+

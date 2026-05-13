@@ -164,6 +164,103 @@
   margin-right: auto;
 }
 
+.uploadArea {
+  position: relative;
+  background: #f8fafc;
+  border: 2px dashed #e2e8f0;
+  border-radius: var(--radius-md);
+  padding: 40px 20px;
+  text-align: center;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.uploadArea:hover {
+  background: white;
+  border-color: var(--primary);
+}
+
+.fileInput {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.uploadLabel i {
+  font-size: 2rem;
+  display: block;
+  margin-bottom: 12px;
+}
+
+.uploadLabel span {
+  display: block;
+  font-weight: 700;
+  color: var(--secondary);
+  margin-bottom: 4px;
+}
+
+.uploadLabel small {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.imageGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.imageThumb {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border-light);
+}
+
+.imageThumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.imageThumb button {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #e11d48;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: all 0.2s;
+}
+
+.imageThumb button:hover {
+  background: #e11d48;
+  color: white;
+}
+
+.errorMsg {
+  background: #fef2f2;
+  color: #b91c1c;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border: 1px solid #fee2e2;
+}
+
 /* Process Section */
 .processSection {
   padding: 100px 0;

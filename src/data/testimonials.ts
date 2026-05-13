@@ -1,3 +1,5 @@
+import { SupabaseClient } from '@supabase/supabase-js';
+
 export interface Testimonial {
   quote: string;
   author: string;
@@ -5,7 +7,7 @@ export interface Testimonial {
   image: string;
 }
 
-export const TESTIMONIALS: Testimonial[] = [
+export const TESTIMONIALS_DEFAULTS: Testimonial[] = [
   {
     quote: "Property Trader has completely transformed how I manage my central London portfolio. Their attention to detail is unparalleled.",
     author: "Alexandra Vane",
@@ -25,3 +27,36 @@ export const TESTIMONIALS: Testimonial[] = [
     image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=200&h=200"
   }
 ];
+
+interface TestimonialRecord {
+  quote: string;
+  author: string;
+  role: string;
+  image_url?: string;
+}
+
+export const getTestimonials = async (supabase?: SupabaseClient): Promise<Testimonial[]> => {
+  try {
+    let client = supabase;
+    if (!client) {
+      const { createClient } = await import('@/lib/supabase/client');
+      client = createClient() as SupabaseClient;
+    }
+
+    const { data, error } = await client
+      .from('testimonials')
+      .select('*');
+
+    if (error || !data || data.length === 0) return TESTIMONIALS_DEFAULTS;
+
+    return (data as TestimonialRecord[]).map((t: TestimonialRecord) => ({
+      quote: t.quote,
+      author: t.author,
+      role: t.role,
+      image: t.image_url || TESTIMONIALS_DEFAULTS.find(d => d.author === t.author)?.image || ''
+    }));
+  } catch (err) {
+    console.warn('Testimonial fetch failed, using defaults:', err);
+    return TESTIMONIALS_DEFAULTS;
+  }
+};

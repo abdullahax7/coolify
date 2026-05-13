@@ -1,151 +1,64 @@
-'use client';
+import React from 'react';
+import { getPageContent } from '@/lib/getContent';
+import { ServicesClient } from './ServicesClient';
 
-import React, { useState } from 'react';
-import Image from 'next/image';
-import { Header } from '@/components/layout/Header';
-import { Footer } from '@/components/layout/Footer';
-import { QuickStartSection } from '@/components/services/QuickStartSection';
-import { useCart } from '@/context/CartContext';
-import { SERVICE_CATALOG } from '@/data/pricing_data';
-import styles from './services-page.module.css';
+import { SERVICE_CATALOG, CatalogCategory } from '@/data/pricing_data';
 
-interface Item {
-  name: string;
-  price: string;
-  desc: string;
-}
+export const revalidate = 3600; // 1 hour
 
-export default function ServicesHubPage() {
-  const { addItem } = useCart();
-  const [activeCategory, setActiveCategory] = useState(SERVICE_CATALOG[0].category);
-  const [notification, setNotification] = useState<{ msg: string; type: 'success' | 'info' } | null>(null);
+export default async function ServicesHubPage() {
+  const content = await getPageContent('services', {
+    services_title: 'Full Service <span>Catalog</span>',
+    services_subtitle: 'Individual services, products, and compliance certificates for landlords.',
+    cta_heading: 'Need a Bespoke Solution?',
+    cta_subtext: 'Contact our expert team for portfolio management or specialized commercial services.',
+    hero_image_url: '/servicesbg.png'
+  });
 
-  const handleAddToCart = (item: Item) => {
-    const numericPrice = parseFloat(item.price.replace(/[^0-9.]/g, '')) || 0;
-    const success = addItem({ id: item.name, name: item.name, price: item.price, numericPrice });
-    
-    setNotification({
-      msg: success ? `Added ${item.name} to cart` : `${item.name} is already in cart`,
-      type: success ? 'success' : 'info'
-    });
+  const globalData = await getPageContent('global_data', {
+    service_catalog: ''
+  });
 
-    setTimeout(() => setNotification(null), 3000);
-  };
-
-  return (
-    <div className={styles.page}>
-      <Header />
+  // Ensure all categories from static SERVICE_CATALOG exist in the final catalog
+  let finalCatalog = SERVICE_CATALOG;
+  if (globalData.service_catalog) {
+    try {
+      const dbCatalog = JSON.parse(globalData.service_catalog);
+      // Create a map of existing categories in DB
+      const dbCatMap = new Map(dbCatalog.map((c: any) => [c.category, c]));
       
-      <main className={styles.main}>
-        {/* Hero Section */}
-        <section className={styles.hero}>
-          <div className={styles.container}>
-            <div className={styles.heroLayout}>
-              <div className={styles.heroText}>
-                <div className={styles.badge}>Compliance & Care</div>
-                <h1 className={styles.title}>Professional <span>Landlord Services</span></h1>
-                <p className={styles.subtitle}>
-                  A comprehensive catalog of management solutions, safety certificates, and legal documentation 
-                  designed to keep your property compliant and profitable.
-                </p>
-              </div>
-              <div className={styles.heroImage}>
-                <Image 
-                  src="/services_hero.png" 
-                  alt="Landlord Services Illustration" 
-                  width={500} 
-                  height={400} 
-                  className={styles.heroIllustration}
-                  priority
-                />
-              </div>
-            </div>
-          </div>
-        </section>
+      // Merge: use DB version if exists, otherwise fallback to static
+      finalCatalog = SERVICE_CATALOG.map(staticCat => {
+        return (dbCatMap.get(staticCat.category) as CatalogCategory) || staticCat;
+      });
 
-        {/* Full Service Catalog Section - NOW THE PRIMARY FOCUS */}
-        <section className={styles.section} id="catalog">
-          <div className={styles.container}>
-            {notification && (
-              <div className={`${styles.toast} ${styles[notification.type]}`}>
-                {notification.type === 'success' ? '✓' : 'ℹ️'} {notification.msg}
-              </div>
-            )}
-            <div className={styles.sectionHeader}>
-              <h2 className={styles.sectionTitle}>Full Service <span>Catalog</span></h2>
-              <p className={styles.sectionSubtitle}>Individual services, products, and compliance certificates for landlords.</p>
-            </div>
+      // Also include any extra categories from DB that aren't in static
+      const staticCatNames = new Set(SERVICE_CATALOG.map(c => c.category));
+      dbCatalog.forEach((dbCat: any) => {
+        if (!staticCatNames.has(dbCat.category)) {
+          finalCatalog.push(dbCat);
+        }
+      });
+    } catch (e) {
+      // Failed to parse catalog from DB
+    }
+  }
+  
+  // Final Sort/Order Logic (applied to both static and merged catalog)
+  // 1. Move Renting Homes Wales Forms to the absolute end
+  const walesIdx = finalCatalog.findIndex(c => c.category.includes('Wales Forms'));
+  if (walesIdx !== -1) {
+    const [walesCat] = finalCatalog.splice(walesIdx, 1);
+    finalCatalog.push(walesCat);
+  }
 
-            <div className={styles.catalogLayout}>
-              {/* Category Tabs */}
-              <div className={styles.catalogNav}>
-                {SERVICE_CATALOG.map((cat) => (
-                  <button 
-                    key={cat.category}
-                    className={`${styles.navItem} ${activeCategory === cat.category ? styles.navActive : ''}`}
-                    onClick={() => setActiveCategory(cat.category)}
-                  >
-                    {cat.category}
-                  </button>
-                ))}
-              </div>
+  // 2. Move Marketing & Boards to second last (right before Wales Forms)
+  const marketingIdx = finalCatalog.findIndex(c => c.category.includes('Marketing & Boards'));
+  if (marketingIdx !== -1) {
+    const [marketingCat] = finalCatalog.splice(marketingIdx, 1);
+    // If Wales is at the end, inserting at length-1 makes Marketing second-to-last
+    finalCatalog.splice(finalCatalog.length - 1, 0, marketingCat);
+  }
 
-            <div className={styles.catalogGrid}>
-              {SERVICE_CATALOG.find(c => c.category === activeCategory)?.items.map((item, idx) => {
-                const isRHW = /Form RHW/i.test(item.name);
-
-                return (
-                  <div key={idx} className={styles.catalogCard}>
-                    <div className={styles.cardHeader}>
-                      <h3>{item.name}</h3>
-                      <span className={styles.price}>{item.price}</span>
-                    </div>
-                    <p>{item.desc}</p>
-                    <div className={styles.cardActions}>
-                      <button
-                        className={styles.selectBtn}
-                        onClick={() => {
-                          if (isRHW) {
-                            window.location.href = `/forms/preview?form=${encodeURIComponent(item.name)}&price=${encodeURIComponent(item.price)}`;
-                          } else {
-                            window.location.href = `/checkout?service=${encodeURIComponent(item.name)}&price=${encodeURIComponent(item.price)}`;
-                          }
-                        }}
-                      >
-                        {isRHW ? 'EDIT & PAY' : 'BUY NOW'}
-                      </button>
-                      {!isRHW && (
-                        <button 
-                          className={styles.cartBtn}
-                          onClick={() => handleAddToCart(item)}
-                        >
-                          + CART
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            </div>
-          </div>
-        </section>
-
-        <QuickStartSection />
-
-        {/* Contact/CTA Section */}
-        <section className={styles.ctaSection}>
-          <div className={styles.container}>
-            <div className={styles.ctaCard}>
-              <h2>Need a Bespoke Solution?</h2>
-              <p>Contact our expert team for portfolio management or specialized commercial services.</p>
-              <button onClick={() => window.location.href='/contact'}>Talk to an Expert</button>
-            </div>
-          </div>
-        </section>
-      </main>
-
-      <Footer />
-    </div>
-  );
+  return <ServicesClient content={content} rawCatalog={JSON.stringify(finalCatalog)} />;
 }

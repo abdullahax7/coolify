@@ -1,4 +1,5 @@
 import React from 'react';
+import Script from 'next/script';
 import styles from './PropertyFAQ.module.css';
 
 const FAQS = [
@@ -27,7 +28,8 @@ const FAQS = [
 export const PropertyFAQ = () => {
   return (
     <section className={styles.section}>
-      <script
+      <Script
+        id="faq-ld-json"
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify({

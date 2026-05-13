@@ -16,6 +16,7 @@ export async function GET() {
   const query = supabase
     .from('orders')
     .select('*')
+    .is('deleted_at', null)
     .order('created_at', { ascending: false });
 
   if (!isAdmin) query.eq('user_id', user.id);
@@ -33,11 +34,20 @@ export async function POST(req: NextRequest) {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('name, phone')
+    .select('name, phone, is_admin')
     .eq('id', user.id)
     .single();
+  const isAdmin = profile?.is_admin ?? false;
 
   const body = await req.json();
+
+  // Admins may be creating an order on a client's behalf (e.g. Wales form).
+  // When the body supplies customer info, trust it; otherwise fall back to
+  // the requester's own profile (customer self-serve path).
+  const customerName  = isAdmin && body.customerName  ? body.customerName  : (profile?.name  ?? '');
+  const customerEmail = isAdmin && body.customerEmail ? body.customerEmail : (user.email     ?? '');
+  const customerPhone = isAdmin && body.customerPhone ? body.customerPhone : (profile?.phone ?? '');
+
   const order = {
     id: `ORD-${Date.now()}`,
     user_id: user.id,
@@ -51,9 +61,9 @@ export async function POST(req: NextRequest) {
     form_data: body.formData ?? null,
     pdf_url: body.pdfUrl ?? null,
     square_payment_id: body.squarePaymentId ?? null,
-    customer_name: profile?.name ?? '',
-    customer_email: user.email ?? '',
-    customer_phone: profile?.phone ?? '',
+    customer_name: customerName,
+    customer_email: customerEmail,
+    customer_phone: customerPhone,
     created_at: new Date().toISOString(),
   };
 

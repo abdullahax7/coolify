@@ -27,7 +27,7 @@ export const CashBuy: React.FC = () => {
                 </div>
               </div>
               <div className={styles.trustItem}>
-                <span className={styles.trustIcon}>💰</span>
+                <span className={styles.trustIcon}>💷</span>
                 <div>
                   <h4>Zero Fees</h4>
                   <p>We pay your legal costs</p>

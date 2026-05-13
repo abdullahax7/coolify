@@ -1,26 +1,26 @@
 :root {
-  /* Color Palette - Property Trader Brand */
-  --background: #ffffff;
-  --foreground: #0f172a;
+  /* Color Palette - Property Trader Brand (Premium Dark Default) */
+  --background: #0f172a; /* Navy background */
+  --foreground: #f8fafc; /* Light text */
   
   --primary: #e11d48; /* Brand Red */
   --primary-light: #fb7185;
   --primary-dark: #be123c;
   
-  --secondary: #1e3a8a; /* Brand Blue */
+  --secondary: #60a5fa; /* Lighter blue for dark mode */
   --secondary-light: #3b82f6;
   --secondary-dark: #1e40af;
   
-  --accent-cream: #f8fafc;
+  --accent-cream: #1e293b;
   
-  --text-muted: #64748b;
-  --border: #e2e8f0;
-  --border-light: #f1f5f9;
-  --navy: #0f172a; /* Dark Navy for text and backgrounds */
+  --text-muted: #94a3b8;
+  --border: #334155;
+  --border-light: #1e293b;
+  --navy: #0f172a; 
   
   /* Shared Aesthetics */
-  --glass-bg: rgba(255, 255, 255, 0.9);
-  --glass-border: rgba(255, 255, 255, 0.2);
+  --glass-bg: rgba(15, 23, 42, 0.8);
+  --glass-border: rgba(255, 255, 255, 0.1);
   --glass-blur: 16px;
   
   --radius-sm: 4px;
@@ -141,3 +141,109 @@ button {
   }
 }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   STANDARD WALES FORM ENGINE - 1:1 PARITY BETWEEN PREVIEW & PRINT
+   ══════════════════════════════════════════════════════════════════════════ */
+[class*="wales-form-html"] {
+  background: white !important;
+  color: black !important;
+  font-family: "Times New Roman", Times, serif !important;
+  width: 210mm !important;
+  min-height: 297mm !important;
+  margin: 40px auto !important; /* Visual margin for on-screen preview */
+  padding: 10mm 15mm !important; /* Standard margins */
+  box-sizing: border-box !important;
+  font-size: 11pt !important;
+  line-height: 1.3 !important;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+@media print {
+  @page {
+    margin: 0;
+    size: A4;
+  }
+
+  /* Robust Reset for Print */
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    overflow: visible !important;
+    height: auto !important;
+    width: 100% !important;
+  }
+
+  /* Hide common layout distractions */
+  header, footer, nav, aside, 
+  [class*="sidebar"], 
+  [class*="nav"],
+  [class*="whatsapp"], [id*="whatsapp"], .floating-btn, .chat-widget, 
+  button, [class*="closeBtn"] {
+    display: none !important;
+  }
+
+  /* Specific exclusion for Wales forms to prevent hiding their headers/footers */
+  .wales-form-container [class*="header"],
+  .wales-form-container [class*="footer"],
+  [class*="wales-form-html"] [class*="header"],
+  [class*="wales-form-html"] [class*="footer"] {
+    display: flex !important;
+    visibility: visible !important;
+  }
+
+  /* Force the Form and its structural parents to be visible */
+  [class*="modalOverlay"],
+  [class*="modalBackdrop"],
+  [class*="modalContent"],
+  [class*="modalBody"],
+  [class*="modal"] {
+    display: block !important;
+    visibility: visible !important;
+    position: relative !important;
+    background: white !important;
+    width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  [class*="wales-form-html"] {
+    margin: 0 auto !important;
+    box-shadow: none !important;
+    width: 100% !important; /* Allow browser to fit to paper */
+    max-width: 210mm !important;
+    height: auto !important;
+    min-height: auto !important;
+    visibility: visible !important;
+  }
+
+  [class*="wales-form-html"] * {
+    visibility: visible !important;
+  }
+
+  /* Prevent page breaks inside form parts */
+  [class*="part-"], .parts-ab, .parts-row, .part-single {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    display: block !important;
+    width: 100% !important;
+  }
+}
+
+@media print {
+  .WhatsAppButton, 
+  .PageProgressBar, 
+  header, 
+  footer, 
+  [class*="Header"], 
+  [class*="Footer"],
+  [class*="PageProgressBar"],
+  [class*="WhatsAppButton"] {
+    display: none !important;
+  }
+}

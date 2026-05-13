@@ -77,23 +77,6 @@ function LandlordApplicationForm() {
         setErrorMsg(data.error || 'Something went wrong.');
         setStatus('error');
       } else {
-        // Log to "admin portal" (local storage for demo/prototype consistency in this project)
-        try {
-          const fullMessage = `Service: ${form.service}\nProperty: ${form.propertyType}\nAddress: ${form.rentalProperty}\nBathrooms: ${form.bathrooms}, Toilets: ${form.toilets}, Kitchens: ${form.kitchens}\nHeating: ${form.heating}\nGlazing: ${form.glazing}\nCooker: ${form.cooker}\nCertificates: ${form.certificates.join(', ') || 'None'}\nPeriod/Amount: ${form.rentalPeriodAmount}\nPhone: ${form.contactNumber}`;
-
-          await fetch('/api/messages', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              name: form.ownerDetails,
-              email: form.email,
-              phone: form.contactNumber,
-              subject: 'Landlord Application',
-              message: fullMessage,
-            }),
-          });
-        } catch { /* ignore */ }
-        
         setStatus('success');
       }
     } catch {

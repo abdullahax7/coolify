@@ -10,10 +10,20 @@ export const PropertyFilters: React.FC = () => {
         <label>Property Type</label>
         <select>
           <option>All Types</option>
-          <option>Apartment</option>
           <option>House</option>
-          <option>Villa</option>
+          <option>Detached House</option>
+          <option>Semi-Detached House</option>
+          <option>Terraced House</option>
+          <option>End of Terrace House</option>
+          <option>Apartment</option>
+          <option>Flat</option>
+          <option>Studio</option>
+          <option>Maisonette</option>
           <option>Penthouse</option>
+          <option>Duplex</option>
+          <option>Bungalow</option>
+          <option>Office</option>
+          <option>Retail</option>
         </select>
       </div>
 

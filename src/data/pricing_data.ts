@@ -15,6 +15,8 @@ export interface CatalogItem {
   name: string;
   price: string;
   desc: string;
+  flag?: 'england' | 'wales';
+  image_url?: string;
 }
 
 export interface CatalogCategory {
@@ -24,7 +26,7 @@ export interface CatalogCategory {
 
 /** SELLING PACKAGES DATA */
 export const SELL_TIERS: PricingTier[] = [
-  { name: 'Basic', price: '£65', subtitle: '3 Months with 3 months free' },
+  { name: 'Basic', price: 'Free', subtitle: '3 Months with 3 months free' },
   { name: 'Silver', price: '£250', isPopular: true, highlight: 'Best Value' },
   { name: 'Gold', price: '£450' },
   { name: 'Ultimate', price: '1% fee', subtitle: 'No Sale No Fee' },
@@ -48,7 +50,7 @@ export const SELL_FEATURES: PricingFeature[] = [
 
 /** LETTING PACKAGES DATA */
 export const LET_TIERS: PricingTier[] = [
-  { name: 'Basic', price: '£50', subtitle: '4 Months Advertising' },
+  { name: 'Basic', price: 'Free', subtitle: '4 Months Advertising' },
   { name: 'Essential', price: '£150', isPopular: true, subtitle: '4 Months Advertising' },
   { name: 'Premium', price: '£280', subtitle: '4 Months Advertising' },
 ];
@@ -119,6 +121,52 @@ export const getPricingData = (type: 'sell' | 'let' | 'manage') => {
 
 export const SERVICE_CATALOG: CatalogCategory[] = [
   {
+    category: '🏴󠁧󠁢󠁷󠁬󠁳󠁿 Renting Homes Wales Forms',
+    items: [
+      { name: 'Form RHW1', price: '£10.00', desc: 'Notice of standard contract.' },
+      { name: 'Form RHW2', price: '£10.00', desc: 'Notice of landlord’s address.' },
+      { name: 'Form RHW3', price: '£10.00', desc: 'Notice of change of landlord’s identity.' },
+      { name: 'Form RHW4', price: '£10.00', desc: 'Notice of change of landlord’s address.' },
+      { name: 'Form RHW5', price: '£10.00', desc: 'Notice of change of landlord.' },
+      { name: 'Form RHW6', price: '£10.00', desc: 'Head landlord\'s sub-occupation notice.' },
+      { name: 'Form RHW7', price: '£10.00', desc: 'Head landlord\'s notice to sub-holder.' },
+      { name: 'Form RHW8', price: '£10.00', desc: 'Notice of extended possession claim against the sub-holder.' },
+      { name: 'Form RHW9', price: '£10.00', desc: 'Notice of landlord\'s intention to provide a written statement (Para 2).' },
+      { name: 'Form RHW10', price: '£10.00', desc: 'Notice of landlord\'s intention to provide a written statement (Para 3).' },
+      { name: 'Form RHW11', price: '£10.00', desc: 'Notice of landlord\'s intention to provide a written statement (Para 4).' },
+      { name: 'Form RHW12', price: '£10.00', desc: 'Notice of variation of rent.' },
+      { name: 'Form RHW13', price: '£10.00', desc: 'Notice of variation of rent (Introductory).' },
+      { name: 'Form RHW14', price: '£10.00', desc: 'Notice of variation of rent (Prohibited conduct).' },
+      { name: 'Form RHW15', price: '£10.00', desc: 'Notice of temporary exclusion: supported standard contract.' },
+      { name: 'Form RHW16', price: '£10.00', desc: 'Landlord\'s notice to terminate (Section 173).' },
+      { name: 'Form RHW17', price: '£10.00', desc: 'Landlord\'s notice: breach of contract.' },
+      { name: 'Form RHW18', price: '£10.00', desc: 'Landlord\'s notice: estate management grounds.' },
+      { name: 'Form RHW19', price: '£10.00', desc: 'Notice of withdrawal of Section 173 notice.' },
+      { name: 'Form RHW20', price: '£10.00', desc: 'Notice of possession claim: serious rent arrears.' },
+      { name: 'Form RHW21', price: '£10.00', desc: 'Notice of possession claim: serious rent arrears (Intro/Prohib).' },
+      { name: 'Form RHW22', price: '£10.00', desc: 'Landlord\'s notice to end a fixed-term standard contract.' },
+      { name: 'Form RHW23', price: '£10.00', desc: 'Notice before making a possession claim.' },
+      { name: 'Form RHW24', price: '£10.00', desc: 'Landlord\'s break clause notice (6-month).' },
+      { name: 'Form RHW25', price: '£10.00', desc: 'Landlord\'s break clause notice (2-month).' },
+      { name: 'Form RHW26', price: '£10.00', desc: 'Notice of withdrawal of break clause notice.' },
+      { name: 'Form RHW27', price: '£10.00', desc: 'Notice of landlord\'s intention to end contract due to abandonment.' },
+      { name: 'Form RHW28', price: '£10.00', desc: 'Notice of end of contract due to abandonment.' },
+      { name: 'Form RHW29', price: '£10.00', desc: 'Notice of landlord\'s intention to end rights of joint contract-holder (non-occupation).' },
+      { name: 'Form RHW30', price: '£10.00', desc: 'Notice of end of rights of joint contract-holder (non-occupation).' },
+      { name: 'Form RHW31', price: '£10.00', desc: 'Notice of ending of joint contract-holder’s rights (non-occupation).' },
+      { name: 'Form RHW32', price: '£10.00', desc: 'Notice of intention to apply for order ending JCH rights (prohibited conduct).' },
+      { name: 'Form RHW33', price: '£10.00', desc: 'Notice to other joint contract-holders (prohibited conduct).' },
+      { name: 'Form RHW34', price: '£10.00', desc: 'Notice of extension of introductory period.' },
+      { name: 'Form RHW35', price: '£10.00', desc: 'Notice of intention to apply for a prohibited conduct standard contract.' },
+      { name: 'Form RHW36', price: '£10.00', desc: 'Notice of end of probation period.' },
+            { name: 'Form RHW37', price: '£10.00', desc: 'Notice of extension of probation period.' },
+
+      { name: 'Form RHW38', price: '£10.00', desc: 'Landlord\'s notice of termination: fixed term standard contract (converted).' }
+
+
+    ]
+  },
+  {
     category: '📢 Marketing & Boards',
     items: [
       { name: '🪧 “To Let” Board', price: '£45.00', desc: 'Advertise your property 24 hours a day, locally.' },
@@ -149,65 +197,31 @@ export const SERVICE_CATALOG: CatalogCategory[] = [
   {
     category: '📊 Reports & Valuations',
     items: [
-      { name: '🏠 House Report – England', price: '£130.00', desc: 'Detailed comprehensive property valuation.' },
-      { name: '🏴󠁧󠁢󠁷󠁬󠁳󠁿 House Report – Wales', price: '£130.00', desc: 'Detailed comprehensive property valuation.' },
-      { name: '📋 Inventory Report – England', price: '£80.00', desc: 'Full property condition log for move-in.' },
-      { name: '📋 Inventory Report – Wales', price: '£50.00', desc: 'Full property condition log for move-in.' }
+      { name: 'House Report – England', price: '£130.00', desc: 'Detailed comprehensive property valuation.', flag: 'england' },
+      { name: 'House Report – Wales', price: '£130.00', desc: 'Detailed comprehensive property valuation.', flag: 'wales' },
+      { name: 'Inventory Report – England', price: '£80.00', desc: 'Full property condition log for move-in.', flag: 'england' },
+      { name: 'Inventory Report – Wales', price: '£50.00', desc: 'Full property condition log for move-in.', flag: 'wales' }
     ]
   },
   {
     category: '⚖️ Legal & Documentation',
     items: [
-      { name: '📄 Tenancy Agreements', price: '£40.00', desc: 'Professionally prepared AST or commercial agreements.' },
-      { name: '✍️ Digital Signing', price: '£40.00', desc: 'Includes electronic signatures for all parties.' },
+      
+      { name: 'Tenancy Agreements', price: '£40.00', desc: 'Professionally prepared AST or commercial agreements.' },
+      { name: '✍️ Digital Signing', price: '£40.00', desc: 'Includes electronic signatures for all parties.' }
+,
       { name: '💼 Commercial Lease', price: '£130.00', desc: 'Specialized legal commercial leasing documents.' },
       { name: '🔒 Deposit Holding', price: '£30.00', desc: 'Secure management of tenant deposits (DPS).' },
       { name: '🔔 Section 13 Notice', price: '£30.00', desc: 'Issuance of legal notices for rent review.' },
       { name: '⚠️ Section 8 Notice', price: '£50.00', desc: 'Legal notice for possession due to breach.' },
-      { name: '📈 Rent Increase England', price: '£20.00', desc: 'Formal procedure for rent review.' },
-      { name: '📈 Rent Increase Wales', price: '£13.00', desc: 'Formal procedure for rent review in Wales.' }
+      { name: 'Rent Increase England', price: '£20.00', desc: 'Formal procedure for rent review.', flag: 'england' },
+      { name: 'Rent Increase Wales', price: '£13.00', desc: 'Formal procedure for rent review in Wales.', flag: 'wales' }
     ]
   },
   {
     category: '🛠️ Hardware & Other',
     items: [
       { name: '🔥 Infered Panel Heater', price: '£55.00', desc: 'Efficient heating solution for properties.' }
-    ]
-  },
-  {
-    category: '🏴󠁧󠁢󠁷󠁬󠁳󠁿 Renting Homes Wales Forms',
-    items: [
-      { name: 'Form RHW1', price: '£10.00', desc: 'Notice of standard contract.' },
-      { name: 'Form RHW2', price: '£10.00', desc: 'Notice of landlord’s address.' },
-      { name: 'Form RHW3', price: '£10.00', desc: 'Notice of change of landlord’s address.' },
-      { name: 'Form RHW4', price: '£10.00', desc: 'Notice of landlord’s intention to provide a written statement.' },
-      { name: 'Form RHW6', price: '£10.00', desc: 'Notice of variation of contract.' },
-      { name: 'Form RHW7', price: '£10.00', desc: 'Notice of variation of rent.' },
-      { name: 'Form RHW8', price: '£10.00', desc: 'Notice of variation of other contract terms.' },
-      { name: 'Form RHW12', price: '£10.00', desc: 'Notice of landlord’s intention to end a contract.' },
-      { name: 'Form RHW15', price: '£10.00', desc: 'Information about a new contract-holder.' },
-      { name: 'Form RHW16', price: '£10.00', desc: 'Landlord’s notice of termination.' },
-      { name: 'Form RHW17', price: '£10.00', desc: 'Landlord’s notice: breach of contract.' },
-      { name: 'Form RHW18', price: '£10.00', desc: 'Landlord’s notice: estate management grounds.' },
-      { name: 'Form RHW19', price: '£10.00', desc: 'Notice of landlord’s intention to end a fixed-term contract.' },
-      { name: 'Form RHW20', price: '£10.00', desc: 'Notice of landlord’s intention to end a periodic contract.' },
-      { name: 'Form RHW21', price: '£10.00', desc: 'Notice of landlord’s intention to end a contract (no fault).' },
-      { name: 'Form RHW22', price: '£10.00', desc: 'Notice of intention to end a fixed-term standard contract.' },
-      { name: 'Form RHW23', price: '£10.00', desc: 'Notice of intention to end a periodic standard contract.' },
-      { name: 'Form RHW24', price: '£10.00', desc: 'Notice of landlord’s intention to end a contract (serious rent arrears).' },
-      { name: 'Form RHW25', price: '£10.00', desc: 'Notice of landlord’s intention to end a contract (standard).' },
-      { name: 'Form RHW26', price: '£10.00', desc: 'Notice of landlord’s intention to end a contract (secure).' },
-      { name: 'Form RHW27', price: '£10.00', desc: 'Landlord’s notice: serious rent arrears.' },
-      { name: 'Form RHW28', price: '£10.00', desc: 'Landlord’s notice: serious rent arrears (fixed term).' },
-      { name: 'Form RHW29', price: '£10.00', desc: 'Notice of landlord’s intention to end a fixed-term contract (no fault).' },
-      { name: 'Form RHW30', price: '£10.00', desc: 'Notice of landlord’s intention to end a periodic contract (no fault).' },
-      { name: 'Form RHW32', price: '£10.00', desc: 'Notice of variation of fixed-term standard contract.' },
-      { name: 'Form RHW33', price: '£10.00', desc: 'Notice of variation of periodic standard contract.' },
-      { name: 'Form RHW34', price: '£10.00', desc: 'Notice of variation of secure contract.' },
-      { name: 'Form RHW35', price: '£10.00', desc: 'Notice of change of landlord.' },
-      { name: 'Form RHW36', price: '£10.00', desc: 'Notice of change of contract-holder.' },
-      { name: 'Form RHW37', price: '£10.00', desc: 'Landlord’s notice: serious rent arrears (periodic).' },
-      { name: 'Form RHW38', price: '£10.00', desc: 'Termination of converted contract.' }
     ]
   }
 ];

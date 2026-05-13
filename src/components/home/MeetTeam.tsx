@@ -2,10 +2,16 @@
 
 import React from 'react';
 import Image from 'next/image';
-import { STAFF } from '@/data/staff';
+import { STAFF_DEFAULTS, getStaff, type StaffMember } from '@/data/staff';
 import styles from './MeetTeam.module.css';
 
 export const MeetTeam: React.FC = () => {
+  const [staff, setStaff] = React.useState<StaffMember[]>(STAFF_DEFAULTS);
+
+  React.useEffect(() => {
+    getStaff().then(setStaff);
+  }, []);
+
   return (
     <section className={styles.section}>
       <div className={styles.sectionHeader}>
@@ -15,7 +21,7 @@ export const MeetTeam: React.FC = () => {
       </div>
 
       <div className={styles.grid}>
-        {STAFF.map((member) => (
+        {staff.map((member) => (
           <div key={member.id} className={styles.card}>
             <div className={styles.imageWrapper}>
               {/* Using a placeholder if specific image not provided, 

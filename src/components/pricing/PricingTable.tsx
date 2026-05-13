@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { getPricingData, PricingTier, PricingFeature } from '@/data/pricing_data';
 import { ManagementInfo } from './ManagementInfo';
 import styles from './Pricing.module.css';
@@ -22,18 +23,14 @@ interface SubComponentProps {
   tiers: PricingTier[];
   features: PricingFeature[];
   type: 'sell' | 'let' | 'manage';
+  router: ReturnType<typeof useRouter>;
 }
 
 /** Mobile card view — one card per tier with all features listed */
-const MobilePricingCards: React.FC<SubComponentProps> = ({ tiers, features, type }) => {
+const MobilePricingCards: React.FC<SubComponentProps> = ({ tiers, features, type, router }) => {
   const [selected, setSelected] = useState(
     tiers.findIndex((t) => t.isPopular) || 0
   );
-
-  // Sync selected index when type changes
-  React.useEffect(() => {
-    setSelected(tiers.findIndex((t) => t.isPopular) || 0);
-  }, [type, tiers]);
 
   return (
     <div className={styles.mobileWrapper}>
@@ -92,9 +89,9 @@ const MobilePricingCards: React.FC<SubComponentProps> = ({ tiers, features, type
             className={`${styles.selectBtn} ${tier.isPopular ? styles.popularBtn : ''} ${styles.mobileSelectBtn}`}
             onClick={() => {
               if (type === 'manage') {
-                window.location.href = `/contact/landlord-application?plan=${encodeURIComponent(tier.name)}`;
+                router.push(`/contact/landlord-application?plan=${encodeURIComponent(tier.name)}`);
               } else {
-                window.location.href = `/checkout?plan=${encodeURIComponent(tier.name)}&type=${type}`;
+                router.push(`/checkout?plan=${encodeURIComponent(tier.name)}&type=${type}`);
               }
             }}
           >
@@ -107,7 +104,7 @@ const MobilePricingCards: React.FC<SubComponentProps> = ({ tiers, features, type
 };
 
 /** Desktop table view */
-const DesktopPricingTable: React.FC<SubComponentProps> = ({ tiers, features, type }) => (
+const DesktopPricingTable: React.FC<SubComponentProps> = ({ tiers, features, type, router }) => (
   <div className={styles.tableWrapper}>
     <table className={styles.table}>
       <thead>
@@ -153,9 +150,9 @@ const DesktopPricingTable: React.FC<SubComponentProps> = ({ tiers, features, typ
                 className={`${styles.selectBtn} ${tier.isPopular ? styles.popularBtn : ''}`}
                 onClick={() => {
                   if (type === 'manage') {
-                    window.location.href = `/contact/landlord-application?plan=${encodeURIComponent(tier.name)}`;
+                    router.push(`/contact/landlord-application?plan=${encodeURIComponent(tier.name)}`);
                   } else {
-                    window.location.href = `/checkout?plan=${encodeURIComponent(tier.name)}&type=${type}`;
+                    router.push(`/checkout?plan=${encodeURIComponent(tier.name)}&type=${type}`);
                   }
                 }}
               >
@@ -170,8 +167,38 @@ const DesktopPricingTable: React.FC<SubComponentProps> = ({ tiers, features, typ
 );
 
 export const PricingTable: React.FC = () => {
+  const router = useRouter();
   const [activeType, setActiveType] = useState<'sell' | 'let' | 'manage'>('sell');
-  const { tiers, features } = getPricingData(activeType);
+  const [overrides, setOverrides] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    fetch('/api/content?page=pricing')
+      .then(res => res.json())
+      .then(data => {
+        if (data.content) {
+          const mapped: Record<string, string> = {};
+          data.content.forEach((item: { section_key: string; content_value: string }) => {
+            mapped[item.section_key] = item.content_value;
+          });
+          setOverrides(mapped);
+        }
+      })
+      .catch(err => console.error('Failed to fetch pricing overrides:', err));
+  }, []);
+
+  const { tiers: staticTiers, features } = getPricingData(activeType);
+
+  // Apply overrides
+  const tiers = staticTiers.map(tier => {
+    const baseKey = `${activeType}_${tier.name.toLowerCase()}`;
+    return {
+      ...tier,
+      price: overrides[`${baseKey}_price`] || tier.price,
+      subtitle: overrides[`${baseKey}_subtitle`] || tier.subtitle,
+      isPopular: overrides[`${baseKey}_popular`] === 'true' ? true : (overrides[`${baseKey}_popular`] === 'false' ? false : tier.isPopular),
+      highlight: overrides[`${baseKey}_highlight`] || tier.highlight,
+    };
+  });
 
   return (
     <div className={styles.container}>
@@ -211,12 +238,12 @@ export const PricingTable: React.FC = () => {
 
       {/* Desktop: full comparison table */}
       <div className={styles.desktopOnly}>
-        <DesktopPricingTable tiers={tiers} features={features} type={activeType} />
+        <DesktopPricingTable tiers={tiers} features={features} type={activeType} router={router} />
       </div>
 
       {/* Mobile: card-based selector */}
       <div className={styles.mobileOnly}>
-        <MobilePricingCards tiers={tiers} features={features} type={activeType} />
+        <MobilePricingCards key={activeType} tiers={tiers} features={features} type={activeType} router={router} />
       </div>
 
       <div className={styles.bespokeCall}>

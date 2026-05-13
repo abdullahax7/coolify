@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { Logo } from '@/components/common/Logo';
 import styles from './forgot-password.module.css';
 
 export default function ForgotPasswordPage() {
@@ -27,7 +28,7 @@ export default function ForgotPasswordPage() {
       <div className={styles.left}>
         <div className={styles.leftContent}>
           <Link href="/" className={styles.backLink}>← Back to site</Link>
-          <div className={styles.logo}>PROPERTY <span>TRADER</span></div>
+          <Logo className={styles.logo} showPhone={false} variant="sidebar" />
           <h1>Reset your <span>password.</span></h1>
           <p>Enter your registered email address and we&apos;ll send you instructions to reset your password.</p>
           <div className={styles.trustItems}>
@@ -58,13 +59,19 @@ export default function ForgotPasswordPage() {
 
               <form onSubmit={handleSubmit} className={styles.form} noValidate>
                 <div className={styles.field}>
-                  <label>Email Address</label>
+                  <label htmlFor="forgot-email">Email Address</label>
                   <input
+                    id="forgot-email"
+                    name="email"
                     type="email"
                     placeholder="john@example.com"
                     value={email}
                     onChange={e => setEmail(e.target.value)}
                     disabled={loading}
+                    required
+                    autoComplete="email"
+                    inputMode="email"
+                    aria-required="true"
                   />
                 </div>
 
