@@ -35,6 +35,7 @@ export async function POST(req: NextRequest) {
       email,
       password,
       options: {
+        emailRedirectTo: `${new URL(req.url).origin}/auth/callback`,
         data: { name, phone, role: role || 'tenant' }
       }
     });
