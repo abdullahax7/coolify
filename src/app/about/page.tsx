@@ -8,6 +8,12 @@ import { getPageContent } from '@/lib/getContent';
 import { createAdminClient } from '@/lib/supabase/server';
 import styles from './about.module.css';
 
+export const metadata = {
+  title: 'About Us | Property Trader',
+  description: 'Property Trader has been buying, selling, and managing UK residential property since 1996. Meet the team behind the UK\'s straightforward property service.',
+  alternates: { canonical: '/about' },
+};
+
 export const revalidate = 86400; // 24 hours
 
 export default async function AboutPage() {

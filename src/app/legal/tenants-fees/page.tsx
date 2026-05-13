@@ -1,10 +1,14 @@
-"use client";
-
 import React from 'react';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import styles from '../legal.module.css';
 import Link from 'next/link';
+
+export const metadata = {
+  title: 'Tenants Fees & Welcome Pack | Property Trader',
+  description: 'Property Trader tenant fees and welcome pack. We never charge finder or introductory fees.',
+  alternates: { canonical: '/legal/tenants-fees' },
+};
 
 export default function TenantsFees() {
   return (
@@ -22,9 +26,14 @@ export default function TenantsFees() {
             <div className={styles.downloadSection}>
               <h2>Welcome Pack</h2>
               <p>Welcome pack for New tenants welcome letter 2024</p>
-              <button className={styles.primaryBtn} onClick={() => window.open('https://propertytrader1.com/welcome-pack.pdf', '_blank')}>
+              <a
+                className={styles.primaryBtn}
+                href="/forms/welcome-pack.pdf"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 Download Tenants Welcome Pack
-              </button>
+              </a>
             </div>
 
             <hr className={styles.divider} />

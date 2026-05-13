@@ -1,25 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { sendEmail, getWelcomeEmailHtml } from '@/lib/email';
-
-async function verifyCaptcha(token: string): Promise<boolean> {
-  const secret = process.env.RECAPTCHA_SECRET_KEY;
-  if (!secret) return true;
-  const res = await fetch('https://www.google.com/recaptcha/api/siteverify', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: `secret=${encodeURIComponent(secret)}&response=${encodeURIComponent(token)}`,
-  });
-  const json = await res.json() as { success: boolean };
-  return json.success === true;
-}
+import { verifyCaptcha, captchaEnabled } from '@/lib/captcha';
+import { rateLimit } from '@/lib/rate-limit';
 
 export async function POST(req: NextRequest) {
   try {
+    const rl = rateLimit(req, { name: 'register', capacity: 5, refillPerSec: 1 / 60 });
+    if (!rl.ok) {
+      return NextResponse.json(
+        { error: 'Too many registration attempts. Please wait a minute and try again.' },
+        { status: 429, headers: { 'Retry-After': String(rl.retryAfter) } },
+      );
+    }
+
     const { name, email, phone, password, captchaToken, role } = await req.json();
 
-    const captchaEnabled = process.env.NEXT_PUBLIC_RECAPTCHA_ENABLED === 'true';
-    if (captchaEnabled) {
+    if (captchaEnabled()) {
       if (!captchaToken) {
         return NextResponse.json({ error: 'Please complete the CAPTCHA.' }, { status: 400 });
       }

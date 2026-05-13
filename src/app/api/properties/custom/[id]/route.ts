@@ -25,6 +25,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     title, location, price, beds, baths, sqft, type, sector,
     notes, image_url, gallery_urls, map_embed_url, description,
     features, interior, exterior, listingType, is_approved,
+    is_rejected, rejection_reason, assigned_to_email,
     restore,
   } = body;
 
@@ -55,6 +56,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     if (updateData.is_approved === true) {
       updateData.status = 'Live';
     }
+    // Admin-only fields: rejection workflow + user assignment.
+    if (is_rejected !== undefined) updateData.is_rejected = is_rejected;
+    if (rejection_reason !== undefined) updateData.rejection_reason = rejection_reason;
+    if (assigned_to_email !== undefined) updateData.assigned_to_email = assigned_to_email;
   }
 
   const adminClient = await createAdminClient();

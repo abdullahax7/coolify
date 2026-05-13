@@ -83,6 +83,21 @@ export async function signOut(): Promise<void> {
   await supabase.auth.signOut();
 }
 
+export async function requestPasswordReset(email: string): Promise<{ error?: string }> {
+  const supabase = createClient();
+  const redirectTo = `${window.location.origin}/reset-password`;
+  const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+  if (error) return { error: error.message };
+  return {};
+}
+
+export async function updatePassword(newPassword: string): Promise<{ error?: string }> {
+  const supabase = createClient();
+  const { error } = await supabase.auth.updateUser({ password: newPassword });
+  if (error) return { error: error.message };
+  return {};
+}
+
 export async function getOrders(): Promise<Order[]> {
   const res = await fetch('/api/orders');
   if (!res.ok) return [];

@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Logo } from '@/components/common/Logo';
+import { requestPasswordReset } from '@/lib/auth';
 import styles from './forgot-password.module.css';
 
 export default function ForgotPasswordPage() {
@@ -11,16 +12,18 @@ export default function ForgotPasswordPage() {
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     if (!email) { setError('Please enter your email address.'); return; }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setError('Please enter a valid email address.'); return; }
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      setSubmitted(true);
-    }, 1000);
+    const { error: err } = await requestPasswordReset(email.trim());
+    setLoading(false);
+    // Always show success — never reveal whether an email exists in the system
+    // (prevents account enumeration). Log the real error to console for debugging.
+    if (err) console.warn('[forgot-password]', err);
+    setSubmitted(true);
   };
 
   return (

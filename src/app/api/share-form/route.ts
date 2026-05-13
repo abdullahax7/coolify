@@ -1,8 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
+import { createClient } from '@/lib/supabase/server';
+import { rateLimit } from '@/lib/rate-limit';
 
 export async function POST(req: NextRequest) {
   try {
+    // Admin-only — this endpoint sends attachments through our SMTP relay
+    // and was previously open to the world (open relay risk).
+    const userClient = await createClient();
+    const { data: { user } } = await userClient.auth.getUser();
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const { data: profile } = await userClient
+      .from('profiles')
+      .select('is_admin')
+      .eq('id', user.id)
+      .single();
+    if (!profile?.is_admin) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    // Defense in depth: even admins can't blast unlimited mail.
+    const rl = rateLimit(req, { name: 'share-form', capacity: 10, refillPerSec: 1 / 30 });
+    if (!rl.ok) {
+      return NextResponse.json(
+        { error: 'Too many emails. Try again shortly.' },
+        { status: 429, headers: { 'Retry-After': String(rl.retryAfter) } },
+      );
+    }
+
     const { recipientEmail, recipientName, formType, pdfBase64, pdfName, senderNote } = await req.json();
 
     if (!recipientEmail || !pdfBase64 || !formType) {

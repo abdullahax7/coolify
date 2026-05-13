@@ -2,9 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { sendEmail } from '@/lib/email';
 import { createClient } from '@/lib/supabase/server';
 import { verifyCaptcha, captchaEnabled } from '@/lib/captcha';
+import { rateLimit } from '@/lib/rate-limit';
 
 export async function POST(req: NextRequest) {
   try {
+    const rl = rateLimit(req, { name: 'contact', capacity: 3, refillPerSec: 1 / 120 });
+    if (!rl.ok) {
+      return NextResponse.json(
+        { error: 'Too many messages. Please wait a few minutes and try again.' },
+        { status: 429, headers: { 'Retry-After': String(rl.retryAfter) } },
+      );
+    }
+
     const { name, email, phone, subject, message, captchaToken } = await req.json();
 
     if (captchaEnabled()) {

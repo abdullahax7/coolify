@@ -4,6 +4,12 @@ import { Footer } from '@/components/layout/Footer';
 import styles from '../legal.module.css';
 import Link from 'next/link';
 
+export const metadata = {
+  title: 'Landlord Privacy Notice | Property Trader',
+  description: 'How Property Trader collects, processes, and protects landlord personal data under UK GDPR.',
+  alternates: { canonical: '/legal/privacy-notice-landlord' },
+};
+
 export default function LandlordPrivacyNotice() {
   return (
     <div className={styles.page}>

@@ -4,6 +4,12 @@ import { Footer } from '@/components/layout/Footer';
 import styles from '../legal.module.css';
 import Link from 'next/link';
 
+export const metadata = {
+  title: 'Data Protection Policy | Property Trader',
+  description: 'Property Trader\'s data protection policy: how we handle personal data, security measures, and our obligations under UK GDPR.',
+  alternates: { canonical: '/legal/data-protection-policy' },
+};
+
 export default function DataProtectionPolicy() {
   return (
     <div className={styles.page}>

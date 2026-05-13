@@ -4,6 +4,17 @@ import React, { useState } from 'react';
 import Image from 'next/image';
 import styles from '../admin.module.css';
 
+function Row({ label, value, href, mono }: { label: string; value: string; href?: string; mono?: boolean }) {
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: 12, fontSize: 14 }}>
+      <div style={{ color: '#64748b', fontWeight: 600 }}>{label}</div>
+      <div style={{ color: '#0f172a', fontWeight: 500, fontFamily: mono ? 'monospace' : undefined, fontSize: mono ? 12 : undefined, wordBreak: 'break-word' }}>
+        {href ? <a href={href} style={{ color: '#e11d48', textDecoration: 'none' }}>{value}</a> : value}
+      </div>
+    </div>
+  );
+}
+
 export interface UserProfile {
   id: string;
   name: string;
@@ -35,6 +46,7 @@ export default function UsersTab({
   const [roleFilter, setRoleFilter] = useState('all');
   const [assigningUser, setAssigningUser] = useState<UserProfile | null>(null);
   const [tenancyUser, setTenancyUser] = useState<UserProfile | null>(null);
+  const [viewingUser, setViewingUser] = useState<UserProfile | null>(null);
 
   const filteredUsers = users.filter(u => {
     const matchesSearch = 
@@ -138,7 +150,7 @@ export default function UsersTab({
                       >
                         📄
                       </button>
-                      <button className={styles.docActionIcon} title="View Details">👤</button>
+                      <button className={styles.docActionIcon} title="View Details" onClick={() => setViewingUser(user)}>👤</button>
                       <a href={`mailto:${user.email}`} className={styles.docActionIcon} title="Email User">✉️</a>
                       <button 
                         className={`${styles.docActionIcon} ${styles.btnDanger}`} 
@@ -160,6 +172,37 @@ export default function UsersTab({
           </tbody>
         </table>
       </div>
+
+      {/* User Details Modal */}
+      {viewingUser && (
+        <div className={styles.modalBackdrop} onClick={() => setViewingUser(null)}>
+          <div className={styles.modal} style={{ maxWidth: 480 }} onClick={e => e.stopPropagation()}>
+            <div style={{ padding: 24 }}>
+              <h2 style={{ margin: '0 0 4px', fontSize: 22, fontWeight: 800 }}>{viewingUser.name}</h2>
+              <p style={{ margin: '0 0 20px', color: '#64748b', fontSize: 14 }}>{viewingUser.role}{viewingUser.is_admin ? ' · admin' : ''}</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <Row label="Email" value={viewingUser.email} href={`mailto:${viewingUser.email}`} />
+                <Row label="Phone" value={viewingUser.phone || '—'} href={viewingUser.phone ? `tel:${viewingUser.phone}` : undefined} />
+                <Row label="Role" value={viewingUser.role} />
+                <Row label="Admin" value={viewingUser.is_admin ? 'Yes' : 'No'} />
+                <Row label="Created" value={new Date(viewingUser.created_at).toLocaleString('en-GB')} />
+                <Row label="User ID" value={viewingUser.id} mono />
+                <Row
+                  label="Assigned Properties"
+                  value={
+                    properties.filter(p => p.assigned_to_email === viewingUser.email).length === 0
+                      ? '—'
+                      : properties.filter(p => p.assigned_to_email === viewingUser.email).map(p => p.title).join(', ')
+                  }
+                />
+              </div>
+              <div style={{ marginTop: 24, textAlign: 'right' }}>
+                <button onClick={() => setViewingUser(null)} className={`${styles.btn} ${styles.btnInfo}`}>Close</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Property Assignment Modal */}
       {assigningUser && (

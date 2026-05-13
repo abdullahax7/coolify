@@ -4,6 +4,12 @@ import { Footer } from '@/components/layout/Footer';
 import styles from '../legal.module.css';
 import Link from 'next/link';
 
+export const metadata = {
+  title: 'Complaints Policy | Property Trader',
+  description: 'How to raise a complaint with Property Trader and our complaints handling timeline.',
+  alternates: { canonical: '/legal/complaints-policy' },
+};
+
 export default function ComplaintsPolicy() {
   return (
     <div className={styles.page}>

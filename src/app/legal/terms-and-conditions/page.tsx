@@ -4,6 +4,12 @@ import { Footer } from '@/components/layout/Footer';
 import styles from '../legal.module.css';
 import Link from 'next/link';
 
+export const metadata = {
+  title: 'Terms & Conditions | Property Trader',
+  description: 'Terms and conditions governing the use of Property Trader\'s website and services.',
+  alternates: { canonical: '/legal/terms-and-conditions' },
+};
+
 export default function TermsAndConditions() {
   return (
     <div className={styles.page}>

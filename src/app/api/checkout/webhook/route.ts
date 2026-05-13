@@ -26,8 +26,14 @@ export async function POST(req: NextRequest) {
   const signature = req.headers.get('x-square-hmacsha256-signature') ?? '';
   const sigKey = process.env.SQUARE_WEBHOOK_SIGNATURE_KEY ?? '';
 
-  // Use a dedicated env var so the URL is stable across deployments / proxies
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? `https://${req.headers.get('x-forwarded-host') ?? req.nextUrl.host}`;
+  // Pin the URL used for HMAC verification to a trusted env var. Falling
+  // back to request headers (x-forwarded-host, host) lets an attacker
+  // present a forged URL that their HMAC matches, defeating the check.
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? process.env.NEXT_PUBLIC_SITE_URL;
+  if (!appUrl) {
+    console.error('CRITICAL: NEXT_PUBLIC_APP_URL (or NEXT_PUBLIC_SITE_URL) is missing');
+    return NextResponse.json({ error: 'System configuration error' }, { status: 500 });
+  }
   const webhookUrl = `${appUrl}/api/checkout/webhook`;
 
   if (!sigKey) {

@@ -4,6 +4,12 @@ import { Footer } from '@/components/layout/Footer';
 import styles from '../legal.module.css';
 import Link from 'next/link';
 
+export const metadata = {
+  title: 'Tenant Fair Processing Notice | Property Trader',
+  description: 'How Property Trader processes tenant personal data, your rights, and how to contact us about your information.',
+  alternates: { canonical: '/legal/fair-processing-notice' },
+};
+
 export default function TenantFairProcessingNotice() {
   return (
     <div className={styles.page}>

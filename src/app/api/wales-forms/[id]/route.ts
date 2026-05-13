@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { softDeleteRow } from '@/lib/soft-delete';
+import { logAudit } from '@/lib/audit';
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -19,9 +20,16 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   }
 }
 
-export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
+    // Admin check via user-scoped client.
+    const userClient = await createClient();
+    const { data: { user } } = await userClient.auth.getUser();
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { data: profile } = await userClient.from('profiles').select('is_admin').eq('id', user.id).single();
+    if (!profile?.is_admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+
     const body = await request.json();
     const supabase = await createAdminClient();
     
@@ -73,6 +81,11 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       console.warn('Sync to orders exception:', e);
     }
 
+    await logAudit({
+      adminId: user.id, adminEmail: user.email, action: 'update',
+      targetTable: 'wales_forms', targetId: id, targetName: body.clientName ?? body.formType ?? null,
+      diff: { after: body }, request,
+    });
     return NextResponse.json(data);
   } catch (error: any) {
     console.error('API PUT Error:', error);

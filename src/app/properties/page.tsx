@@ -10,6 +10,12 @@ import { getPageContent } from '@/lib/getContent';
 import PropertiesClient from './PropertiesClient';
 import styles from './properties.module.css';
 
+export const metadata = {
+  title: 'Properties for Sale & Rent in the UK | Property Trader',
+  description: 'Browse UK properties for sale and rent — flats, houses, apartments across England and Wales. Verified listings from Property Trader.',
+  alternates: { canonical: '/properties' },
+};
+
 export const revalidate = 600; // Refresh properties every 10 minutes
 
 async function fetchCustomProperties(): Promise<(Property & { isUnavailable?: boolean })[]> {

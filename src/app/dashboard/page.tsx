@@ -11,6 +11,7 @@ import styles from './dashboard.module.css';
 import PropertyViewerModal from './PropertyViewerModal';
 import FormViewer from '@/components/wales/FormViewer';
 import { ThemeToggle } from '@/components/common/ThemeToggle';
+import SettingsTab from './SettingsTab';
 
 interface MyListing {
   id: string; title: string; location: string; price: string; beds: string; baths: string; sqft: string;
@@ -43,7 +44,18 @@ async function getAssignedProperties(): Promise<MyListing[]> {
   }
 }
 
-type Tab = 'overview' | 'list-property' | 'services' | 'compliance';
+type Tab = 'overview' | 'list-property' | 'services' | 'compliance' | 'settings';
+
+interface UserDocument {
+  id: string;
+  property_name: string | null;
+  document_type: string | null;
+  expiry_date: string | null;
+  date_uploaded: string | null;
+  status: string | null;
+  file_url: string | null;
+  file_name: string | null;
+}
 
 
 
@@ -62,6 +74,7 @@ function DashboardContent() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [myListings, setMyListings] = useState<MyListing[]>([]);
   const [assignedProperties, setAssignedProperties] = useState<MyListing[]>([]);
+  const [userDocs, setUserDocs] = useState<UserDocument[]>([]);
   const params = useSearchParams();
   const initialTab = (params.get('tab') as Tab) || 'overview';
   const [tab, setTab] = useState<Tab>(initialTab);
@@ -83,12 +96,14 @@ function DashboardContent() {
       const u = await getUser();
       if (!u) { router.replace('/login'); return; }
       setUser(u);
-      const [ordersData, listingsData, assignedData, walesData] = await Promise.all([
+      const [ordersData, listingsData, assignedData, walesData, docsRes] = await Promise.all([
         getOrders(),
         getMyListings(),
         getAssignedProperties(),
-        getWalesForms()
+        getWalesForms(),
+        fetch('/api/documents?mine=true').then(r => r.ok ? r.json() : { documents: [] }).catch(() => ({ documents: [] })),
       ]);
+      setUserDocs(docsRes.documents ?? []);
 
       // Merge wales_forms into orders for display if they aren't already there
       const mergedOrders = [...ordersData];
@@ -167,6 +182,7 @@ function DashboardContent() {
     'list-property': 'Property Management',
     'services': 'My Services',
     'compliance': 'Compliance & Certificates',
+    'settings': 'Account Settings',
   };
 
   return (
@@ -218,6 +234,13 @@ function DashboardContent() {
             onClick={() => { changeTab('compliance'); setMenuOpen(false); }}
           >
             <span>🚨</span> Compliance
+          </button>
+
+          <button
+            className={`${styles.navItem} ${tab === 'settings' ? styles.navActive : ''}`}
+            onClick={() => { changeTab('settings'); setMenuOpen(false); }}
+          >
+            <span>⚙️</span> Settings
           </button>
         </nav>
 
@@ -473,80 +496,97 @@ function DashboardContent() {
         {/* ── COMPLIANCE ── */}
         {tab === 'compliance' && (
           <div className={styles.complianceContent}>
-             <div className={styles.alertBanner}>
-               <div className={styles.alertIcon}>💡</div>
-               <div className={styles.alertText}>
-                 <strong>Proactive Compliance Tracking</strong>
-                 <p>We automatically monitor your certificate expiry dates. You will receive alerts 30 days before any document expires.</p>
-               </div>
-             </div>
+            {userDocs.length === 0 ? (
+              <>
+                <div className={styles.alertBanner}>
+                  <div className={styles.alertIcon}>📄</div>
+                  <div className={styles.alertText}>
+                    <strong>No compliance documents yet</strong>
+                    <p>Once your property manager uploads certificates (Gas Safety, EPC, EICR, tenancy agreements), they&apos;ll appear here with expiry warnings.</p>
+                  </div>
+                </div>
+                <div style={{ marginTop: 24 }}>
+                  <Link href="/services" className={styles.primaryActionBtn}>Book a Service</Link>
+                </div>
+              </>
+            ) : (
+              <>
+                {(() => {
+                  // Categorise into expiring (≤30 days) vs valid for the alert banner.
+                  const now = Date.now();
+                  const days30 = 30 * 24 * 60 * 60 * 1000;
+                  const expiring = userDocs.filter(d => {
+                    if (!d.expiry_date) return false;
+                    const t = new Date(d.expiry_date).getTime();
+                    return !isNaN(t) && t - now < days30 && t - now > -days30;
+                  });
+                  if (expiring.length === 0) return null;
+                  return (
+                    <div className={styles.alertBanner} style={{ background: '#fff7ed', borderColor: '#fdba74' }}>
+                      <div className={styles.alertIcon}>⚠️</div>
+                      <div className={styles.alertText}>
+                        <strong>{expiring.length} document{expiring.length === 1 ? '' : 's'} expiring soon</strong>
+                        <p>Review the table below — anything in the next 30 days needs renewing.</p>
+                      </div>
+                    </div>
+                  );
+                })()}
 
-             <div className={styles.complianceGrid}>
-               <ComplianceCard 
-                 title="Gas Safety (CP12)" 
-                 status="Good" 
-                 expiry="12 Oct 2026" 
-                 icon="🔥" 
-                 color="#10b981"
-               />
-               <ComplianceCard 
-                 title="EPC Certificate" 
-                 status="Expiring Soon" 
-                 expiry="15 Jun 2026" 
-                 icon="⚡" 
-                 color="#f59e0b"
-                 alert
-               />
-               <ComplianceCard 
-                 title="Electrical (EICR)" 
-                 status="Required" 
-                 expiry="N/A" 
-                 icon="🔌" 
-                 color="#ef4444"
-                 action="Book Now"
-               />
-               <ComplianceCard 
-                 title="Tenancy Agreement" 
-                 status="Active" 
-                 expiry="31 Dec 2026" 
-                 icon="📄" 
-                 color="#3b82f6"
-               />
-             </div>
-
-             <div className={styles.recentDocs}>
-               <h3 className={styles.sectionTitle}>Document Repository</h3>
-               <div className={styles.tableWrap}>
-                 <table className={styles.table}>
-                   <thead>
-                     <tr>
-                       <th>Document Name</th>
-                       <th>Property</th>
-                       <th>Issue Date</th>
-                       <th>Expiry Date</th>
-                       <th>Status</th>
-                     </tr>
-                   </thead>
-                   <tbody>
-                     <tr>
-                       <td>Gas Safety CP12</td>
-                       <td>24 Park Lane, Cardiff</td>
-                       <td>12 Oct 2025</td>
-                       <td>12 Oct 2026</td>
-                       <td><span className={styles.statusPill} style={{ background: '#ecfdf5', color: '#10b981' }}>Valid</span></td>
-                     </tr>
-                     <tr style={{ background: '#fff9f2' }}>
-                       <td>EPC Certificate</td>
-                       <td>12 High Street, Swansea</td>
-                       <td>15 Jun 2016</td>
-                       <td style={{ color: '#d97706', fontWeight: 700 }}>15 Jun 2026</td>
-                       <td><span className={styles.statusPill} style={{ background: '#fff7ed', color: '#d97706' }}>Expiring</span></td>
-                     </tr>
-                   </tbody>
-                 </table>
-               </div>
-             </div>
+                <div className={styles.recentDocs}>
+                  <h3 className={styles.sectionTitle}>Your Documents</h3>
+                  <div className={styles.tableWrap}>
+                    <table className={styles.table}>
+                      <thead>
+                        <tr>
+                          <th>Document</th>
+                          <th>Property</th>
+                          <th>Uploaded</th>
+                          <th>Expires</th>
+                          <th>Status</th>
+                          <th></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {userDocs.map(d => {
+                          const expiryTs = d.expiry_date ? new Date(d.expiry_date).getTime() : NaN;
+                          const isExpired = !isNaN(expiryTs) && expiryTs < now;
+                          const isExpiringSoon = !isNaN(expiryTs) && !isExpired && expiryTs - now < 30 * 24 * 60 * 60 * 1000;
+                          const pillColor = isExpired
+                            ? { bg: '#fee2e2', fg: '#991b1b', label: 'Expired' }
+                            : isExpiringSoon
+                              ? { bg: '#fff7ed', fg: '#d97706', label: 'Expiring' }
+                              : { bg: '#ecfdf5', fg: '#10b981', label: d.status || 'Valid' };
+                          return (
+                            <tr key={d.id}>
+                              <td>{d.document_type || d.file_name || 'Document'}</td>
+                              <td>{d.property_name || '—'}</td>
+                              <td>{d.date_uploaded || '—'}</td>
+                              <td style={isExpired || isExpiringSoon ? { color: pillColor.fg, fontWeight: 700 } : undefined}>
+                                {d.expiry_date || '—'}
+                              </td>
+                              <td><span className={styles.statusPill} style={{ background: pillColor.bg, color: pillColor.fg }}>{pillColor.label}</span></td>
+                              <td>
+                                {d.file_url ? (
+                                  <a href={d.file_url} target="_blank" rel="noopener noreferrer" style={{ color: '#e11d48', fontWeight: 700, fontSize: 13, textDecoration: 'none' }}>View →</a>
+                                ) : '—'}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
+        )}
+
+        {tab === 'settings' && user && (
+          <SettingsTab
+            user={user}
+            onProfileSaved={(next) => setUser(u => u ? { ...u, name: next.name, phone: next.phone } : u)}
+          />
         )}
       </main>
 

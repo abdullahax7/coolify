@@ -1,5 +1,28 @@
 import type { NextConfig } from "next";
 
+// Content Security Policy.
+//   - 'self' for first-party assets.
+//   - Supabase: API + storage + realtime websocket.
+//   - Square: payment iframe + assets.
+//   - reCAPTCHA: scripts + iframe.
+//   - Google Fonts: stylesheet + font CDN.
+//   - inline scripts allowed (Next.js needs them for hydration); add a nonce
+//     if you ever lock this down further.
+const csp = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.google.com https://www.gstatic.com https://web.squarecdn.com https://sandbox.web.squarecdn.com",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "img-src 'self' data: blob: https://*.supabase.co https://images.unsplash.com https://www.gstatic.com https://www.google.com",
+  "font-src 'self' data: https://fonts.gstatic.com",
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://connect.squareup.com https://connect.squareupsandbox.com https://www.google.com",
+  "frame-src 'self' https://www.google.com https://www.googletagmanager.com https://web.squarecdn.com https://sandbox.web.squarecdn.com",
+  "frame-ancestors 'self'",
+  "form-action 'self'",
+  "base-uri 'self'",
+  "object-src 'none'",
+  "upgrade-insecure-requests",
+].join('; ');
+
 const securityHeaders = [
   { key: "X-DNS-Prefetch-Control", value: "on" },
   { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
@@ -8,6 +31,7 @@ const securityHeaders = [
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(self), payment=(self)" },
   { key: "X-XSS-Protection", value: "1; mode=block" },
+  { key: "Content-Security-Policy", value: csp },
 ];
 
 const nextConfig: NextConfig = {

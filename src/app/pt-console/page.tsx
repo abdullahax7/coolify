@@ -18,6 +18,8 @@ import PricingTab from './components/PricingTab';
 import UsersTab, { type UserProfile } from './components/UsersTab';
 import StaffTab from './components/StaffTab';
 import TrashTab from './components/TrashTab';
+import AuditLogTab from './components/AuditLogTab';
+import RejectModal from './components/RejectModal';
 import WalesWizardModalV2 from './components/WalesWizardModalV2';
 import FormViewer from '@/components/wales/FormViewer';
 import { createClient } from '@/lib/supabase/client';
@@ -104,7 +106,7 @@ interface CashInquiry {
 
 import { signIn as supabaseSignIn, signOut as supabaseSignOut, getUser } from '@/lib/auth';
 
-type Tab = 'overview' | 'properties' | 'listing-plans' | 'services' | 'inbox' | 'documents' | 'tenants' | 'appointments' | 'forms' | 'tenancy-form' | 'site-content' | 'media-manager' | 'services-catalog' | 'pricing-manager' | 'team' | 'trash';
+type Tab = 'overview' | 'properties' | 'listing-plans' | 'services' | 'inbox' | 'documents' | 'tenants' | 'appointments' | 'forms' | 'tenancy-form' | 'site-content' | 'media-manager' | 'services-catalog' | 'pricing-manager' | 'team' | 'trash' | 'audit-log';
 
 
 
@@ -587,6 +589,7 @@ function Shell({ tab, setTab, onLogout }: { tab: Tab; setTab: (t: Tab) => void; 
     { id: 'pricing-manager', label: 'Pricing Manager', icon: '💰' },
     { id: 'services-catalog', label: 'Services Catalog', icon: '🛒' },
     { id: 'trash',          label: 'Trash',           icon: '🗑️' },
+    { id: 'audit-log',      label: 'Activity Log',    icon: '📋' },
   ];
 
   const assignProperty = async (propId: string, email: string) => {
@@ -698,6 +701,7 @@ function Shell({ tab, setTab, onLogout }: { tab: Tab; setTab: (t: Tab) => void; 
               {tab === 'pricing-manager' && <PricingTab />}
               {tab === 'services-catalog' && <ServicesCatalogTab />}
               {tab === 'trash'         && <TrashTab />}
+              {tab === 'audit-log'     && <AuditLogTab />}
             </>
           )}
         </div>
@@ -921,6 +925,7 @@ function PropertiesTab({ overrides, onOverride, customProps, onCreate, onUpdate,
   const [createOpen, setCreateOpen] = useState(false);
   const [draft, setDraft]           = useState<Omit<CustomProp, 'id' | 'createdAt'>>(EMPTY_CUSTOM);
   const [warn, setWarn]             = useState<{ id: string; title: string } | null>(null);
+  const [rejecting, setRejecting]   = useState<CustomProp | null>(null);
   const [staticNotes, setStaticNotes] = useState('');
 
   // Static properties are removed to be 100% database-driven.
@@ -979,13 +984,21 @@ function PropertiesTab({ overrides, onOverride, customProps, onCreate, onUpdate,
             assignedToEmail={p.assigned_to_email}
             status={p.status}
             onApprove={() => onUpdate({ ...p, is_approved: true, is_rejected: false, status: 'Live' })}
-            onReject={() => {
-              const reason = prompt('Reason for rejection:');
-              if (reason !== null) onUpdate({ ...p, is_approved: false, is_rejected: true, rejection_reason: reason });
-            }}
+            onReject={() => setRejecting(p)}
           />
         ))}
       </div>
+
+      {rejecting && (
+        <RejectModal
+          propertyName={rejecting.title}
+          onCancel={() => setRejecting(null)}
+          onConfirm={(reason) => {
+            onUpdate({ ...rejecting, is_approved: false, is_rejected: true, rejection_reason: reason });
+            setRejecting(null);
+          }}
+        />
+      )}
 
       {/* Create modal */}
       {createOpen && (
@@ -1548,7 +1561,7 @@ function DocumentsTab({ documents, onCreate, onUpdate, onDelete, customProps }: 
                   <td style={{ textAlign: 'right' }}>
                     <div className={styles.actionGroup} style={{ justifyContent: 'flex-end' }}>
                       {doc.status === 'Expiring' && (
-                        <button className={styles.renewBtn} onClick={() => alert('Renewal requested for ' + doc.propertyName)}>
+                        <button className={styles.renewBtn} onClick={() => setEditDoc(doc)} title="Open document to upload a renewed version">
                           🔄 Renew now
                         </button>
                       )}

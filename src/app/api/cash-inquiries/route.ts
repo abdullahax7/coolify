@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { rateLimit } from '@/lib/rate-limit';
 
 export async function GET() {
   const supabase = await createClient();
@@ -14,9 +15,17 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const rl = rateLimit(req, { name: 'cash-inquiries', capacity: 3, refillPerSec: 1 / 120 });
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: 'Too many submissions. Please wait a few minutes and try again.' },
+      { status: 429, headers: { 'Retry-After': String(rl.retryAfter) } },
+    );
+  }
+
   const supabase = await createClient();
   const body = await req.json();
-  
+
   if (!body.image_urls || !Array.isArray(body.image_urls) || body.image_urls.length === 0) {
     return NextResponse.json({ error: 'At least one property image is required.' }, { status: 400 });
   }

@@ -1,11 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  // Ownership check: only the order owner or an admin can replace the PDF.
+  // Previously any logged-in user could overwrite anyone else's order PDF.
+  const adminClient = await createAdminClient();
+  const { data: existingOrder } = await adminClient
+    .from('orders')
+    .select('user_id')
+    .eq('id', id)
+    .single();
+  if (!existingOrder) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
+  const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', user.id).single();
+  const isAdmin = !!profile?.is_admin;
+  if (!isAdmin && existingOrder.user_id !== user.id) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
 
   const formData = await req.formData();
   const file = formData.get('file') as File | null;

@@ -4,6 +4,12 @@ import { ServicesClient } from './ServicesClient';
 
 import { SERVICE_CATALOG, CatalogCategory } from '@/data/pricing_data';
 
+export const metadata = {
+  title: 'Services & Compliance Certificates | Property Trader',
+  description: 'Gas Safety, EPC, EICR, tenancy agreements and Welsh statutory forms for UK landlords. Book individual property services online.',
+  alternates: { canonical: '/services' },
+};
+
 export const revalidate = 3600; // 1 hour
 
 export default async function ServicesHubPage() {

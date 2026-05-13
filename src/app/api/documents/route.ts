@@ -28,17 +28,27 @@ export async function GET(req: NextRequest) {
   const admin = await requireAdmin(supabase);
   const { searchParams } = new URL(req.url);
   const propertyId = searchParams.get('propertyId');
+  const mineOnly = searchParams.get('mine') === 'true';
 
-  // Use admin client to bypass RLS for administrative fetch or verification
   const adminClient = await createAdminClient();
 
   let query = adminClient.from('property_documents').select('*').is('deleted_at', null);
 
-  if (!admin) {
-    // If not admin, we MUST have a propertyId and the user MUST be assigned to it
+  if (mineOnly) {
+    // Documents for every property the user owns or is assigned to.
+    const { data: myProps } = await adminClient
+      .from('custom_properties')
+      .select('id')
+      .or(`user_id.eq.${user.id},assigned_to_email.eq.${user.email}`)
+      .is('deleted_at', null);
+    const ids = (myProps ?? []).map(p => p.id);
+    if (ids.length === 0) {
+      return NextResponse.json({ documents: [] });
+    }
+    query = query.in('property_id', ids);
+  } else if (!admin) {
     if (!propertyId) return NextResponse.json({ error: 'Property ID required' }, { status: 400 });
 
-    // Verify property assignment or ownership
     const { data: prop, error: propErr } = await adminClient
       .from('custom_properties')
       .select('user_id, assigned_to_email')
@@ -51,7 +61,6 @@ export async function GET(req: NextRequest) {
 
     query = query.eq('property_id', propertyId);
   } else if (propertyId) {
-    // Admin filtering by propertyId
     query = query.eq('property_id', propertyId);
   }
 

@@ -1,10 +1,14 @@
-"use client";
-
 import React from 'react';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import styles from './blog.module.css';
 import Link from 'next/link';
+
+export const metadata = {
+  title: 'Property News & Landlord Insights | Property Trader Blog',
+  description: 'UK property news, landlord guides, and market commentary from the Property Trader team. Brexit, Right to Rent, market strategy and more.',
+  alternates: { canonical: '/blog' },
+};
 
 const BLOGS = [
   {

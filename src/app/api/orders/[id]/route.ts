@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { softDeleteRow } from '@/lib/soft-delete';
+import { logAudit } from '@/lib/audit';
 
 async function requireAdmin(supabase: Awaited<ReturnType<typeof createClient>>) {
   const { data: { user } } = await supabase.auth.getUser();
@@ -56,10 +57,14 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const body = await req.json();
   const update = toSnake(body);
 
-  // Use admin client to bypass RLS for administrative update
   const adminClient = await createAdminClient();
   const { data, error } = await adminClient.from('orders').update(update).eq('id', id).select().single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  await logAudit({
+    adminId: admin.id, adminEmail: admin.email, action: 'update',
+    targetTable: 'orders', targetId: id, targetName: data?.name ?? null,
+    diff: { after: update }, request: req,
+  });
   return NextResponse.json(data);
 }
 
