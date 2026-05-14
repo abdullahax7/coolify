@@ -110,7 +110,11 @@ const DesktopPricingTable: React.FC<SubComponentProps> = ({ tiers, features, typ
       <thead>
         <tr className={styles.headerRow}>
           <th className={styles.typeHeader}>
-            {type === 'manage' ? 'Landlord Fees and Service options' : 'Plan Features'}
+            {type === 'manage'
+              ? 'Landlord Fees and Service options'
+              : type === 'sell'
+                ? 'Plan Features to Sell Property'
+                : 'Plan Features to Let Property'}
           </th>
           {tiers.map((tier, idx) => (
             <th key={idx} className={tier.isPopular ? styles.popularColumn : ''}>
