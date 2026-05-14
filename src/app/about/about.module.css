@@ -1,0 +1,414 @@
+.page {
+  background: white;
+  min-height: 100vh;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 40px;
+}
+
+.hero {
+  padding: 180px 0 80px;
+  background: var(--secondary);
+  color: white;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.heroInner {
+  max-width: 900px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 2;
+}
+
+.title {
+  font-size: clamp(2.5rem, 8vw, 4.5rem);
+  font-weight: 900;
+  margin-bottom: 24px;
+  line-height: 1.1;
+  text-transform: uppercase;
+  color: #ffffff;
+}
+
+.badge {
+  display: inline-block;
+  background: rgba(225, 29, 72, 0.2);
+  color: var(--primary);
+  padding: 8px 20px;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 24px;
+}
+
+.hero h1 {
+  font-size: 4rem;
+  font-weight: 900;
+  margin-bottom: 24px;
+  line-height: 1.1;
+}
+
+.hero h1 span {
+  color: var(--primary);
+}
+
+.subtitle {
+  font-size: 1.25rem;
+  max-width: 650px;
+  margin: 0 auto;
+  opacity: 0.9;
+  line-height: 1.7;
+}
+
+/* Intro Section */
+.introSection {
+  padding: 100px 0;
+  background: white;
+}
+
+.introContent h2 {
+  font-size: clamp(1.75rem, 4vw, 2.75rem);
+  font-weight: 800;
+  color: var(--secondary);
+  text-align: center;
+  margin-bottom: 60px;
+  line-height: 1.2;
+}
+
+.introContent h2 span {
+  color: var(--primary);
+}
+
+.introGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 60px;
+  align-items: center;
+  margin-bottom: 100px;
+}
+
+.introGrid:last-child {
+  margin-bottom: 0;
+}
+
+.introGridMirrored {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px;
+  align-items: center;
+}
+
+.introText p {
+  font-size: 1.1rem;
+  line-height: 1.8;
+  color: #475569;
+  margin-bottom: 24px;
+}
+
+.introImageSide {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.agentPng {
+  width: 100%;
+  height: auto;
+  max-width: 900px; /* Increased from 650px */
+  filter: drop-shadow(0 20px 40px rgba(0,0,0,0.08));
+}
+
+.highlight {
+  font-weight: 800;
+  color: var(--primary);
+  font-size: 1.25rem !important;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Founder Section */
+.founderSection {
+  padding: 120px 0;
+  background: #f8fafc;
+}
+
+.founderGrid {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 80px;
+  align-items: center;
+}
+
+.founderImageFrame {
+  position: relative;
+  border-radius: 40px;
+  overflow: hidden;
+  box-shadow: 0 40px 80px rgba(0,0,0,0.1);
+}
+
+.founderImg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.founderBadge {
+  color: var(--primary);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.875rem;
+  margin-bottom: 16px;
+}
+
+.founderName {
+  font-size: 3rem;
+  font-weight: 900;
+  color: var(--navy);
+  margin-bottom: 24px;
+}
+
+.founderBio {
+  font-size: 1.125rem;
+  line-height: 1.8;
+  color: #475569;
+  margin-bottom: 32px;
+}
+
+.founderPhilosophy {
+  font-size: 1.25rem;
+  font-style: italic;
+  color: var(--navy);
+  border-left: 4px solid var(--primary);
+  padding-left: 24px;
+  margin-bottom: 40px;
+  line-height: 1.6;
+}
+
+.miniStat strong {
+  font-size: 2.5rem;
+  color: var(--primary);
+  display: block;
+}
+
+.miniStat span {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--navy);
+  text-transform: uppercase;
+}
+
+/* Team Section */
+.team {
+  padding: 120px 0;
+}
+
+.sectionTitle {
+  text-align: center;
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: var(--navy);
+  margin-bottom: 60px;
+}
+
+.sectionTitle span {
+  color: var(--primary);
+}
+
+.teamGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 40px;
+}
+
+.teamCard {
+  background: white;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+  border: 1px solid #f1f5f9;
+  transition: transform 0.3s ease;
+}
+
+.teamCard:hover {
+  transform: translateY(-10px);
+}
+
+.teamImgWrapper {
+  height: 350px;
+  overflow: hidden;
+}
+
+.teamImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.teamInfo {
+  padding: 32px;
+}
+
+.teamInfo h3 {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--navy);
+  margin-bottom: 4px;
+}
+
+.roleLabel {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--primary);
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+
+.teamBioSnippet {
+  font-size: 0.875rem;
+  color: #64748b;
+  line-height: 1.6;
+}
+
+/* Testimonials */
+.testimonials {
+  padding: 120px 0;
+  background: var(--navy);
+  color: white;
+}
+
+.testimonialGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 32px;
+}
+
+.testimonialCard {
+  background: var(--primary);
+  padding: 40px;
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+}
+
+.quoteIcon {
+  font-size: 4rem;
+  color: white;
+  line-height: 1;
+  margin-bottom: -10px;
+  opacity: 0.3;
+}
+
+.testimonialCard p {
+  font-size: 1.125rem;
+  line-height: 1.8;
+  color: white;
+  margin-bottom: 24px;
+}
+
+.authorFlex {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.authorImg {
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.authorMeta strong {
+  display: block;
+  font-size: 1rem;
+  margin-bottom: 2px;
+  color: white;
+}
+
+.authorMeta span {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+@media (max-width: 1024px) {
+  .founderGrid {
+    grid-template-columns: 1fr;
+    gap: 60px;
+  }
+  .founderImageArea {
+    max-width: 500px;
+    margin: 0 auto;
+  }
+  .introGrid {
+    gap: 40px;
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 0 24px;
+  }
+
+  .hero {
+    padding: 140px 0 60px;
+  }
+
+  .hero h1 {
+    font-size: 2.75rem;
+  }
+
+  .introSection {
+    padding: 60px 0;
+  }
+
+  .introContent h2 {
+    margin-bottom: 40px;
+    text-align: left;
+  }
+
+  .introGrid, .introGridMirrored {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 40px;
+  }
+
+  .introGridMirrored {
+    flex-direction: column;
+  }
+
+  .introText p {
+    font-size: 1rem;
+    margin-bottom: 20px;
+  }
+
+  .agentPng {
+    max-width: 100%;
+  }
+
+  .founderSection {
+    padding: 80px 0;
+  }
+
+  .founderName {
+    font-size: 2.25rem;
+  }
+
+  .teamGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .testimonialGrid {
+    grid-template-columns: 1fr;
+  }
+}

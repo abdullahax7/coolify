@@ -1,0 +1,155 @@
+.page {
+  background: white;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.container {
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 120px 40px 80px;
+}
+
+.hero {
+  padding: 80px 0;
+  text-align: center;
+  max-width: 900px;
+  margin: 0 auto 100px;
+}
+
+.title {
+  font-size: 4.5rem;
+  font-weight: 850;
+  line-height: 1.1;
+  letter-spacing: -0.04em;
+  color: var(--secondary);
+  margin-bottom: 24px;
+}
+
+.title span {
+  color: var(--primary);
+}
+
+.subtitle {
+  font-size: 1.25rem;
+  color: var(--text-muted);
+  max-width: 600px;
+  margin: 0 auto 40px;
+  line-height: 1.6;
+}
+
+.heroActions {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+}
+
+.mainBtn {
+  background: var(--primary);
+  color: white;
+  padding: 16px 32px;
+  border-radius: var(--radius-full);
+  font-weight: 600;
+  transition: var(--transition-base);
+}
+
+.mainBtn:hover {
+  background: var(--primary-dark);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.outlineBtn {
+  border: 2px solid var(--secondary);
+  color: var(--secondary);
+  padding: 16px 32px;
+  border-radius: var(--radius-full);
+  font-weight: 600;
+  transition: var(--transition-base);
+}
+
+.outlineBtn:hover {
+  background: var(--secondary);
+  color: white;
+}
+
+/* Quick Start Selection Grid */
+.quickStart {
+  margin-bottom: 120px;
+}
+
+.sectionTitle {
+  font-size: 2.5rem;
+  font-weight: 800;
+  text-align: center;
+  margin-bottom: 60px;
+  color: var(--secondary);
+}
+
+.sectionTitle span {
+  color: var(--primary);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 30px;
+}
+
+.card {
+  background: white;
+  padding: 40px;
+  border-radius: var(--radius-lg);
+  border: 2px solid var(--border-light);
+  display: flex;
+  flex-direction: column;
+  transition: var(--transition-base);
+  position: relative;
+  overflow: hidden;
+}
+
+.card:hover {
+  border-color: var(--primary);
+  transform: translateY(-8px);
+  box-shadow: var(--shadow-lg);
+}
+
+.cardIcon {
+  font-size: 3rem;
+  margin-bottom: 24px;
+}
+
+.cardText h3 {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--secondary);
+  margin-bottom: 12px;
+}
+
+.cardText p {
+  font-size: 0.9375rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-bottom: 24px;
+}
+
+.arrow {
+  font-size: 1.5rem;
+  color: var(--primary);
+  transition: var(--transition-fast);
+}
+
+.card:hover .arrow {
+  transform: translateX(8px);
+}
+
+@media (max-width: 1024px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+  .title {
+    font-size: 3rem;
+  }
+}

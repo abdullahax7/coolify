@@ -1,0 +1,220 @@
+export interface PricingTier {
+  name: string;
+  price: string;
+  subtitle?: string;
+  isPopular?: boolean;
+  highlight?: string;
+}
+
+export interface PricingFeature {
+  name: string;
+  values: (boolean | string)[]; // true = check, false = cross, string = text
+}
+
+export interface CatalogItem {
+  name: string;
+  price: string;
+  desc: string;
+  flag?: 'england' | 'wales';
+  image_url?: string;
+}
+
+export interface CatalogCategory {
+  category: string;
+  items: CatalogItem[];
+}
+
+/** SELLING PACKAGES DATA */
+export const SELL_TIERS: PricingTier[] = [
+  { name: 'Basic', price: 'Free', subtitle: '3 Months with 3 months free' },
+  { name: 'Silver', price: '£250', isPopular: true, highlight: 'Best Value' },
+  { name: 'Gold', price: '£450' },
+  { name: 'Ultimate', price: '1% fee', subtitle: 'No Sale No Fee' },
+];
+
+export const SELL_FEATURES: PricingFeature[] = [
+  { name: 'Upfront Payment', values: [true, true, true, 'No Sale No Fee'] },
+  { name: 'Property advertised on our website', values: [true, true, true, true] },
+  { name: '24/7 access to manage viewings and offers', values: [true, true, true, true] },
+  { name: 'Free instant valuation', values: [true, true, true, true] },
+  { name: 'Property listing on OnTheMarket.com', values: [false, true, true, true] },
+  { name: 'Viewing Arrangement', values: [false, true, true, true] },
+  { name: 'Dedicated Account Manager', values: [false, true, true, true] },
+  { name: 'Weekly Performance Update', values: [false, true, true, true] },
+  { name: 'Professional Photography and Floor Plan', values: [false, false, true, true] },
+  { name: 'Preparation of Paperwork', values: [false, false, true, true] },
+  { name: 'Full Property Description', values: [true, true, true, true] },
+  { name: 'Premium display on OnTheMarket.com', values: [false, false, true, true] },
+  { name: 'EPC', values: [false, false, true, true] },
+];
+
+/** LETTING PACKAGES DATA */
+export const LET_TIERS: PricingTier[] = [
+  { name: 'Basic', price: 'Free', subtitle: '4 Months Advertising' },
+  { name: 'Essential', price: '£150', isPopular: true, subtitle: '4 Months Advertising' },
+  { name: 'Premium', price: '£280', subtitle: '4 Months Advertising' },
+];
+
+export const LET_FEATURES: PricingFeature[] = [
+  { name: 'Upfront Payment', values: [true, true, true] },
+  { name: 'Property advertised on our website & OnTheMarket.com', values: [true, true, true] },
+  { name: '24/7 access to manage viewings and offers', values: [true, true, true] },
+  { name: 'Free instant valuation', values: [true, true, true] },
+  { name: 'Property listing on Rightmove, Zoopla & PrimeLocation', values: [false, true, true] },
+  { name: 'Viewing Arrangement', values: [false, true, true] },
+  { name: 'Dedicated Account Manager', values: [false, true, true] },
+  { name: 'Weekly Performance Update', values: [false, true, true] },
+  { name: 'Professional Photography and Floor Plan', values: [false, false, true] },
+  { name: 'Preparation of Paperwork', values: [false, false, true] },
+  { name: 'Full Property Description', values: [true, true, true] },
+  { name: 'Premium display on Zoopla', values: [false, false, true] },
+  { name: 'Premium display on Rightmove', values: [false, false, true] },
+  { name: 'EPC', values: [false, false, true] },
+];
+
+/** MANAGEMENT PACKAGES DATA */
+export const MANAGE_TIERS: PricingTier[] = [
+  { name: 'Tenancy Incl.', price: 'Included', subtitle: 'Contract setup' },
+  { name: 'Fully Managed', price: '10%', isPopular: true, subtitle: 'Of rent collected' },
+  { name: 'Rent Collection', price: '7%', subtitle: 'Of rent collected' },
+  { name: 'Let Only', price: '1 Month', subtitle: 'First month rent fee' },
+  { name: 'Mini Manage', price: '£17', subtitle: 'Per month' },
+];
+
+export const MANAGE_FEATURES: PricingFeature[] = [
+  { name: 'Free Consultation', values: [true, true, true, true, true] },
+  { name: 'Property Marketing', values: [true, true, true, true, false] },
+  { name: 'Internet Advertising', values: [true, true, true, true, true] },
+  { name: 'Newspaper Advertising', values: [true, true, true, true, false] },
+  { name: 'Accompanied Viewings', values: [true, true, true, true, false] },
+  { name: 'Negotiating and agreeing offers', values: [true, true, true, true, true] },
+  { name: 'Tenants referencing services', values: [true, true, true, true, true] },
+  { name: 'Annual rent assessment reviews', values: [true, true, true, true, true] },
+  { name: 'Debt control', values: [true, true, true, true, false] },
+  { name: 'Rent demand service', values: [true, true, true, false, false] },
+  { name: 'Monthly accounts service', values: [true, true, true, false, false] },
+  { name: 'Organise property maintenance', values: [true, true, true, false, false] },
+  { name: 'Handle dilapidation check outs', values: [true, true, false, false, false] },
+  { name: 'Security deposit management', values: [true, true, false, false, true] },
+  { name: 'Gas safety renewal', values: [true, true, false, false, true] },
+  { name: 'Inventory check in/out', values: [true, true, false, false, true] },
+  { name: '24 hours emergency', values: [true, true, false, false, true] },
+  { name: 'Dedicated accounts team', values: [true, true, false, false, true] },
+  { name: 'Online maintenance reporting', values: [true, true, false, false, true] },
+  { name: 'Ensure property compliance', values: [true, true, false, false, true] },
+  { name: '3rd party maintenance liaison', values: [true, true, false, false, false] },
+  { name: 'Portfolio Management', values: [true, true, false, false, false] },
+  { name: 'Routine property visit', values: [true, true, true, true, false] },
+  { name: 'Issuing Section 21 Notice', values: [true, true, false, false, false] },
+  { name: 'Issuing Section 8 Notice', values: [true, true, false, false, false] },
+  { name: 'Issuing Section 13 Notice', values: [true, true, false, false, false] },
+  { name: 'Tenancy renewal', values: [true, true, false, false, false] },
+  { name: 'Rent Smart Wales Compliance', values: [true, true, false, false, true] },
+];
+
+/** SHARED HELPERS */
+export const getPricingData = (type: 'sell' | 'let' | 'manage') => {
+  if (type === 'sell') return { tiers: SELL_TIERS, features: SELL_FEATURES };
+  if (type === 'let') return { tiers: LET_TIERS, features: LET_FEATURES };
+  return { tiers: MANAGE_TIERS, features: MANAGE_FEATURES };
+};
+
+export const SERVICE_CATALOG: CatalogCategory[] = [
+  {
+    category: '🏴󠁧󠁢󠁷󠁬󠁳󠁿 Renting Homes Wales Forms',
+    items: [
+      { name: 'Form RHW1', price: '£10.00', desc: 'Notice of standard contract.' },
+      { name: 'Form RHW2', price: '£10.00', desc: 'Notice of landlord’s address.' },
+      { name: 'Form RHW3', price: '£10.00', desc: 'Notice of change of landlord’s identity.' },
+      { name: 'Form RHW4', price: '£10.00', desc: 'Notice of change of landlord’s address.' },
+      { name: 'Form RHW6', price: '£10.00', desc: 'Head landlord\'s sub-occupation notice.' },
+      { name: 'Form RHW7', price: '£10.00', desc: 'Head landlord\'s notice to sub-holder.' },
+      { name: 'Form RHW8', price: '£10.00', desc: 'Notice of extended possession claim against the sub-holder.' },
+      { name: 'Form RHW12', price: '£10.00', desc: 'Notice of variation of rent.' },
+      { name: 'Form RHW15', price: '£10.00', desc: 'Notice of temporary exclusion: supported standard contract.' },
+      { name: 'Form RHW16', price: '£10.00', desc: 'Landlord\'s notice to terminate (Section 173).' },
+      { name: 'Form RHW17', price: '£10.00', desc: 'Landlord\'s notice: breach of contract.' },
+      { name: 'Form RHW18', price: '£10.00', desc: 'Landlord\'s notice: estate management grounds.' },
+      { name: 'Form RHW19', price: '£10.00', desc: 'Notice of withdrawal of Section 173 notice.' },
+      { name: 'Form RHW20', price: '£10.00', desc: 'Notice of possession claim: serious rent arrears.' },
+      { name: 'Form RHW21', price: '£10.00', desc: 'Notice of possession claim: serious rent arrears (Intro/Prohib).' },
+      { name: 'Form RHW22', price: '£10.00', desc: 'Landlord\'s notice to end a fixed-term standard contract.' },
+      { name: 'Form RHW23', price: '£10.00', desc: 'Notice before making a possession claim.' },
+      { name: 'Form RHW24', price: '£10.00', desc: 'Landlord\'s break clause notice (6-month).' },
+      { name: 'Form RHW25', price: '£10.00', desc: 'Landlord\'s break clause notice (2-month).' },
+      { name: 'Form RHW26', price: '£10.00', desc: 'Notice of withdrawal of break clause notice.' },
+      { name: 'Form RHW27', price: '£10.00', desc: 'Notice of landlord\'s intention to end contract due to abandonment.' },
+      { name: 'Form RHW28', price: '£10.00', desc: 'Notice of end of contract due to abandonment.' },
+      { name: 'Form RHW29', price: '£10.00', desc: 'Notice of landlord\'s intention to end rights of joint contract-holder (non-occupation).' },
+      { name: 'Form RHW30', price: '£10.00', desc: 'Notice of end of rights of joint contract-holder (non-occupation).' },
+      { name: 'Form RHW32', price: '£10.00', desc: 'Notice of intention to apply for order ending JCH rights (prohibited conduct).' },
+      { name: 'Form RHW33', price: '£10.00', desc: 'Notice to other joint contract-holders (prohibited conduct).' },
+      { name: 'Form RHW34', price: '£10.00', desc: 'Notice of extension of introductory period.' },
+      { name: 'Form RHW35', price: '£10.00', desc: 'Notice of intention to apply for a prohibited conduct standard contract.' },
+      { name: 'Form RHW36', price: '£10.00', desc: 'Notice of end of probation period.' },
+            { name: 'Form RHW37', price: '£10.00', desc: 'Notice of extension of probation period.' },
+
+      { name: 'Form RHW38', price: '£10.00', desc: 'Landlord\'s notice of termination: fixed term standard contract (converted).' }
+
+
+    ]
+  },
+  {
+    category: '📢 Marketing & Boards',
+    items: [
+      { name: '🪧 “To Let” Board', price: '£45.00', desc: 'Advertise your property 24 hours a day, locally.' },
+      { name: '🪧 “For Sale” Board', price: '£45.00', desc: 'Advertise your property 24 hours a day, locally.' },
+      { name: '👤 Accompanied Viewings', price: '£195.00', desc: 'Let us take care of the viewings for you and host up to 5 viewings.' },
+      { name: '📸 Photo & Floor Plan', price: '£125.00', desc: 'Professionally taken 10 photographs and floor plan.' }
+    ]
+  },
+  {
+    category: '🛡️ Safety & Compliance',
+    items: [
+      { name: '🔥 Gas Certificate', price: '£65.00', desc: 'Official CP12 gas safety certification.' },
+      { name: '⚡ EPC Certificate', price: '£95.00', desc: 'Energy Performance Certificate requirement.' },
+      { name: '🔌 Electric Certificate', price: '£140.00', desc: 'Five-year electrical safety check (EICR).' },
+      { name: '🚨 Fire Alarm Certificate', price: '£100.00', desc: 'System testing and certification.' },
+      { name: '💨 CO Detector', price: '£15.00', desc: 'Backlit digital display with household/commercial scope.' },
+      { name: '🔔 Smoke Alarm', price: '£16.00', desc: 'Essential safety hardware for any property.' }
+    ]
+  },
+  {
+    category: '👥 Tenant Find & Referencing',
+    items: [
+      { name: '🏢 Tenant Find – Commercial', price: '£250.00', desc: 'Comprehensive commercial tenant matching.' },
+      { name: '🏠 Tenant Find – Residential', price: '£150.00', desc: 'End-to-end residential tenant placement.' },
+      { name: '📋 Tenant Referencing', price: '£20.00', desc: 'Credit check for one applicant with free guarantor check.' }
+    ]
+  },
+  {
+    category: '📊 Reports & Valuations',
+    items: [
+      { name: 'House Report – England', price: '£130.00', desc: 'Detailed comprehensive property valuation.', flag: 'england' },
+      { name: 'House Report – Wales', price: '£130.00', desc: 'Detailed comprehensive property valuation.', flag: 'wales' },
+      { name: 'Inventory Report – England', price: '£80.00', desc: 'Full property condition log for move-in.', flag: 'england' },
+      { name: 'Inventory Report – Wales', price: '£50.00', desc: 'Full property condition log for move-in.', flag: 'wales' }
+    ]
+  },
+  {
+    category: '⚖️ Legal & Documentation',
+    items: [
+      
+      { name: 'Tenancy Agreements', price: '£40.00', desc: 'Professionally prepared AST or commercial agreements.' },
+      { name: '✍️ Digital Signing', price: '£40.00', desc: 'Includes electronic signatures for all parties.' }
+,
+      { name: '💼 Commercial Lease', price: '£130.00', desc: 'Specialized legal commercial leasing documents.' },
+      { name: '🔒 Deposit Holding', price: '£30.00', desc: 'Secure management of tenant deposits (DPS).' },
+      { name: '🔔 Section 13 Notice', price: '£30.00', desc: 'Issuance of legal notices for rent review.' },
+      { name: '⚠️ Section 8 Notice', price: '£50.00', desc: 'Legal notice for possession due to breach.' },
+      { name: 'Rent Increase England', price: '£20.00', desc: 'Formal procedure for rent review.', flag: 'england' },
+      { name: 'Rent Increase Wales', price: '£13.00', desc: 'Formal procedure for rent review in Wales.', flag: 'wales' }
+    ]
+  },
+  {
+    category: '🛠️ Hardware & Other',
+    items: [
+      { name: '🔥 Infered Panel Heater', price: '£55.00', desc: 'Efficient heating solution for properties.' }
+    ]
+  }
+];

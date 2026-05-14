@@ -1,0 +1,475 @@
+/* ===== Container ===== */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 60px 20px 40px;
+}
+
+.title {
+  text-align: center;
+  margin-bottom: 32px;
+  font-size: clamp(1.75rem, 4vw, 3rem);
+  font-weight: 800;
+  color: var(--secondary);
+}
+
+.subtitle {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 1.125rem;
+  margin-bottom: 48px;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.title span {
+  color: var(--primary);
+}
+
+/* ===== Visibility Helpers ===== */
+.desktopOnly {
+  display: block;
+}
+
+.mobileOnly {
+  display: none;
+}
+
+/* ===== Toggle Selector ===== */
+.toggleWrapper {
+  display: flex;
+  justify-content: center;
+  margin-top: 60px; /* More space at top */
+  margin-bottom: 32px;
+}
+
+.toggleContainer {
+  position: relative;
+  display: flex;
+  background: var(--primary); /* Red Background */
+  padding: 4px;
+  border-radius: 0;
+  min-width: 480px;
+  box-shadow: 0 4px 12px rgba(225, 29, 72, 0.2);
+}
+
+@media (max-width: 580px) {
+  .toggleContainer {
+    min-width: 100%;
+    width: 100%;
+  }
+}
+
+.toggleBtn {
+  flex: 1;
+  position: relative;
+  z-index: 2;
+  border: none;
+  background: transparent;
+  padding: 12px 10px;
+  font-size: 0.8125rem;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.8); /* Semi-transparent white for inactive */
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+  .toggleBtn {
+    font-size: 0.7rem;
+    padding: 10px 4px;
+    letter-spacing: 0.02em;
+  }
+}
+
+@media (max-width: 360px) {
+  .toggleBtn {
+    font-size: 0.6rem;
+    padding: 8px 2px;
+  }
+}
+
+.toggleBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.toggleActive {
+  color: white !important; /* White text on blue slider */
+}
+
+.toggleSlider {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: calc(33.333% - 4px);
+  height: calc(100% - 8px);
+  background: var(--secondary); /* Blue color */
+  border-radius: 0; /* No round corners */
+  box-shadow: 0 4px 12px rgba(30, 58, 138, 0.2);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sliderLet {
+  transform: translateX(100%);
+}
+
+.sliderManage {
+  transform: translateX(200%);
+}
+
+/* ===== Desktop Table ===== */
+.tableWrapper {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(16px);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 40px 100px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  border: 1px solid var(--border-light);
+}
+
+.table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed; /* Force fixed widths */
+}
+
+.table th, .table td {
+  padding: 16px 12px;
+  text-align: center;
+  border-bottom: 1px solid var(--border-light);
+  font-size: 15px;
+}
+
+.table th:first-child, .table td:first-child {
+  text-align: left;
+  font-weight: 700;
+  color: var(--secondary);
+  background: white;
+  width: 260px;
+}
+
+.featureName {
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+/* Popular Tier Highlighting */
+.popularColumn {
+  position: relative;
+}
+
+
+.typeHeader {
+  background: var(--primary) !important;
+  color: white !important;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  font-weight: 800;
+  text-align: left;
+  line-height: 1.2;
+}
+
+.headerRow th:last-child {
+  border-right: none;
+}
+
+.badge {
+  background: var(--primary);
+  color: white;
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  font-weight: 800;
+  display: inline-block;
+  margin-bottom: 8px;
+}
+
+/* Header Cells */
+.headerRow th {
+  padding: 32px 12px;
+  vertical-align: bottom;
+  background: #1e40af; /* Deep blue from screenshot */
+  color: white;
+  border-right: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.headerRow th .tierName,
+.headerRow th .tierPrice,
+.headerRow th .tierSubtitle {
+  color: white;
+}
+
+.headerRow th:first-child {
+  background: var(--primary);
+  color: white;
+}
+
+.tierInfo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.tierName {
+  font-size: 0.875rem;
+  font-weight: 800;
+  color: var(--secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.tierPrice {
+  font-size: 1.75rem;
+  font-weight: 900;
+  color: var(--secondary);
+  line-height: 1;
+  margin: 6px 0;
+}
+
+.tierSubtitle {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+/* Feature Rows */
+.featureRow:nth-child(even) td {
+  background: #fdf2f2; /* Light pink/subtle red tint */
+}
+
+.featureRow:nth-child(even) td:first-child {
+  background: #fdf2f2;
+}
+
+.featureRow:hover td {
+  background: #fee2e2 !important;
+}
+
+.checkIcon {
+  color: #10b981;
+  width: 20px;
+  height: 20px;
+  margin: 0 auto;
+  display: block;
+}
+
+.crossIcon {
+  color: #94a3b8;
+  width: 14px;
+  height: 14px;
+  margin: 0 auto;
+  display: block;
+  opacity: 0.6;
+}
+
+.textValue {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--secondary);
+}
+
+.footerRow td {
+  padding: 28px 12px;
+  background: white;
+}
+
+.selectBtn {
+  width: 100%;
+  padding: 12px 8px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  font-weight: 700;
+  font-size: 0.75rem; /* Slight reduction to help */
+  cursor: pointer;
+  background: white;
+  color: var(--secondary);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.selectBtn:hover {
+  background: var(--secondary);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(30, 58, 138, 0.2);
+}
+
+.popularBtn {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.popularBtn:hover {
+  background: var(--primary-dark);
+}
+
+.bespokeCall {
+  margin-top: 32px;
+  text-align: center;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.bespokeCall strong {
+  color: var(--secondary);
+  font-size: 1.125rem;
+}
+
+/* ===== Mobile Card Layout ===== */
+.mobileWrapper {
+  width: 100%;
+}
+
+/* Tier tab selector */
+.mobileTabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 20px;
+  background: var(--primary); /* Red Background */
+  padding: 4px;
+  border-radius: 0;
+}
+
+.mobileTab {
+  flex: 1;
+  padding: 12px 4px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.8); /* White for mobile tabs too */
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.mobileTab:hover {
+  background: white;
+  color: var(--secondary);
+}
+
+.mobileTabActive {
+  background: var(--secondary);
+  color: white !important;
+  box-shadow: 0 4px 12px rgba(30, 58, 138, 0.2);
+}
+
+.mobileTabPopular.mobileTabActive {
+  color: var(--primary);
+}
+
+/* Card */
+.mobileCard {
+  background: white;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-light);
+  padding: 28px 24px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+}
+
+.mobileCardHidden {
+  display: none;
+}
+
+.mobileCardPopular {
+  border-color: var(--primary);
+  box-shadow: 0 8px 40px rgba(225, 29, 72, 0.12);
+}
+
+.mobilePriceRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.mobilePriceRow .tierName {
+  font-size: 1.25rem;
+}
+
+.mobilePriceRow .tierPrice {
+  font-size: 2rem;
+  margin: 0;
+}
+
+/* Feature list */
+.mobileFeatureList {
+  list-style: none;
+  padding: 0;
+  margin: 20px 0 24px;
+  border-top: 1px solid var(--border-light);
+  padding-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.mobileFeatureItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.9375rem;
+  color: var(--secondary);
+}
+
+.mobileFeatureDisabled {
+  opacity: 0.4;
+}
+
+.mobileFeatureIcon {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mobileFeatureName {
+  flex: 1;
+}
+
+.mobileFeatureValue {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--primary);
+  background: rgba(225, 29, 72, 0.08);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+}
+
+.mobileSelectBtn {
+  margin-top: 4px;
+}
+
+/* ===== Breakpoints ===== */
+@media (max-width: 900px) {
+  .desktopOnly { display: none; }
+  .mobileOnly  { display: block; }
+}
+
+@media (max-width: 480px) {
+  .mobileTab {
+    font-size: 0.6875rem;
+    padding: 9px 2px;
+  }
+
+  .mobileCard {
+    padding: 22px 18px;
+  }
+}

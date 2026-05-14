@@ -1,0 +1,249 @@
+:root {
+  /* Color Palette - Property Trader Brand (Premium Dark Default) */
+  --background: #0f172a; /* Navy background */
+  --foreground: #f8fafc; /* Light text */
+  
+  --primary: #e11d48; /* Brand Red */
+  --primary-light: #fb7185;
+  --primary-dark: #be123c;
+  
+  --secondary: #60a5fa; /* Lighter blue for dark mode */
+  --secondary-light: #3b82f6;
+  --secondary-dark: #1e40af;
+  
+  --accent-cream: #1e293b;
+  
+  --text-muted: #94a3b8;
+  --border: #334155;
+  --border-light: #1e293b;
+  --navy: #0f172a; 
+  
+  /* Shared Aesthetics */
+  --glass-bg: rgba(15, 23, 42, 0.8);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-blur: 16px;
+  
+  --radius-sm: 4px;
+  --radius-md: 10px;
+  --radius-lg: 20px;
+  --radius-full: 9999px;
+  
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  
+  /* Transitions */
+  --transition-fast: 0.15s ease;
+  --transition-base: 0.3s ease;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+  height: 100%;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.6;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-serif), serif;
+  font-weight: 500;
+  line-height: 1.25;
+  color: var(--secondary);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+  transition: var(--transition-fast);
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: inherit;
+}
+
+/* Luxury Utilities */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+}
+
+.text-gradient {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.section-padding {
+  padding: 80px 24px;
+}
+
+@media (max-width: 768px) {
+  .section-padding {
+    padding: 40px 16px;
+  }
+}
+
+/* Response Utilities */
+.container {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 0 40px;
+  width: 100%;
+}
+
+@media (max-width: 1024px) {
+  .container {
+    padding: 0 24px;
+  }
+}
+
+@media (max-width: 640px) {
+  .container {
+    padding: 0 16px;
+  }
+  
+  .hero {
+    padding-top: 120px;
+  }
+
+  .title {
+    font-size: 2.25rem;
+    padding: 0 16px;
+  }
+
+  .trustBar {
+    gap: 16px 32px;
+  }
+
+  .trustItem span {
+    font-size: 1.25rem;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   STANDARD WALES FORM ENGINE - 1:1 PARITY BETWEEN PREVIEW & PRINT
+   ══════════════════════════════════════════════════════════════════════════ */
+[class*="wales-form-html"] {
+  background: white !important;
+  color: black !important;
+  font-family: "Times New Roman", Times, serif !important;
+  width: 210mm !important;
+  min-height: 297mm !important;
+  margin: 40px auto !important; /* Visual margin for on-screen preview */
+  padding: 10mm 15mm !important; /* Standard margins */
+  box-sizing: border-box !important;
+  font-size: 11pt !important;
+  line-height: 1.3 !important;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+@media print {
+  @page {
+    margin: 0;
+    size: A4;
+  }
+
+  /* Robust Reset for Print */
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    overflow: visible !important;
+    height: auto !important;
+    width: 100% !important;
+  }
+
+  /* Hide common layout distractions */
+  header, footer, nav, aside, 
+  [class*="sidebar"], 
+  [class*="nav"],
+  [class*="whatsapp"], [id*="whatsapp"], .floating-btn, .chat-widget, 
+  button, [class*="closeBtn"] {
+    display: none !important;
+  }
+
+  /* Specific exclusion for Wales forms to prevent hiding their headers/footers */
+  .wales-form-container [class*="header"],
+  .wales-form-container [class*="footer"],
+  [class*="wales-form-html"] [class*="header"],
+  [class*="wales-form-html"] [class*="footer"] {
+    display: flex !important;
+    visibility: visible !important;
+  }
+
+  /* Force the Form and its structural parents to be visible */
+  [class*="modalOverlay"],
+  [class*="modalBackdrop"],
+  [class*="modalContent"],
+  [class*="modalBody"],
+  [class*="modal"] {
+    display: block !important;
+    visibility: visible !important;
+    position: relative !important;
+    background: white !important;
+    width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  [class*="wales-form-html"] {
+    margin: 0 auto !important;
+    box-shadow: none !important;
+    width: 100% !important; /* Allow browser to fit to paper */
+    max-width: 210mm !important;
+    height: auto !important;
+    min-height: auto !important;
+    visibility: visible !important;
+  }
+
+  [class*="wales-form-html"] * {
+    visibility: visible !important;
+  }
+
+  /* Prevent page breaks inside form parts */
+  [class*="part-"], .parts-ab, .parts-row, .part-single {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    display: block !important;
+    width: 100% !important;
+  }
+}
+
+@media print {
+  .WhatsAppButton, 
+  .PageProgressBar, 
+  header, 
+  footer, 
+  [class*="Header"], 
+  [class*="Footer"],
+  [class*="PageProgressBar"],
+  [class*="WhatsAppButton"] {
+    display: none !important;
+  }
+}

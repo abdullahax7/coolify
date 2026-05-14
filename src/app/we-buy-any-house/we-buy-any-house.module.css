@@ -1,0 +1,417 @@
+.page {
+  padding-top: 120px;
+  min-height: 100vh;
+  background: var(--background);
+}
+
+.main {
+  padding-bottom: 100px;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* Hero */
+.hero {
+  background: linear-gradient(135deg, var(--navy) 0%, #1e293b 100%);
+  padding: 120px 0 100px;
+  color: white;
+  overflow: hidden;
+}
+
+.heroLayout {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 60px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.heroText {
+  flex: 1;
+  text-align: left;
+}
+
+.heroImage {
+  flex: 0 0 45%;
+  display: flex;
+  justify-content: center;
+}
+
+.heroIllustration {
+  width: 100%;
+  height: auto;
+  max-width: 550px;
+  filter: drop-shadow(0 40px 80px rgba(0,0,0,0.5));
+}
+
+.heroBadge {
+  display: inline-block;
+  background: var(--primary);
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  margin-bottom: 24px;
+  letter-spacing: 0.05em;
+}
+
+.heroTitle {
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-weight: 800;
+  line-height: 1.1;
+  margin-bottom: 24px;
+  text-align: left;
+}
+
+.heroTitle span {
+  color: var(--primary);
+}
+
+.heroSubtitle {
+  font-size: 1.25rem;
+  max-width: 600px;
+  margin: 0;
+  opacity: 0.8;
+  line-height: 1.6;
+}
+
+/* Form Section */
+.formSection {
+  margin-top: -60px;
+  padding-bottom: 80px;
+  position: relative;
+  z-index: 10;
+}
+
+.formCard {
+  background: white;
+  padding: 60px;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 40px 100px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border-light);
+}
+
+.formHeader {
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+.formHeader h2 {
+  font-size: 2.25rem;
+  margin-bottom: 12px;
+}
+
+.formHeader p {
+  color: var(--text-muted);
+  font-size: 1.1rem;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.inputGroup {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.field label {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--secondary);
+}
+
+.field input, .field select {
+  padding: 14px 20px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
+  font-size: 1rem;
+}
+
+.field input:focus, .field select:focus {
+  border-color: var(--primary);
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(225, 29, 72, 0.05);
+}
+
+.submitBtn {
+  margin-top: 12px;
+  padding: 18px !important;
+  font-weight: 800 !important;
+}
+
+.formNote {
+  margin-top: 24px;
+  text-align: center;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.uploadArea {
+  position: relative;
+  background: #f8fafc;
+  border: 2px dashed #e2e8f0;
+  border-radius: var(--radius-md);
+  padding: 40px 20px;
+  text-align: center;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.uploadArea:hover {
+  background: white;
+  border-color: var(--primary);
+}
+
+.fileInput {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.uploadLabel i {
+  font-size: 2rem;
+  display: block;
+  margin-bottom: 12px;
+}
+
+.uploadLabel span {
+  display: block;
+  font-weight: 700;
+  color: var(--secondary);
+  margin-bottom: 4px;
+}
+
+.uploadLabel small {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.imageGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.imageThumb {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border-light);
+}
+
+.imageThumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.imageThumb button {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #e11d48;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: all 0.2s;
+}
+
+.imageThumb button:hover {
+  background: #e11d48;
+  color: white;
+}
+
+.errorMsg {
+  background: #fef2f2;
+  color: #b91c1c;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border: 1px solid #fee2e2;
+}
+
+/* Process Section */
+.processSection {
+  padding: 100px 0;
+  background: var(--primary);
+  color: white;
+}
+
+.sectionHeader {
+  text-align: center;
+  margin-bottom: 60px;
+}
+
+.sectionHeader h2 {
+  font-size: 2.5rem;
+  margin-bottom: 12px;
+}
+
+.sectionHeader h2 span {
+  color: white;
+  opacity: 0.9;
+}
+
+.processGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 40px;
+}
+
+.processStep {
+  background: white;
+  padding: 40px;
+  border-radius: var(--radius-md);
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--navy);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+}
+
+.stepNumber {
+  width: 60px;
+  height: 60px;
+  background: var(--accent-cream);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin: 0 auto 24px;
+}
+
+.processStep h3 {
+  font-size: 1.5rem;
+  margin-bottom: 16px;
+}
+
+.processStep p {
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+/* Benefits Section */
+.benefitsSection {
+  background: white;
+  padding: 80px 0;
+  color: var(--navy);
+}
+
+.benefitsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+}
+
+.benefitCard {
+  text-align: center;
+  padding: 32px;
+  background: #f8fafc;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
+  transition: transform 0.2s ease;
+}
+
+.benefitCard:hover {
+  transform: translateY(-5px);
+  background: white;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+}
+
+.benefitIcon {
+  font-size: 2.5rem;
+  margin-bottom: 20px;
+}
+
+.benefitCard h3 {
+  font-size: 1.25rem;
+  margin-bottom: 12px;
+  color: var(--navy);
+}
+
+.benefitCard p {
+  color: var(--text-muted);
+  font-size: 0.9375rem;
+  opacity: 1;
+}
+
+@media (max-width: 1024px) {
+  .heroLayout {
+    flex-direction: column;
+    text-align: center;
+    gap: 40px;
+  }
+  
+  .heroText {
+    order: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  
+  .heroTitle, .heroSubtitle {
+    text-align: center;
+    margin: 0 auto 24px;
+  }
+  
+  .heroImage {
+    order: -1;
+    width: 100%;
+  }
+  
+  .heroIllustration {
+    max-width: 400px;
+  }
+
+  .processGrid, .benefitsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .heroTitle {
+    font-size: 2.5rem;
+  }
+  
+  .formCard {
+    padding: 32px 20px;
+  }
+  
+  .inputGroup {
+    grid-template-columns: 1fr;
+  }
+}
