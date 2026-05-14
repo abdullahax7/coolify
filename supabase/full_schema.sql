@@ -187,10 +187,14 @@ create table if not exists custom_properties (
   is_approved      boolean default false,
   is_rejected      boolean default false,
   rejection_reason text,
+  assigned_to_email text,
   expires_at       timestamptz,
   deleted_at       timestamptz,
   created_at       timestamptz default now()
 );
+
+-- Older deployments may have the table without the assigned_to_email column.
+alter table if exists custom_properties add column if not exists assigned_to_email text;
 
 -- Property Overrides
 create table if not exists property_overrides (
@@ -518,6 +522,9 @@ create index if not exists idx_profiles_admin    on profiles (id) where is_admin
 create index if not exists idx_staff_order        on staff (order_index);
 create index if not exists idx_testimonials_order on testimonials (order_index);
 create index if not exists idx_profiles_role      on profiles (role);
+create index if not exists idx_custom_props_assigned_email
+  on custom_properties (lower(assigned_to_email))
+  where assigned_to_email is not null;
 
 -- Audit log
 create index if not exists idx_audit_log_admin         on admin_audit_log (admin_id, created_at desc);
