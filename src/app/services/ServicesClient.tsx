@@ -117,12 +117,12 @@ export function ServicesClient({ content, rawCatalog }: { content: Record<string
                         </div>
                       )}
                       <div className={styles.cardHeader}>
-                        <h3>
+                        <h3 className={isForm ? styles.formHeading : ''}>
                           {item.name}
                         </h3>
                         <span className={styles.price}>{item.price}</span>
                       </div>
-                      <p>{item.desc}</p>
+                      <p className={isForm ? styles.formDesc : ''}>{item.desc}</p>
                       <div className={styles.cardActions}>
                         <button
                           className={styles.selectBtn}

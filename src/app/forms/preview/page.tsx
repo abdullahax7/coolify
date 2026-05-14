@@ -201,7 +201,7 @@ function FormPreviewContent() {
       <div className={styles.mainContent}>
         <div className={styles.formContainer}>
           <div className={styles.formHeader}>
-            <h2>Document Information</h2>
+            <h2>{normalizedKey.includes('tenancy') || normalizedKey.includes('standard occupation contract') ? 'Occupation contract wales' : 'Document Information'}</h2>
             <p>Please provide the details exactly as they should appear on the official document.</p>
           </div>
 

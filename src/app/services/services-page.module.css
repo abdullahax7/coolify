@@ -286,6 +286,20 @@
   flex: 1;
 }
 
+/* Wales form cards: invert visual hierarchy so the description reads first */
+.cardHeader h3.formHeading {
+  font-size: 1rem;
+  font-weight: 500;
+  opacity: 0.75;
+}
+
+.catalogCard p.formDesc {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--secondary);
+  line-height: 1.5;
+}
+
 .cardActions {
   display: flex;
   gap: 12px;
