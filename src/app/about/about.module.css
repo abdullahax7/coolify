@@ -280,8 +280,8 @@
 /* Testimonials */
 .testimonials {
   padding: 120px 0;
-  background: var(--navy);
-  color: white;
+  background: #f8fafc;
+  color: #0f172a;
 }
 
 .testimonialGrid {
