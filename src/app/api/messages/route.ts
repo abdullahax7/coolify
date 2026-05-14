@@ -31,7 +31,10 @@ export async function POST(req: NextRequest) {
     subject: body.subject ?? 'Contact Form',
     message: body.message,
   };
-  const { data, error } = await supabase.from('messages').insert(message).select().single();
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json(data, { status: 201 });
+  const { error } = await supabase.from('messages').insert(message);
+  if (error) {
+    console.error('[Messages API] Insert failed:', error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+  return NextResponse.json(message, { status: 201 });
 }
