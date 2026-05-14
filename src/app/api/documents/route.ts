@@ -30,16 +30,20 @@ export async function GET(req: NextRequest) {
   const propertyId = searchParams.get('propertyId');
   const mineOnly = searchParams.get('mine') === 'true';
 
+  // Emails are compared case-insensitively — Supabase normalizes auth emails
+  // to lowercase, but assigned_to_email may have been entered with any case.
+  const userEmailLower = (user.email ?? '').toLowerCase();
+
   const adminClient = await createAdminClient();
 
   let query = adminClient.from('property_documents').select('*').is('deleted_at', null);
 
   if (mineOnly) {
-    // Documents for every property the user owns or is assigned to.
+    // Documents for every property the user owns or is assigned to (case-insensitive on email).
     const { data: myProps } = await adminClient
       .from('custom_properties')
       .select('id')
-      .or(`user_id.eq.${user.id},assigned_to_email.eq.${user.email}`)
+      .or(`user_id.eq.${user.id},assigned_to_email.ilike.${userEmailLower}`)
       .is('deleted_at', null);
     const ids = (myProps ?? []).map(p => p.id);
     if (ids.length === 0) {
@@ -55,7 +59,8 @@ export async function GET(req: NextRequest) {
       .eq('id', propertyId)
       .single();
 
-    if (propErr || !prop || (prop.assigned_to_email !== user.email && prop.user_id !== user.id)) {
+    const assignedEmailLower = (prop?.assigned_to_email ?? '').toLowerCase();
+    if (propErr || !prop || (assignedEmailLower !== userEmailLower && prop.user_id !== user.id)) {
       return NextResponse.json({ error: 'Access denied. You are not assigned to or owner of this property.' }, { status: 403 });
     }
 

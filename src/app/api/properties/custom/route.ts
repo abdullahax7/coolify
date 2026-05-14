@@ -31,14 +31,18 @@ export async function GET(req: NextRequest) {
     query = query.is('deleted_at', null);
   }
 
+  // Emails are matched case-insensitively (assigned_to_email may have been
+  // entered with any case by an admin; auth user.email is always lowercase).
+  const userEmailLower = user?.email ? user.email.toLowerCase() : '';
+
   if (user) {
     if (!isAdmin && !trash) {
       if (assigned) {
-        query = query.eq('assigned_to_email', user.email);
+        query = query.ilike('assigned_to_email', userEmailLower);
       } else if (mineOnly) {
         query = query.eq('user_id', user.id);
       } else {
-        query = query.or(`is_approved.eq.true,user_id.eq.${user.id},assigned_to_email.eq.${user.email}`);
+        query = query.or(`is_approved.eq.true,user_id.eq.${user.id},assigned_to_email.ilike.${userEmailLower}`);
       }
     }
   } else {
@@ -53,9 +57,9 @@ export async function GET(req: NextRequest) {
     let retry = adminClient.from('custom_properties').select('*, profiles(is_admin, email)');
     if (user) {
       if (!isAdmin) {
-        if (assigned) retry = retry.eq('assigned_to_email', user.email);
+        if (assigned) retry = retry.ilike('assigned_to_email', userEmailLower);
         else if (mineOnly) retry = retry.eq('user_id', user.id);
-        else retry = retry.or(`is_approved.eq.true,user_id.eq.${user.id},assigned_to_email.eq.${user.email}`);
+        else retry = retry.or(`is_approved.eq.true,user_id.eq.${user.id},assigned_to_email.ilike.${userEmailLower}`);
       }
     } else {
       retry = retry.eq('is_approved', true).or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`);

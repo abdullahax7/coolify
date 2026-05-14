@@ -59,7 +59,12 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     // Admin-only fields: rejection workflow + user assignment.
     if (is_rejected !== undefined) updateData.is_rejected = is_rejected;
     if (rejection_reason !== undefined) updateData.rejection_reason = rejection_reason;
-    if (assigned_to_email !== undefined) updateData.assigned_to_email = assigned_to_email;
+    if (assigned_to_email !== undefined) {
+      // Normalize to lowercase so reads with auth.email (always lowercase) match.
+      updateData.assigned_to_email = assigned_to_email
+        ? String(assigned_to_email).toLowerCase()
+        : assigned_to_email;
+    }
   }
 
   const adminClient = await createAdminClient();
