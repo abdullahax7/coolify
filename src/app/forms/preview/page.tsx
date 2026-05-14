@@ -74,11 +74,20 @@ function FormPreviewContent() {
     const missingFields = schema.fields.filter(f => {
       const val = formData[f.key];
       if (Array.isArray(val)) return val.length === 0;
-      return !val?.trim();
+      if (typeof val === 'string') return !val.trim();
+      return val === undefined || val === null;
     });
 
     if (missingFields.length > 0) {
-      setError(`Please fill in all fields: ${missingFields.map(f => f.label).join(', ')}`);
+      const labels = missingFields.map(f => f.label).join(', ');
+      const isTenancy = normalizedKey.includes('tenancy') || normalizedKey.includes('standard occupation contract');
+      const msg = isTenancy
+        ? `Please complete every tenancy field before saving. Missing: ${labels}`
+        : `Please fill in all fields: ${labels}`;
+      setError(msg);
+      if (isTenancy && typeof window !== 'undefined') alert(msg);
+      const firstMissing = document.getElementById(missingFields[0].key);
+      if (firstMissing) firstMissing.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
 

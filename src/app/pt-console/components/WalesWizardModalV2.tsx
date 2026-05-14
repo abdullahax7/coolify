@@ -91,7 +91,23 @@ export default function WalesWizardModalV2({ title, existing, onClose, onSave, f
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!clientName.trim()) { setError('Client name is required.'); return; }
-    
+
+    // Tenancy agreements must have every field completed (legally binding document).
+    const normalizedType = formType.toLowerCase();
+    const isTenancy = normalizedType.includes('tenancy') || normalizedType.includes('standard occupation contract');
+    if (isTenancy) {
+      const missing = schema.fields.filter(f => {
+        const val = walesData[f.key];
+        if (Array.isArray(val)) return val.length === 0;
+        if (typeof val === 'string') return !val.trim();
+        return val === undefined || val === null;
+      });
+      if (missing.length > 0) {
+        setError(`Please complete every tenancy field before saving. Missing: ${missing.map(f => f.label).join(', ')}`);
+        return;
+      }
+    }
+
     setSaving(true);
     try {
       const isPurchased = existing?.is_user_purchased;
