@@ -251,6 +251,17 @@ create table if not exists staff (
   updated_at   timestamptz not null default now()
 );
 
+-- Testimonials (public quotes, editable from the admin pt-console)
+create table if not exists testimonials (
+  id           uuid primary key default gen_random_uuid(),
+  quote        text not null,
+  author       text not null,
+  role         text not null default '',
+  image_url    text not null default '',
+  order_index  int  not null default 0,
+  created_at   timestamptz not null default now()
+);
+
 -- ── 2. SAFETY: BACKFILL deleted_at ON PRE-EXISTING TABLES ─
 -- (no-op on fresh installs; required if a previous deploy
 --  used the older schema without the column)
@@ -449,6 +460,15 @@ create policy "staff_admin_write" on staff for all
   using      (is_admin())
   with check (is_admin());
 
+-- Testimonials (public read, admin write)
+alter table testimonials enable row level security;
+drop policy if exists "testimonials_public_read"  on testimonials;
+drop policy if exists "testimonials_admin_write"  on testimonials;
+create policy "testimonials_public_read" on testimonials for select using (true);
+create policy "testimonials_admin_write" on testimonials for all
+  using      (is_admin())
+  with check (is_admin());
+
 -- ── 5. INDEXES ───────────────────────────────────────────
 
 -- Expiry sweeps
@@ -495,8 +515,9 @@ create index if not exists idx_property_documents_expiry   on property_documents
 -- Misc
 create index if not exists idx_site_content_page on site_content (page_identifier);
 create index if not exists idx_profiles_admin    on profiles (id) where is_admin = true;
-create index if not exists idx_staff_order       on staff (order_index);
-create index if not exists idx_profiles_role     on profiles (role);
+create index if not exists idx_staff_order        on staff (order_index);
+create index if not exists idx_testimonials_order on testimonials (order_index);
+create index if not exists idx_profiles_role      on profiles (role);
 
 -- Audit log
 create index if not exists idx_audit_log_admin         on admin_audit_log (admin_id, created_at desc);

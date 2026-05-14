@@ -111,7 +111,7 @@ function ContactForm() {
           <div className={styles.formRow}>
             <div className={styles.formGroup}>
               <label htmlFor="phone">Phone Number</label>
-              <input id="phone" name="phone" type="tel" placeholder="+44 7000 000000" value={form.phone} onChange={handleChange} disabled={status === 'loading'} autoComplete="tel" inputMode="tel" pattern="[\d\s()+\-]{7,20}" />
+              <input id="phone" name="phone" type="tel" placeholder="+44 7000 000000" value={form.phone} onChange={handleChange} disabled={status === 'loading'} autoComplete="tel" inputMode="tel" pattern="[\d\s\(\)+\-]{7,20}" />
             </div>
             <div className={styles.formGroup}>
               <label htmlFor="subject">Subject</label>

@@ -154,7 +154,7 @@ export function CashBuyClient({ content }: { content: Record<string, string> }) 
                     </div>
                     <div className={styles.field}>
                       <label htmlFor="cb-phone">Phone Number</label>
-                      <input id="cb-phone" name="phone" type="tel" placeholder="07123 456789" value={form.phone} onChange={e => set('phone', e.target.value)} required autoComplete="tel" inputMode="tel" pattern="[\d\s()+\-]{7,20}" aria-required="true" />
+                      <input id="cb-phone" name="phone" type="tel" placeholder="07123 456789" value={form.phone} onChange={e => set('phone', e.target.value)} required autoComplete="tel" inputMode="tel" pattern="[\d\s\(\)+\-]{7,20}" aria-required="true" />
                     </div>
                   </div>
 

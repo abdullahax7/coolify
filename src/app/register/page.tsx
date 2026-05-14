@@ -153,7 +153,7 @@ export default function RegisterPage() {
                   disabled={loading}
                   autoComplete="tel"
                   inputMode="tel"
-                  pattern="[\d\s()+\-]{7,20}"
+                  pattern="[\d\s\(\)+\-]{7,20}"
                 />
               </div>
             </div>

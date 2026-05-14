@@ -52,6 +52,11 @@ const nextConfig: NextConfig = {
         hostname: "*.supabase.co",
         pathname: "/storage/v1/object/**",
       },
+      {
+        protocol: "https",
+        hostname: "pt1.webxoo.com",
+        pathname: "/storage/v1/object/**",
+      },
     ],
   },
   transpilePackages: ["pdfjs-dist"],

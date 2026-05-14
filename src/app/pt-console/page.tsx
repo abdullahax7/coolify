@@ -476,11 +476,22 @@ function Shell({ tab, setTab, onLogout }: { tab: Tab; setTab: (t: Tab) => void; 
   };
 
   /* Documents CRUD */
+  const base64ToBlob = (base64Data: string): Blob => {
+    const [meta, encoded] = base64Data.split(',');
+    const contentType = meta?.match(/data:([^;]+);/)?.[1] ?? 'application/octet-stream';
+    const binary = atob(encoded);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i += 1) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return new Blob([bytes], { type: contentType });
+  };
+
   const createDoc = async (d: Omit<PropertyDocument, 'id' | 'dateUploaded'>) => {
     const fd = new FormData();
     fd.append('meta', JSON.stringify({ propertyId: d.propertyId, propertyName: d.propertyName, documentType: d.documentType, expiryDate: d.expiryDate, status: d.status }));
     if (d.fileBase64 && d.fileName) {
-      const blob = await fetch(d.fileBase64).then(r => r.blob());
+      const blob = base64ToBlob(d.fileBase64);
       fd.append('file', blob, d.fileName);
     }
     const res = await fetch('/api/documents', { method: 'POST', body: fd });
