@@ -42,10 +42,10 @@ export async function POST(req: NextRequest) {
     date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
     status: 'new',
   };
-  const { data, error } = await supabase.from('cash_inquiries').insert(inquiry).select().single();
+  const { error } = await supabase.from('cash_inquiries').insert(inquiry);
   if (error) {
     console.error('[Cash Inquiry API] Insert failed:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-  return NextResponse.json(data, { status: 201 });
+  return NextResponse.json(inquiry, { status: 201 });
 }
