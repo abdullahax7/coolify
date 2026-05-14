@@ -166,6 +166,7 @@ export default function MediaTab() {
             ...prev,
             [`${slot.page}_${slot.key}`]: data.url
           }));
+          loadMedia();
         } else {
           alert('Failed to save image reference to database.');
         }

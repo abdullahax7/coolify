@@ -62,6 +62,7 @@ export default function PricingTab() {
 
       if (res.ok) {
         alert('Pricing updated successfully!');
+        loadPricing();
       } else {
         alert('Failed to update pricing.');
       }

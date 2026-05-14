@@ -43,6 +43,7 @@ export default function SettingsTab({ user, onProfileSaved }: SettingsTabProps) 
       if (!res.ok) throw new Error(data.error || 'Failed to save');
       setProfileMsg({ kind: 'ok', text: 'Profile updated.' });
       onProfileSaved?.({ name: data.profile.name, phone: data.profile.phone ?? '' });
+      window.location.reload();
     } catch (err) {
       setProfileMsg({ kind: 'err', text: err instanceof Error ? err.message : 'Unknown error' });
     } finally {

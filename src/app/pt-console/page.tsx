@@ -244,6 +244,8 @@ function Shell({ tab, setTab, onLogout }: { tab: Tab; setTab: (t: Tab) => void; 
   const [cashInquiries, setCashInquiries] = useState<CashInquiry[]>([]);
   const [walesForms, setWalesForms] = useState<WalesFormRecordV2[]>([]);
   const [menuOpen, setMenuOpen]   = useState(false);
+  const [dataVersion, setDataVersion] = useState(0);
+  const refresh = () => setDataVersion(v => v + 1);
 
   useEffect(() => {
     (async () => {
@@ -375,7 +377,7 @@ function Shell({ tab, setTab, onLogout }: { tab: Tab; setTab: (t: Tab) => void; 
       setAllUsers(users || []);
       setLoadingUsers(false);
     })();
-  }, []);
+  }, [dataVersion]);
 
   const api = {
     post: (url: string, body: unknown) => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }),
@@ -395,6 +397,7 @@ function Shell({ tab, setTab, onLogout }: { tab: Tab; setTab: (t: Tab) => void; 
         pdfUrl: data.pdf_url ?? (o as Order).pdfUrl,
       };
       setOrders(prev => [saved, ...prev]);
+      refresh();
       return saved;
     } else {
       alert('Failed to create order: ' + (data.error || 'Unknown error'));
@@ -404,10 +407,12 @@ function Shell({ tab, setTab, onLogout }: { tab: Tab; setTab: (t: Tab) => void; 
   const updateOrder = async (upd: Order) => {
     await api.put(`/api/orders/${upd.id}`, upd);
     setOrders(prev => prev.map(o => o.id === upd.id ? upd : o));
+    refresh();
   };
   const deleteOrder = async (id: string) => {
     await api.del(`/api/orders/${id}`);
     setOrders(prev => prev.filter(o => o.id !== id));
+    refresh();
   };
 
 
@@ -415,14 +420,17 @@ function Shell({ tab, setTab, onLogout }: { tab: Tab; setTab: (t: Tab) => void; 
   const markRead = async (id: string) => {
     await api.put(`/api/messages/${id}`, { read: true });
     setMessages(prev => prev.map(m => m.id === id ? { ...m, read: true } : m));
+    refresh();
   };
   const markAllRead = async () => {
     await Promise.all(messages.filter(m => !m.read).map(m => api.put(`/api/messages/${m.id}`, { read: true })));
     setMessages(prev => prev.map(m => ({ ...m, read: true })));
+    refresh();
   };
   const deleteMsg = async (id: string) => {
     await api.del(`/api/messages/${id}`);
     setMessages(prev => prev.filter(m => m.id !== id));
+    refresh();
   };
 
   /* Property overrides */
@@ -430,6 +438,7 @@ function Shell({ tab, setTab, onLogout }: { tab: Tab; setTab: (t: Tab) => void; 
     const next = { ...(overrides[id] ?? {}), ...patch };
     await api.post('/api/properties/overrides', { propertyId: id, ...next });
     setOverrides(prev => ({ ...prev, [id]: { ...(prev[id] ?? {}), ...patch } }));
+    refresh();
   };
 
   /* Custom properties CRUD */
@@ -446,6 +455,7 @@ function Shell({ tab, setTab, onLogout }: { tab: Tab; setTab: (t: Tab) => void; 
     const data = await res.json();
     if (res.ok && data.id) {
       setCustomProps(prev => [{ ...c, id: data.id, createdAt: today(), assigned_to_email: null }, ...prev]);
+      refresh();
     } else {
       alert('Failed to create property: ' + (data.error || 'Unknown error'));
     }
@@ -465,6 +475,7 @@ function Shell({ tab, setTab, onLogout }: { tab: Tab; setTab: (t: Tab) => void; 
     });
     if (res.ok) {
       setCustomProps(prev => prev.map(c => c.id === upd.id ? upd : c));
+      refresh();
     } else {
       const data = await res.json().catch(() => ({}));
       alert('Failed to update property: ' + (data.error || 'Unknown error'));
@@ -473,6 +484,7 @@ function Shell({ tab, setTab, onLogout }: { tab: Tab; setTab: (t: Tab) => void; 
   const deleteCustom = async (id: string) => {
     await api.del(`/api/properties/custom/${id}`);
     setCustomProps(prev => prev.filter(c => c.id !== id));
+    refresh();
   };
 
   /* Documents CRUD */
@@ -498,6 +510,7 @@ function Shell({ tab, setTab, onLogout }: { tab: Tab; setTab: (t: Tab) => void; 
     const data = await res.json();
     if (res.ok && data.id) {
       setDocuments(prev => [{ ...d, id: data.id, fileUrl: data.file_url ?? undefined, dateUploaded: today() }, ...prev]);
+      refresh();
     } else {
       console.error('Failed to create document:', data.error || 'Unknown error');
       alert('Failed to save document. Please try again.');
@@ -505,28 +518,32 @@ function Shell({ tab, setTab, onLogout }: { tab: Tab; setTab: (t: Tab) => void; 
   };
   const updateDoc = async (upd: PropertyDocument) => {
     // We now send full metadata so that the server can update property links, names, etc.
-    await api.put(`/api/documents/${upd.id}`, { 
-      status: upd.status, 
+    await api.put(`/api/documents/${upd.id}`, {
+      status: upd.status,
       expiry_date: upd.expiryDate,
       property_id: upd.propertyId,
       property_name: upd.propertyName,
       document_type: upd.documentType
     });
     setDocuments(prev => prev.map(d => d.id === upd.id ? upd : d));
+    refresh();
   };
   const deleteDoc = async (id: string) => {
     await api.del(`/api/documents/${id}`);
     setDocuments(prev => prev.filter(d => d.id !== id));
+    refresh();
   };
 
   /* Tenancies CRUD */
   const updateTenancy = async (upd: Tenancy) => {
     await api.put(`/api/tenancies/${upd.id}`, upd);
     setTenancies(prev => prev.map(t => t.id === upd.id ? upd : t));
+    refresh();
   };
   const deleteTenancy = async (id: string) => {
     await api.del(`/api/tenancies/${id}`);
     setTenancies(prev => prev.filter(t => t.id !== id));
+    refresh();
   };
 
   /* Appointments CRUD */
@@ -534,34 +551,40 @@ function Shell({ tab, setTab, onLogout }: { tab: Tab; setTab: (t: Tab) => void; 
     const res = await api.post('/api/appointments', a);
     const data = await res.json();
     setAppointments(prev => [{ ...a, id: data.id, createdAt: today() }, ...prev]);
+    refresh();
   };
   const updateAppointment = async (upd: Appointment) => {
     await api.put(`/api/appointments/${upd.id}`, { name: upd.name, number: upd.number, timing: upd.timing, day: upd.day, description: upd.description ?? null });
     setAppointments(prev => prev.map(a => a.id === upd.id ? upd : a));
+    refresh();
   };
   const deleteAppointment = async (id: string) => {
     await api.del(`/api/appointments/${id}`);
     setAppointments(prev => prev.filter(a => a.id !== id));
+    refresh();
   };
 
   /* Cash Inquiries CRUD */
   const updateCashInquiry = async (inc: CashInquiry) => {
     await api.put(`/api/cash-inquiries/${inc.id}`, { status: inc.status });
     setCashInquiries(prev => prev.map(i => i.id === inc.id ? inc : i));
+    refresh();
   };
   const deleteCashInquiry = async (id: string) => {
     await api.del(`/api/cash-inquiries/${id}`);
     setCashInquiries(prev => prev.filter(i => i.id !== id));
+    refresh();
   };
 
 
 
   /* Wales Forms V2 CRUD */
-  const createWalesForm = (f: any) => setWalesForms(prev => [f, ...prev]);
-  const updateWalesForm = (upd: any) => setWalesForms(prev => prev.map(f => f.id === upd.id ? upd : f));
+  const createWalesForm = (f: any) => { setWalesForms(prev => [f, ...prev]); refresh(); };
+  const updateWalesForm = (upd: any) => { setWalesForms(prev => prev.map(f => f.id === upd.id ? upd : f)); refresh(); };
   const deleteWalesForm = async (id: string) => {
     await api.del(`/api/wales-forms/${id}`);
     setWalesForms(prev => prev.filter(f => f.id !== id));
+    refresh();
   };
 
   const unread       = messages.filter(m => !m.read).length;

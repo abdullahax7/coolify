@@ -90,6 +90,8 @@ function DashboardContent() {
   const [printOrder, setPrintOrder] = useState<Order | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [dataVersion, setDataVersion] = useState(0);
+  const refresh = () => setDataVersion(v => v + 1);
 
   useEffect(() => {
     (async () => {
@@ -137,7 +139,7 @@ function DashboardContent() {
       setAssignedProperties(assignedData);
       setLoading(false);
     })();
-  }, [router]);
+  }, [router, dataVersion]);
 
   const handleLogout = async () => { await signOut(); router.push('/'); router.refresh(); };
 
@@ -406,6 +408,7 @@ function DashboardContent() {
               if (res.ok) {
                 const updated = await res.json();
                 setMyListings(prev => prev.map(l => l.id === id ? updated : l));
+                refresh();
                 return true;
               }
               return false;
@@ -419,13 +422,17 @@ function DashboardContent() {
               if (res.ok) {
                 const newList = await res.json();
                 setMyListings(prev => [newList, ...prev]);
+                refresh();
                 return true;
               }
               return false;
             }}
             onDelete={async (id) => {
               const res = await fetch(`/api/properties/custom/${id}`, { method: 'DELETE' });
-              if (res.ok) setMyListings(prev => prev.filter(l => l.id !== id));
+              if (res.ok) {
+                setMyListings(prev => prev.filter(l => l.id !== id));
+                refresh();
+              }
             }}
             onViewDocuments={(l) => setViewingProperty(l)}
           />

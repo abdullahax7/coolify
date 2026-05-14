@@ -62,6 +62,7 @@ export default function TrashTab() {
       if (!res.ok) throw new Error(data.error || `Failed to ${action}`);
       // Optimistic: drop from list (whether restored or purged, it leaves trash).
       setItems(prev => prev.filter(i => !(i.table === item.table && i.id === item.id)));
+      load();
     } catch (e) {
       alert((e instanceof Error ? e.message : 'Unknown error'));
     } finally {
