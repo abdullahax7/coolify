@@ -540,6 +540,7 @@ insert into storage.buckets (id, name, public) values ('properties',       'prop
 insert into storage.buckets (id, name, public) values ('property-images',  'property-images',  true)  on conflict (id) do nothing;
 insert into storage.buckets (id, name, public) values ('cash-inquiries',   'cash-inquiries',   true)  on conflict (id) do nothing;
 insert into storage.buckets (id, name, public) values ('documents',        'documents',        false) on conflict (id) do nothing;
+insert into storage.buckets (id, name, public) values ('site-assets',      'site-assets',      true)  on conflict (id) do nothing;
 
 -- Storage policies
 drop policy if exists "Public Upload Cash Inquiries"       on storage.objects;
@@ -553,6 +554,8 @@ drop policy if exists "Admin Manage PDFs"                  on storage.objects;
 drop policy if exists "Server can insert PDFs"             on storage.objects;
 drop policy if exists "Admin Manage Documents"             on storage.objects;
 drop policy if exists "Owners and tenants view docs"       on storage.objects;
+drop policy if exists "Public View Site Assets"            on storage.objects;
+drop policy if exists "Admin Manage Site Assets"           on storage.objects;
 
 -- Cash inquiries bucket (public uploads e.g. photo of property)
 create policy "Public Upload Cash Inquiries" on storage.objects for insert with check (bucket_id = 'cash-inquiries');
@@ -572,6 +575,11 @@ create policy "Admin Manage PDFs"     on storage.objects for all    using (bucke
 -- Documents (private — admin uploads, authenticated reads via signed URL)
 create policy "Admin Manage Documents"       on storage.objects for all    using (bucket_id = 'documents' and is_admin()) with check (bucket_id = 'documents' and is_admin());
 create policy "Owners and tenants view docs" on storage.objects for select using (bucket_id = 'documents' and auth.role() = 'authenticated');
+
+-- Site assets (CMS media / staff photos / services catalog images — public CDN reads, admin writes)
+create policy "Public View Site Assets"  on storage.objects for select using      (bucket_id = 'site-assets');
+create policy "Admin Manage Site Assets" on storage.objects for all    using      (bucket_id = 'site-assets' and is_admin())
+                                                                       with check (bucket_id = 'site-assets' and is_admin());
 
 -- ── 7. SEED DATA ─────────────────────────────────────────
 
@@ -594,3 +602,10 @@ analyze custom_properties;
 analyze property_overrides;
 analyze site_content;
 analyze admin_audit_log;
+
+-- ── 9. RELOAD POSTGREST SCHEMA CACHE ─────────────────────
+-- Force PostgREST to refresh its in-memory schema. Without this, embedded
+-- selects like  custom_properties.select('*, profiles(is_admin, email)')
+-- can fail with "Could not find a relationship between …" right after the
+-- schema is first applied (the cache still holds the empty state).
+notify pgrst, 'reload schema';
