@@ -118,15 +118,6 @@ export function ServicesClient({ content, rawCatalog }: { content: Record<string
                       )}
                       <div className={styles.cardHeader}>
                         <h3>
-                          {item.flag && (
-                            <Image 
-                              src={`/images/${item.flag}_flag.png`}
-                              alt={`${item.flag} flag`}
-                              width={24}
-                              height={16}
-                              className={styles.cardFlag}
-                            />
-                          )}
                           {item.name}
                         </h3>
                         <span className={styles.price}>{item.price}</span>
