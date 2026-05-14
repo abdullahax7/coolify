@@ -18,8 +18,14 @@ create table if not exists profiles (
   email      text,
   phone      text,
   is_admin   boolean default false,
+  role       text not null default 'tenant' check (role in ('tenant', 'landlord')),
   created_at timestamptz default now()
 );
+
+-- Older deployments may have the table without the role column.
+alter table if exists profiles add column if not exists role text not null default 'tenant';
+alter table if exists profiles drop constraint if exists profiles_role_check;
+alter table if exists profiles add constraint profiles_role_check check (role in ('tenant', 'landlord'));
 
 -- Orders
 create table if not exists orders (
@@ -232,6 +238,19 @@ create table if not exists admin_audit_log (
   created_at   timestamptz default now()
 );
 
+-- Staff (team management — editable from the admin pt-console)
+create table if not exists staff (
+  id           uuid primary key default gen_random_uuid(),
+  id_slug      text unique,
+  name         text not null,
+  role         text not null,
+  description  text not null default '',
+  image_url    text not null default '',
+  order_index  int  not null default 0,
+  created_at   timestamptz not null default now(),
+  updated_at   timestamptz not null default now()
+);
+
 -- ── 2. SAFETY: BACKFILL deleted_at ON PRE-EXISTING TABLES ─
 -- (no-op on fresh installs; required if a previous deploy
 --  used the older schema without the column)
@@ -257,12 +276,16 @@ $$;
 create or replace function handle_new_user()
 returns trigger language plpgsql security definer set search_path = public as $$
 begin
-  insert into profiles (id, name, email, phone)
+  insert into profiles (id, name, email, phone, role)
   values (
     new.id,
     coalesce(new.raw_user_meta_data->>'name', split_part(new.email, '@', 1)),
     new.email,
-    new.raw_user_meta_data->>'phone'
+    new.raw_user_meta_data->>'phone',
+    case
+      when lower(coalesce(new.raw_user_meta_data->>'role', '')) = 'landlord' then 'landlord'
+      else 'tenant'
+    end
   );
   return new;
 end;
@@ -417,6 +440,15 @@ drop policy if exists "Service role insert audit log"   on admin_audit_log;
 create policy "Admins read audit log"          on admin_audit_log for select using (is_admin());
 create policy "Service role insert audit log"  on admin_audit_log for insert with check (true);
 
+-- Staff (public read, admin write — service-role admin client bypasses RLS)
+alter table staff enable row level security;
+drop policy if exists "staff_public_read"  on staff;
+drop policy if exists "staff_admin_write"  on staff;
+create policy "staff_public_read" on staff for select using (true);
+create policy "staff_admin_write" on staff for all
+  using      (is_admin())
+  with check (is_admin());
+
 -- ── 5. INDEXES ───────────────────────────────────────────
 
 -- Expiry sweeps
@@ -463,6 +495,8 @@ create index if not exists idx_property_documents_expiry   on property_documents
 -- Misc
 create index if not exists idx_site_content_page on site_content (page_identifier);
 create index if not exists idx_profiles_admin    on profiles (id) where is_admin = true;
+create index if not exists idx_staff_order       on staff (order_index);
+create index if not exists idx_profiles_role     on profiles (role);
 
 -- Audit log
 create index if not exists idx_audit_log_admin         on admin_audit_log (admin_id, created_at desc);

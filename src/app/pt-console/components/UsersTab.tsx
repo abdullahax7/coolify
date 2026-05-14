@@ -25,27 +25,24 @@ export interface UserProfile {
   is_admin: boolean;
 }
 
-export default function UsersTab({ 
-  users, 
-  loading, 
-  properties = [], 
+export default function UsersTab({
+  users,
+  loading,
+  properties = [],
   onAssign,
   onUnassign,
   onDelete,
-  onCreateTenancy
-}: { 
-  users: UserProfile[], 
+}: {
+  users: UserProfile[],
   loading: boolean,
   properties?: { id: string; title: string; location: string; image: string; assigned_to_email?: string | null }[],
   onAssign?: (propId: string, email: string) => Promise<void>,
   onUnassign?: (propId: string) => Promise<void>,
   onDelete?: (id: string) => Promise<void>,
-  onCreateTenancy?: (t: any) => Promise<void>
 }) {
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [assigningUser, setAssigningUser] = useState<UserProfile | null>(null);
-  const [tenancyUser, setTenancyUser] = useState<UserProfile | null>(null);
   const [viewingUser, setViewingUser] = useState<UserProfile | null>(null);
 
   const filteredUsers = users.filter(u => {
@@ -136,19 +133,12 @@ export default function UsersTab({
                   </td>
                   <td style={{ textAlign: 'right' }}>
                     <div className={styles.actionGroup} style={{ justifyContent: 'flex-end' }}>
-                      <button 
-                        className={styles.docActionIcon} 
+                      <button
+                        className={styles.docActionIcon}
                         title="Manage Properties"
                         onClick={() => setAssigningUser(user)}
                       >
                         🏠
-                      </button>
-                      <button 
-                        className={styles.docActionIcon} 
-                        title="Create Tenancy / Lease"
-                        onClick={() => setTenancyUser(user)}
-                      >
-                        📄
                       </button>
                       <button className={styles.docActionIcon} title="View Details" onClick={() => setViewingUser(user)}>👤</button>
                       <a href={`mailto:${user.email}`} className={styles.docActionIcon} title="Email User">✉️</a>
@@ -219,136 +209,6 @@ export default function UsersTab({
         />
       )}
 
-      {/* Tenancy Creation Modal */}
-      {tenancyUser && (
-        <CreateTenancyModal 
-          user={tenancyUser}
-          properties={properties.filter(p => p.assigned_to_email === tenancyUser.email)}
-          onClose={() => setTenancyUser(null)}
-          onSave={async (t) => {
-            if (onCreateTenancy) await onCreateTenancy(t);
-            setTenancyUser(null);
-          }}
-        />
-      )}
-    </div>
-  );
-}
-
-function CreateTenancyModal({ user, properties, onClose, onSave }: {
-  user: UserProfile;
-  properties: { id: string; title: string; location: string }[];
-  onClose: () => void;
-  onSave: (t: any) => Promise<void>;
-}) {
-  const [formData, setFormData] = useState({
-    propertyId: properties[0]?.id || '',
-    propertyName: properties[0]?.location || properties[0]?.title || '',
-    startDate: new Date().toISOString().split('T')[0],
-    endDate: '',
-    rentAmount: '',
-    rentFrequency: 'Monthly',
-    rentDay: '1',
-    depositAmount: '',
-    status: 'Active'
-  });
-  const [busy, setBusy] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.propertyId) return alert('Please select a property');
-    setBusy(true);
-    try {
-      await onSave({
-        ...formData,
-        tenantName: user.name,
-        tenantEmail: user.email,
-        tenantPhone: user.phone
-      });
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <div className={styles.modalBackdrop} onClick={onClose}>
-      <div className={styles.modal} style={{ maxWidth: 600 }} onClick={e => e.stopPropagation()}>
-        <div className={styles.modalHeader}>
-          <h2>Create Tenancy for {user.name}</h2>
-          <button className={styles.modalClose} onClick={onClose}>✕</button>
-        </div>
-        <form onSubmit={handleSubmit} className={styles.modalBody}>
-          <div className={styles.grid2}>
-            <div className={styles.field}>
-              <label>Select Property</label>
-              <select 
-                value={formData.propertyId} 
-                onChange={e => {
-                  const p = properties.find(prop => prop.id === e.target.value);
-                  setFormData({ ...formData, propertyId: e.target.value, propertyName: p?.location || p?.title || '' });
-                }}
-                required
-              >
-                <option value="">-- Choose Property --</option>
-                {properties.map(p => <option key={p.id} value={p.id}>{p.location || p.title}</option>)}
-              </select>
-              {properties.length === 0 && <p style={{ color: '#ef4444', fontSize: '0.7rem', marginTop: 4 }}>User has no assigned properties. Assign one first.</p>}
-            </div>
-            <div className={styles.field}>
-              <label>Status</label>
-              <select value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value as any })}>
-                <option value="Active">Active</option>
-                <option value="Pending">Pending</option>
-                <option value="Ended">Ended</option>
-              </select>
-            </div>
-          </div>
-
-          <div className={styles.grid2} style={{ marginTop: 15 }}>
-            <div className={styles.field}>
-              <label>Start Date</label>
-              <input type="date" value={formData.startDate} onChange={e => setFormData({ ...formData, startDate: e.target.value })} required />
-            </div>
-            <div className={styles.field}>
-              <label>End Date (Optional)</label>
-              <input type="date" value={formData.endDate} onChange={e => setFormData({ ...formData, endDate: e.target.value })} />
-            </div>
-          </div>
-
-          <div className={styles.grid3} style={{ marginTop: 15 }}>
-            <div className={styles.field}>
-              <label>Rent Amount</label>
-              <input type="text" placeholder="£1,200" value={formData.rentAmount} onChange={e => setFormData({ ...formData, rentAmount: e.target.value })} required />
-            </div>
-            <div className={styles.field}>
-              <label>Frequency</label>
-              <select value={formData.rentFrequency} onChange={e => setFormData({ ...formData, rentFrequency: e.target.value as any })}>
-                <option value="Monthly">Monthly</option>
-                <option value="Weekly">Weekly</option>
-                <option value="Quarterly">Quarterly</option>
-              </select>
-            </div>
-            <div className={styles.field}>
-              <label>Rent Day (1-31)</label>
-              <input type="number" min="1" max="31" value={formData.rentDay} onChange={e => setFormData({ ...formData, rentDay: e.target.value })} />
-            </div>
-          </div>
-
-          <div className={styles.field} style={{ marginTop: 15 }}>
-            <label>Deposit Amount</label>
-            <input type="text" placeholder="£1,500" value={formData.depositAmount} onChange={e => setFormData({ ...formData, depositAmount: e.target.value })} />
-          </div>
-
-          <div className={styles.modalFooter} style={{ marginTop: 30 }}>
-            <button type="button" className={styles.btnGray} onClick={onClose}>Cancel</button>
-            <button type="submit" className={styles.btnGreen} disabled={busy || properties.length === 0}>
-              {busy ? 'Creating...' : 'Create Tenancy →'}
-            </button>
-          </div>
-        </form>
-      </div>
     </div>
   );
 }

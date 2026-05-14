@@ -10,11 +10,11 @@ import type { NextConfig } from "next";
 //     if you ever lock this down further.
 const csp = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.google.com https://www.gstatic.com https://web.squarecdn.com https://sandbox.web.squarecdn.com",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.google.com https://www.gstatic.com https://web.squarecdn.com https://sandbox.web.squarecdn.com https://static.cloudflareinsights.com",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "img-src 'self' data: blob: https://*.supabase.co https://pt1.webxoo.com https://images.unsplash.com https://www.gstatic.com https://www.google.com",
   "font-src 'self' data: https://fonts.gstatic.com",
-  "connect-src 'self' https://*.supabase.co https://pt1.webxoo.com wss://*.supabase.co wss://pt1.webxoo.com https://connect.squareup.com https://connect.squareupsandbox.com https://www.google.com",
+  "connect-src 'self' https://*.supabase.co https://pt1.webxoo.com wss://*.supabase.co wss://pt1.webxoo.com https://connect.squareup.com https://connect.squareupsandbox.com https://www.google.com https://cloudflareinsights.com",
   "frame-src 'self' https://www.google.com https://www.googletagmanager.com https://web.squarecdn.com https://sandbox.web.squarecdn.com",
   "frame-ancestors 'self'",
   "form-action 'self'",

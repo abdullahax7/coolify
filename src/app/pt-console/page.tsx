@@ -7,6 +7,7 @@ import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { Logo } from '@/components/common/Logo';
+import Captcha from '@/components/common/Captcha';
 import { type Property } from '@/data/properties';
 import styles from './admin.module.css';
 import MessagesTab, { type Message } from './components/MessagesTab';
@@ -181,11 +182,12 @@ function AdminLogin({ onLogin }: { onLogin: () => void }) {
   const [err, setErr]     = useState('');
   const [busy, setBusy]   = useState(false);
   const [show, setShow]   = useState(false);
+  const [captchaToken, setCaptchaToken] = React.useState<string | null>(null);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault(); setErr(''); setBusy(true);
-    const { error } = await supabaseSignIn(email, pass);
-    if (error) { setErr('Invalid credentials. Please try again.'); setBusy(false); return; }
+    const { error } = await supabaseSignIn(email, pass, captchaToken);
+    if (error) { setErr(error); setBusy(false); return; }
     const user = await getUser();
     if (!user?.isAdmin) { setErr('You do not have admin access.'); setBusy(false); return; }
     onLogin();
@@ -214,8 +216,9 @@ function AdminLogin({ onLogin }: { onLogin: () => void }) {
               </button>
             </div>
           </div>
+          <Captcha onChange={setCaptchaToken} />
           {err && <div className={styles.loginErr}>⚠️ {err}</div>}
-          <button type="submit" className={styles.loginBtn} disabled={busy}>
+          <button type="submit" className={styles.loginBtn} disabled={busy || !captchaToken}>
             {busy ? <span className={styles.spinner} /> : 'Sign In →'}
           </button>
         </form>
@@ -506,23 +509,6 @@ function Shell({ tab, setTab, onLogout }: { tab: Tab; setTab: (t: Tab) => void; 
   };
 
   /* Tenancies CRUD */
-  const createTenancy = async (t: Omit<Tenancy, 'id' | 'createdAt'>) => {
-    const res = await api.post('/api/tenancies', {
-      propertyId: t.propertyId, propertyName: t.propertyName,
-      startDate: t.startDate, endDate: t.endDate,
-      rentAmount: t.rentAmount, rentFrequency: t.rentFrequency, rentDay: t.rentDay,
-      depositAmount: t.depositAmount,
-      tenantName: t.tenantName, tenantEmail: t.tenantEmail, tenantPhone: t.tenantPhone,
-      status: t.status
-    });
-    const data = await res.json();
-    if (res.ok && data.id) {
-      setTenancies(prev => [{ ...t, id: data.id, createdAt: today() }, ...prev]);
-      alert('Tenancy created successfully!');
-    } else {
-      alert('Failed to create tenancy: ' + (data.error || 'Unknown error'));
-    }
-  };
   const updateTenancy = async (upd: Tenancy) => {
     await api.put(`/api/tenancies/${upd.id}`, upd);
     setTenancies(prev => prev.map(t => t.id === upd.id ? upd : t));
@@ -691,7 +677,7 @@ function Shell({ tab, setTab, onLogout }: { tab: Tab; setTab: (t: Tab) => void; 
               {tab === 'services'      && <OrdersTab type="service" orders={serviceOrders} onCreate={createOrder} onUpdate={updateOrder} onDelete={deleteOrder} />}
               {tab === 'inbox'         && <InboxTab messages={messages} inquiries={cashInquiries} onMarkRead={markRead} onMarkAllRead={markAllRead} onDeleteMsg={deleteMsg} onUpdateInquiry={updateCashInquiry} onDeleteInquiry={deleteCashInquiry} />}
               {tab === 'documents'     && <DocumentsTab documents={documents} onCreate={createDoc} onUpdate={updateDoc} onDelete={deleteDoc} customProps={customProps} />}
-              {tab === 'tenants'       && <UsersTab users={allUsers} loading={loadingUsers} properties={customProps} onAssign={assignProperty} onUnassign={unassignProperty} onDelete={deleteUser} onCreateTenancy={createTenancy} />}
+              {tab === 'tenants'       && <UsersTab users={allUsers} loading={loadingUsers} properties={customProps} onAssign={assignProperty} onUnassign={unassignProperty} onDelete={deleteUser} />}
               {tab === 'appointments'  && <AppointmentsTab appointments={appointments} onCreate={createAppointment} onUpdate={updateAppointment} onDelete={deleteAppointment} />}
               {tab === 'forms'         && <FormsTab records={walesForms.filter(f => !/Fixed Term Standard Occupation Contract|Tenancy Agreement/i.test(f.form_type))} onUpdate={updateWalesForm} onCreate={createWalesForm} onDelete={deleteWalesForm} />}
               {tab === 'tenancy-form'  && <TenancyAgreementsTab records={walesForms.filter(f => /Fixed Term Standard Occupation Contract|Tenancy Agreement/i.test(f.form_type))} onUpdate={updateWalesForm} onCreate={createWalesForm} onDelete={deleteWalesForm} />}
