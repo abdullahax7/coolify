@@ -324,9 +324,9 @@
 }
 
 .cartBtn {
-  background: var(--accent-cream);
-  color: var(--secondary);
-  border: 1.5px solid var(--border-light);
+  background: #ffffff;
+  color: #0f172a;
+  border: 1.5px solid var(--secondary);
   padding: 12px 20px;
   border-radius: var(--radius-md);
   font-weight: 800;
@@ -335,10 +335,10 @@
 }
 
 .cartBtn:hover {
-  background: white;
-  border-color: var(--primary);
-  color: var(--primary);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  background: var(--secondary);
+  border-color: var(--secondary);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
 /* CTA Section */
