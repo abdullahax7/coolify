@@ -532,6 +532,7 @@ insert into storage.buckets (id, name, public) values ('pdfs',             'pdfs
 insert into storage.buckets (id, name, public) values ('properties',       'properties',       true)  on conflict (id) do nothing;
 insert into storage.buckets (id, name, public) values ('property-images',  'property-images',  true)  on conflict (id) do nothing;
 insert into storage.buckets (id, name, public) values ('cash-inquiries',   'cash-inquiries',   true)  on conflict (id) do nothing;
+insert into storage.buckets (id, name, public) values ('documents',        'documents',        false) on conflict (id) do nothing;
 
 -- Storage policies
 drop policy if exists "Public Upload Cash Inquiries"       on storage.objects;
@@ -543,6 +544,8 @@ drop policy if exists "Admin Manage Property Images"       on storage.objects;
 drop policy if exists "Users View Own PDFs"                on storage.objects;
 drop policy if exists "Admin Manage PDFs"                  on storage.objects;
 drop policy if exists "Server can insert PDFs"             on storage.objects;
+drop policy if exists "Admin Manage Documents"             on storage.objects;
+drop policy if exists "Owners and tenants view docs"       on storage.objects;
 
 -- Cash inquiries bucket (public uploads e.g. photo of property)
 create policy "Public Upload Cash Inquiries" on storage.objects for insert with check (bucket_id = 'cash-inquiries');
@@ -558,6 +561,10 @@ create policy "Admin Manage Property Images"         on storage.objects for all 
 create policy "Users View Own PDFs"   on storage.objects for select using (bucket_id = 'pdfs' and auth.uid()::text = (storage.foldername(name))[1]);
 create policy "Server can insert PDFs" on storage.objects for insert with check (bucket_id = 'pdfs');
 create policy "Admin Manage PDFs"     on storage.objects for all    using (bucket_id = 'pdfs' and is_admin());
+
+-- Documents (private — admin uploads, authenticated reads via signed URL)
+create policy "Admin Manage Documents"       on storage.objects for all    using (bucket_id = 'documents' and is_admin()) with check (bucket_id = 'documents' and is_admin());
+create policy "Owners and tenants view docs" on storage.objects for select using (bucket_id = 'documents' and auth.role() = 'authenticated');
 
 -- ── 7. SEED DATA ─────────────────────────────────────────
 
