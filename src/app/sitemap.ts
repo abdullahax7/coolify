@@ -3,7 +3,7 @@ import { createStaticClient } from '@/lib/supabase/server';
 
 export const revalidate = 3600;
 
-const baseUrl = 'https://property-trader1.co.uk';
+const baseUrl = 'https://pt1.co.uk';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
@@ -16,6 +16,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${baseUrl}/we-buy-any-house`, lastModified: now, changeFrequency: 'weekly', priority: 0.85 },
     { url: `${baseUrl}/about`, lastModified: now, changeFrequency: 'monthly', priority: 0.6 },
     { url: `${baseUrl}/contact`, lastModified: now, changeFrequency: 'monthly', priority: 0.6 },
+    { url: `${baseUrl}/contact/landlord-application`, lastModified: now, changeFrequency: 'monthly', priority: 0.6 },
     { url: `${baseUrl}/tools`, lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
     { url: `${baseUrl}/blog`, lastModified: now, changeFrequency: 'weekly', priority: 0.6 },
     { url: `${baseUrl}/legal/privacy-notice-landlord`, lastModified: now, changeFrequency: 'yearly', priority: 0.2 },

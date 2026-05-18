@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Hero } from "@/components/home/Hero";
@@ -11,6 +12,18 @@ import { CashBuy } from "@/components/home/CashBuy";
 import { getPageContent, getGlobalData } from "@/lib/getContent";
 import { SERVICE_CATALOG } from "@/data/pricing_data";
 import styles from "./page.module.css";
+
+export const metadata: Metadata = {
+  title: "Property Trader | Letting Agents & Property Management Wales & England",
+  description: "Independent estate and letting agents since 1996 — full property management, lettings, sales and cash house buying across Wales and England. Get a free valuation today.",
+  alternates: { canonical: "/" },
+  openGraph: {
+    title: "Property Trader | Letting Agents & Property Management Wales & England",
+    description: "Independent estate and letting agents since 1996. Full property management, lettings, sales and cash house buying across Wales and England.",
+    url: "/",
+    type: "website",
+  },
+};
 
 export const revalidate = 3600; // Refresh every hour
 

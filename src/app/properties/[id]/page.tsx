@@ -11,7 +11,7 @@ interface Props {
   params: Promise<{ id: string }>;
 }
 
-const SITE_URL = 'https://property-trader1.co.uk';
+const SITE_URL = 'https://pt1.co.uk';
 
 function parsePrice(raw?: string | number | null): { amount: number | null; currency: string } {
   if (raw === null || raw === undefined) return { amount: null, currency: 'GBP' };

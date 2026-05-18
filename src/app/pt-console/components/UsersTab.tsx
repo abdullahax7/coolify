@@ -142,11 +142,15 @@ export default function UsersTab({
                       </button>
                       <button className={styles.docActionIcon} title="View Details" onClick={() => setViewingUser(user)}>👤</button>
                       <a href={`mailto:${user.email}`} className={styles.docActionIcon} title="Email User">✉️</a>
-                      <button 
-                        className={`${styles.docActionIcon} ${styles.btnDanger}`} 
-                        style={{ border: 'none', background: 'transparent', cursor: 'pointer' }}
-                        title="Delete User Account"
+                      <button
+                        className={`${styles.docActionIcon} ${styles.btnDanger}`}
+                        style={{ border: 'none', background: 'transparent', cursor: (user.is_admin || user.role === 'admin') ? 'not-allowed' : 'pointer', opacity: (user.is_admin || user.role === 'admin') ? 0.4 : 1 }}
+                        title={(user.is_admin || user.role === 'admin') ? 'User is admin, cannot be deleted' : 'Delete User Account'}
                         onClick={() => {
+                          if (user.is_admin || user.role === 'admin') {
+                            alert('User is admin, cannot be deleted');
+                            return;
+                          }
                           if (confirm(`Are you sure you want to completely delete the account for ${user.email}? This action cannot be undone.`)) {
                             onDelete && onDelete(user.id);
                           }

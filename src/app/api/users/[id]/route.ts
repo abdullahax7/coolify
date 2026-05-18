@@ -20,6 +20,10 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   const { data: targetUser } = await supabase.from('profiles').select('*').eq('id', id).single();
   if (!targetUser) return NextResponse.json({ error: 'User not found' }, { status: 404 });
 
+  if (targetUser.is_admin || targetUser.role === 'admin' || id === requester.id) {
+    return NextResponse.json({ error: 'User is admin, cannot be deleted' }, { status: 403 });
+  }
+
   // 1. Audit Log the deletion
   // Note: Orders will be kept because of 'on delete set null' in DB schema
   await performCleanupAndLog({

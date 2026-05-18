@@ -3,6 +3,17 @@ import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { performCleanupAndLog } from '@/lib/cleanup';
 import { logAudit } from '@/lib/audit';
 
+// Document file_url is stored as a bucket-relative path, but legacy rows may
+// hold a signed URL — accept either and return the bucket path.
+function documentPath(fileUrl: string | null | undefined): string | null {
+  if (!fileUrl) return null;
+  if (!fileUrl.startsWith('http')) return fileUrl;
+  try {
+    const url = new URL(fileUrl);
+    return url.pathname.split('/documents/')[1]?.split('?')[0] ?? null;
+  } catch { return null; }
+}
+
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -29,12 +40,20 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     restore,
   } = body;
 
-  // Restore (admin only): clears deleted_at.
+  // Restore (admin only): clears deleted_at on the property and cascades to its documents
+  // so anything that was soft-deleted alongside the property comes back together.
   if (restore === true) {
     if (!isAdmin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     const adminClient = await createAdminClient();
     const { error } = await adminClient.from('custom_properties').update({ deleted_at: null }).eq('id', id);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    const { error: docRestoreErr } = await adminClient
+      .from('property_documents')
+      .update({ deleted_at: null })
+      .eq('property_id', id);
+    if (docRestoreErr && !/deleted_at/i.test(docRestoreErr.message)) {
+      console.warn('[custom_properties restore] failed to restore child documents:', docRestoreErr.message);
+    }
     await logAudit({
       adminId: user.id, adminEmail: user.email, action: 'restore',
       targetTable: 'custom_properties', targetId: id, targetName: existing.title, request: req,
@@ -106,15 +125,35 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
 
   const adminClient = await createAdminClient();
 
-  // Hard delete path: admin-only AND must be already soft-deleted (or hard=true override).
-  if (hard) {
-    if (!isAdmin) return NextResponse.json({ error: 'Forbidden — admin required for hard delete' }, { status: 403 });
-
-    const filesToDelete: string[] = [];
-    if (existing.image_url) filesToDelete.push(existing.image_url);
+  // Collect property image files + child-document storage paths. Used by both
+  // hard-delete paths so a permanently removed property leaves no orphans.
+  const collectAndPurgeChildren = async () => {
+    const imageFiles: string[] = [];
+    if (existing.image_url) imageFiles.push(existing.image_url);
     if (existing.gallery_urls) {
       const urls = String(existing.gallery_urls).split('|DELIM|').filter(Boolean);
-      filesToDelete.push(...urls);
+      imageFiles.push(...urls);
+    }
+
+    const { data: docs } = await adminClient
+      .from('property_documents')
+      .select('id, file_url')
+      .eq('property_id', id);
+
+    const docPaths = (docs ?? [])
+      .map(d => documentPath(d.file_url as string | null))
+      .filter((p): p is string => !!p);
+
+    if (docPaths.length > 0) {
+      const { error: storageErr } = await adminClient.storage.from('documents').remove(docPaths);
+      if (storageErr) console.warn('[custom_properties hard-delete] documents bucket cleanup:', storageErr.message);
+    }
+    if (docs && docs.length > 0) {
+      const { error: docDelErr } = await adminClient
+        .from('property_documents')
+        .delete()
+        .eq('property_id', id);
+      if (docDelErr) console.warn('[custom_properties hard-delete] property_documents row cleanup:', docDelErr.message);
     }
 
     await performCleanupAndLog({
@@ -122,8 +161,15 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
       itemType: 'property',
       itemName: existing.title,
       deletedBy: user.id,
-      files: filesToDelete,
+      files: imageFiles,
     });
+  };
+
+  // Hard delete path: admin-only AND must be already soft-deleted (or hard=true override).
+  if (hard) {
+    if (!isAdmin) return NextResponse.json({ error: 'Forbidden — admin required for hard delete' }, { status: 403 });
+
+    await collectAndPurgeChildren();
 
     const { error } = await adminClient.from('custom_properties').delete().eq('id', id);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -138,23 +184,15 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   }
 
   // Soft-delete path (default).
+  const now = new Date().toISOString();
   const { error: softErr } = await adminClient
     .from('custom_properties')
-    .update({ deleted_at: new Date().toISOString() })
+    .update({ deleted_at: now })
     .eq('id', id);
 
   // If deleted_at column doesn't exist (pre-migration), fall back to hard delete.
   if (softErr && /deleted_at/i.test(softErr.message)) {
-    const filesToDelete: string[] = [];
-    if (existing.image_url) filesToDelete.push(existing.image_url);
-    if (existing.gallery_urls) {
-      const urls = String(existing.gallery_urls).split('|DELIM|').filter(Boolean);
-      filesToDelete.push(...urls);
-    }
-    await performCleanupAndLog({
-      itemId: id, itemType: 'property', itemName: existing.title,
-      deletedBy: user.id, files: filesToDelete,
-    });
+    await collectAndPurgeChildren();
     const { error: delErr } = await adminClient.from('custom_properties').delete().eq('id', id);
     if (delErr) return NextResponse.json({ error: delErr.message }, { status: 500 });
 
@@ -167,6 +205,18 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   }
 
   if (softErr) return NextResponse.json({ error: softErr.message }, { status: 500 });
+
+  // Cascade the soft-delete to child documents so they disappear from active
+  // lists alongside the property. Storage files stay in the `documents` bucket
+  // until the property is purged from trash — that's what makes restore work.
+  const { error: docSoftErr } = await adminClient
+    .from('property_documents')
+    .update({ deleted_at: now })
+    .eq('property_id', id)
+    .is('deleted_at', null);
+  if (docSoftErr && !/deleted_at/i.test(docSoftErr.message)) {
+    console.warn('[custom_properties soft-delete] cascade documents:', docSoftErr.message);
+  }
 
   await logAudit({
     adminId: user.id, adminEmail: user.email, action: 'delete',

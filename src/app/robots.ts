@@ -38,7 +38,7 @@ export default function robots(): MetadataRoute.Robots {
         disallow: '/',
       },
     ],
-    sitemap: 'https://property-trader1.co.uk/sitemap.xml',
-    host: 'https://property-trader1.co.uk',
+    sitemap: 'https://pt1.co.uk/sitemap.xml',
+    host: 'https://pt1.co.uk',
   };
 }
