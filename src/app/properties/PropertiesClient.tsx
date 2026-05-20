@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { PropertyCard } from '@/components/home/PropertyCard';
 import { type Property } from '@/data/properties';
@@ -9,19 +9,22 @@ import styles from './properties.module.css';
 type ListingType = 'All' | 'Sale' | 'Rent';
 type SectorType = 'All' | 'Residential' | 'Commercial';
 
+const PAGE_SIZE = 12;
+
 interface PropertiesClientProps {
   initialProperties: Property[];
 }
 
 export default function PropertiesClient({ initialProperties }: PropertiesClientProps) {
   const searchParams = useSearchParams();
-  
+
   const [listingType, setListingType] = useState<ListingType>(() => (searchParams.get('listingType') as ListingType) || 'All');
   const [sector, setSector] = useState<SectorType>(() => (searchParams.get('sector') as SectorType) || 'All');
   const [sortBy, setSortBy] = useState('Newest Listed');
   const [searchQuery, setSearchQuery] = useState(() => searchParams.get('location') || '');
   const [minPrice] = useState(() => searchParams.get('minPrice') || '');
   const [maxPrice] = useState(() => searchParams.get('maxPrice') || '');
+  const [page, setPage] = useState(1);
 
   const filteredProperties = useMemo(() => {
     return initialProperties
@@ -73,6 +76,43 @@ export default function PropertiesClient({ initialProperties }: PropertiesClient
         return 0;
       });
   }, [initialProperties, listingType, sector, sortBy, searchQuery, minPrice, maxPrice]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredProperties.length / PAGE_SIZE));
+  // Reset to page 1 whenever filters/sort change the result set.
+  useEffect(() => { setPage(1); }, [listingType, sector, sortBy, searchQuery, minPrice, maxPrice]);
+  // Clamp if the underlying list shrinks below the current page.
+  useEffect(() => { if (page > totalPages) setPage(totalPages); }, [page, totalPages]);
+
+  const pagedProperties = useMemo(
+    () => filteredProperties.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [filteredProperties, page],
+  );
+
+  const goToPage = (next: number) => {
+    const clamped = Math.min(Math.max(1, next), totalPages);
+    setPage(clamped);
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  // Compact page-number list with ellipses (e.g. 1 … 4 5 6 … 12).
+  const pageNumbers = useMemo<(number | 'ellipsis')[]>(() => {
+    const result: (number | 'ellipsis')[] = [];
+    const windowSize = 1;
+    for (let i = 1; i <= totalPages; i++) {
+      if (
+        i === 1 ||
+        i === totalPages ||
+        (i >= page - windowSize && i <= page + windowSize)
+      ) {
+        result.push(i);
+      } else if (result[result.length - 1] !== 'ellipsis') {
+        result.push('ellipsis');
+      }
+    }
+    return result;
+  }, [page, totalPages]);
 
   return (
     <section className={styles.content}>
@@ -129,13 +169,13 @@ export default function PropertiesClient({ initialProperties }: PropertiesClient
           </div>
 
           <div className={styles.grid}>
-            {filteredProperties.map((prop: Property) => (
+            {pagedProperties.map((prop: Property) => (
               <PropertyCard
                 key={prop.id}
                 id={prop.id}
                 image={
-                  prop.image 
-                    ? prop.image 
+                  prop.image
+                    ? prop.image
                     : (Array.isArray(prop.gallery) && prop.gallery.length > 0
                         ? prop.gallery[0]
                         : '/images/prop_1.png')
@@ -151,6 +191,44 @@ export default function PropertiesClient({ initialProperties }: PropertiesClient
               />
             ))}
           </div>
+
+          {filteredProperties.length > PAGE_SIZE && (
+            <nav className={styles.pagination} aria-label="Properties pagination">
+              <button
+                type="button"
+                className={styles.pageBtn}
+                onClick={() => goToPage(page - 1)}
+                disabled={page === 1}
+                aria-label="Previous page"
+              >
+                ‹ Prev
+              </button>
+              {pageNumbers.map((n, idx) =>
+                n === 'ellipsis' ? (
+                  <span key={`e-${idx}`} className={styles.pageEllipsis} aria-hidden>…</span>
+                ) : (
+                  <button
+                    key={n}
+                    type="button"
+                    className={`${styles.pageBtn} ${n === page ? styles.pageBtnActive : ''}`}
+                    onClick={() => goToPage(n)}
+                    aria-current={n === page ? 'page' : undefined}
+                  >
+                    {n}
+                  </button>
+                ),
+              )}
+              <button
+                type="button"
+                className={styles.pageBtn}
+                onClick={() => goToPage(page + 1)}
+                disabled={page === totalPages}
+                aria-label="Next page"
+              >
+                Next ›
+              </button>
+            </nav>
+          )}
 
           {filteredProperties.length === 0 && (
             <div style={{ textAlign: 'center', padding: '80px 24px', borderTop: '1px solid var(--border-light)' }}>

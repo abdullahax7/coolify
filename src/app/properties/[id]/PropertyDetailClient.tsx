@@ -183,10 +183,11 @@ export default function PropertyDetailClient({ property: initialProperty, allPro
                       <h3 className={styles.subHeading}>Exclusive Features <span>& Amenities</span></h3>
                       <p className={styles.subText}>The finest details curated for a sophisticated lifestyle.</p>
                     </div>
-                    <div className={styles.featuresGrid}>
+                    <div className={styles.featuresBox}>
                       {features.map((feature: string, idx: number) => (
-                        <div key={idx} className={styles.featureCard}>
-                          <div className={styles.featureLabel}>{feature}</div>
+                        <div key={idx} className={styles.featureLine}>
+                          <span className={styles.featureBullet} aria-hidden>✓</span>
+                          <span className={styles.featureLabel}>{feature}</span>
                         </div>
                       ))}
                     </div>

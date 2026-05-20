@@ -104,12 +104,24 @@ export async function POST(req: NextRequest) {
   const {
     title, location, price, beds, baths, sqft, type, sector, status,
     notes, image_url, gallery_urls, map_embed_url, description,
-    features, interior, exterior, listing_type
+    features, interior, exterior, listing_type, assigned_to_email
   } = body;
 
   if (!title || !location || !price) {
     return NextResponse.json({ error: 'Title, location and price are required.' }, { status: 400 });
   }
+
+  // Admin-assigned email: lower-cased so reads with auth.email always match.
+  // Only admins can assign on create; non-admins are ignored silently.
+  const normalizedAssignedEmail = isAdmin && assigned_to_email
+    ? String(assigned_to_email).toLowerCase()
+    : null;
+
+  // Assigned-to-landlord properties stay private (never published) so they
+  // only show up in that landlord's dashboard, not on the public listings.
+  const finalIsApproved = normalizedAssignedEmail
+    ? false
+    : isAdmin ? (body.is_approved ?? true) : false;
 
   const prop = {
     id: `PROP-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
@@ -118,7 +130,8 @@ export async function POST(req: NextRequest) {
     features, interior, exterior, listing_type,
     user_id: user.id,
     expires_at: latestOrder?.expires_at || null,
-    is_approved: isAdmin ? (body.is_approved ?? true) : false
+    is_approved: finalIsApproved,
+    assigned_to_email: normalizedAssignedEmail,
   };
 
   const { data, error } = await adminClient.from('custom_properties').insert(prop).select().single();

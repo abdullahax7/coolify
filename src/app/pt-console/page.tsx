@@ -444,17 +444,19 @@ function Shell({ tab, setTab, onLogout }: { tab: Tab; setTab: (t: Tab) => void; 
   /* Custom properties CRUD */
   const createCustom = async (c: Omit<CustomProp, 'id' | 'createdAt'>) => {
     const combinedLoc = [c.addressLine1, c.city, c.postcode].filter(Boolean).join(', ');
-    const res = await api.post('/api/properties/custom', { 
+    const assignedEmail = c.assigned_to_email ? c.assigned_to_email.toLowerCase() : null;
+    const res = await api.post('/api/properties/custom', {
       title: c.title, location: combinedLoc, price: c.price,
       beds: c.beds, baths: c.baths, sqft: c.sqft,
       type: c.type, sector: c.sector, status: c.status,
       notes: c.notes, image_url: c.image, gallery_urls: c.gallery,
       description: c.description,
-      features: c.features
+      features: c.features,
+      assigned_to_email: assignedEmail,
     });
     const data = await res.json();
     if (res.ok && data.id) {
-      setCustomProps(prev => [{ ...c, id: data.id, createdAt: today(), assigned_to_email: null }, ...prev]);
+      setCustomProps(prev => [{ ...c, id: data.id, createdAt: today(), assigned_to_email: assignedEmail }, ...prev]);
       refresh();
     } else {
       alert('Failed to create property: ' + (data.error || 'Unknown error'));
@@ -706,7 +708,7 @@ function Shell({ tab, setTab, onLogout }: { tab: Tab; setTab: (t: Tab) => void; 
           ) : (
             <>
               {tab === 'overview'      && <Overview orders={orders} messages={messages} setTab={setTab} documents={documents} tenancies={tenancies} customProps={customProps} allUsers={allUsers} />}
-              {tab === 'properties'    && <PropertiesTab overrides={overrides} onOverride={saveOverride} customProps={customProps} onCreate={createCustom} onUpdate={updateCustom} onDelete={deleteCustom} onAddTenancy={() => { setTab('tenants'); }} onManageDoc={(id, doc) => setDocToManage({ propId: id, doc })} onViewCompliance={(id) => setViewingPropId(id)} onViewDetails={(id) => setViewingPropId(id)} />}
+              {tab === 'properties'    && <PropertiesTab overrides={overrides} onOverride={saveOverride} customProps={customProps} onCreate={createCustom} onUpdate={updateCustom} onDelete={deleteCustom} onAddTenancy={() => { setTab('tenants'); }} onManageDoc={(id, doc) => setDocToManage({ propId: id, doc })} onViewCompliance={(id) => setViewingPropId(id)} onViewDetails={(id) => setViewingPropId(id)} allUsers={allUsers} />}
               {tab === 'listing-plans' && <OrdersTab type="listing" orders={listingOrders} onCreate={createOrder} onUpdate={updateOrder} onDelete={deleteOrder} />}
               {tab === 'services'      && <OrdersTab type="service" orders={serviceOrders} onCreate={createOrder} onUpdate={updateOrder} onDelete={deleteOrder} />}
               {tab === 'inbox'         && <InboxTab messages={messages} inquiries={cashInquiries} onMarkRead={markRead} onMarkAllRead={markAllRead} onDeleteMsg={deleteMsg} onUpdateInquiry={updateCashInquiry} onDeleteInquiry={deleteCashInquiry} />}
@@ -928,15 +930,18 @@ const EMPTY_CUSTOM: Omit<CustomProp, 'id' | 'createdAt'> = {
   type: 'Sale', sector: 'Residential', status: 'Live', notes: '',
   image: '', gallery: '', mapEmbedUrl: '',
   description: '', features: '',
+  assigned_to_email: null,
 };
 
-function PropertiesTab({ overrides, onOverride, customProps, onCreate, onUpdate, onDelete, onAddTenancy, onManageDoc, onViewCompliance, onViewDetails }: {
+function PropertiesTab({ overrides, onOverride, customProps, onCreate, onUpdate, onDelete, onAddTenancy, onManageDoc, onViewCompliance, onViewDetails, allUsers }: {
   overrides: Record<string, PropOverride>; onOverride: (id: string, p: Partial<PropOverride>) => void;
   customProps: CustomProp[]; onCreate: (c: Omit<CustomProp, 'id' | 'createdAt'>) => void;
   onUpdate: (c: CustomProp) => void; onDelete: (id: string) => void;
   onAddTenancy: (id: string) => void; onManageDoc: (id: string, doc?: PropertyDocument) => void;
   onViewCompliance: (id: string) => void; onViewDetails: (id: string) => void;
+  allUsers: UserProfile[];
 }) {
+  const landlordUsers = useMemo(() => allUsers.filter(u => u.role === 'landlord'), [allUsers]);
   const [search, setSearch]       = useState('');
   const [ft, setFt]               = useState('All Properties');
   const [fs, setFs]               = useState('All Portfolios');
@@ -1030,6 +1035,29 @@ function PropertiesTab({ overrides, onOverride, customProps, onCreate, onUpdate,
             </div>
             <div className={styles.modalBody}>
               <PropForm draft={draft} onChange={draftSet} />
+
+              <div className={styles.propFormSection}><h4>Landlord Assignment (optional)</h4></div>
+              <div className={styles.editGrid}>
+                <div className={`${styles.editField} ${styles.editSpan2}`}>
+                  <label>Assign to Landlord</label>
+                  <select
+                    value={draft.assigned_to_email ?? ''}
+                    onChange={e => setDraft(d => ({ ...d, assigned_to_email: e.target.value || null }))}
+                  >
+                    <option value="">— None (publish publicly) —</option>
+                    {landlordUsers.map(u => (
+                      <option key={u.id} value={u.email}>
+                        {u.name || 'Anonymous'} — {u.email}
+                      </option>
+                    ))}
+                  </select>
+                  <p style={{ fontSize: '0.8125rem', color: '#64748b', marginTop: 6 }}>
+                    {draft.assigned_to_email
+                      ? '🔒 This property will be private and visible only to the selected landlord in their dashboard. It will NOT appear on the public website.'
+                      : 'Leave empty to publish this property publicly on the website.'}
+                  </p>
+                </div>
+              </div>
             </div>
             <div className={styles.modalFooter}>
               <button className={styles.modalCancel} onClick={() => setCreateOpen(false)}>Cancel</button>
