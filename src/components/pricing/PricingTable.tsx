@@ -90,12 +90,16 @@ const MobilePricingCards: React.FC<SubComponentProps> = ({ tiers, features, type
             onClick={() => {
               if (type === 'manage') {
                 router.push(`/contact/landlord-application?plan=${encodeURIComponent(tier.name)}`);
+              } else if (type === 'sell' && tier.name === 'Ultimate') {
+                router.push(`/contact?plan=${encodeURIComponent(tier.name)}`);
               } else {
                 router.push(`/checkout?plan=${encodeURIComponent(tier.name)}&type=${type}`);
               }
             }}
           >
-            SELECT {tier.name.toUpperCase()}
+            {type === 'sell' && tier.name === 'Ultimate'
+              ? 'CONTACT AGENT'
+              : `SELECT ${tier.name.toUpperCase()}`}
           </button>
         </div>
       ))}
@@ -155,12 +159,16 @@ const DesktopPricingTable: React.FC<SubComponentProps> = ({ tiers, features, typ
                 onClick={() => {
                   if (type === 'manage') {
                     router.push(`/contact/landlord-application?plan=${encodeURIComponent(tier.name)}`);
+                  } else if (type === 'sell' && tier.name === 'Ultimate') {
+                    router.push(`/contact?plan=${encodeURIComponent(tier.name)}`);
                   } else {
                     router.push(`/checkout?plan=${encodeURIComponent(tier.name)}&type=${type}`);
                   }
                 }}
               >
-                SELECT {tier.name.toUpperCase()}
+                {type === 'sell' && tier.name === 'Ultimate'
+                  ? 'CONTACT AGENT'
+                  : `SELECT ${tier.name.toUpperCase()}`}
               </button>
             </td>
           ))}
