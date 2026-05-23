@@ -10,9 +10,15 @@ import { Suspense } from 'react';
 
 const SANDBOX_APP_ID = (process.env.NEXT_PUBLIC_SQUARE_APP_ID ?? '').trim();
 const IS_SANDBOX = SANDBOX_APP_ID.startsWith('sandbox');
-const SQUARE_URL = IS_SANDBOX 
-  ? 'https://sandbox.web.squarecdn.com/v1/square.js' 
+const SQUARE_URL = IS_SANDBOX
+  ? 'https://sandbox.web.squarecdn.com/v1/square.js'
   : 'https://web.squarecdn.com/v1/square.js';
+
+// Single source of truth for the Google Search Console verification token.
+// Set NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION in .env.local / hosting env and the
+// <meta name="google-site-verification" ... /> tag is injected on every page
+// via the root metadata (no per-page setup required).
+const GOOGLE_SITE_VERIFICATION = (process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION ?? '').trim();
 
 const inter = Inter({
   variable: "--font-sans",
@@ -48,6 +54,9 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
+  ...(GOOGLE_SITE_VERIFICATION
+    ? { verification: { google: GOOGLE_SITE_VERIFICATION } }
+    : {}),
 };
 
 export default function RootLayout({
