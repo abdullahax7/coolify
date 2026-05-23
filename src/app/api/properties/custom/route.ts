@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { logAudit } from '@/lib/audit';
 
@@ -150,6 +151,10 @@ export async function POST(req: NextRequest) {
     diff: { after: prop },
     request: req,
   });
+
+  if (finalIsApproved) {
+    revalidatePath('/sitemap.xml');
+  }
 
   return NextResponse.json(data, { status: 201 });
 }

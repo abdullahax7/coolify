@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { performCleanupAndLog } from '@/lib/cleanup';
 import { logAudit } from '@/lib/audit';
@@ -100,6 +101,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     diff: { before: existing, after: data },
     request: req,
   });
+
+  if (existing.is_approved !== data.is_approved || existing.deleted_at !== data.deleted_at) {
+    revalidatePath('/sitemap.xml');
+  }
 
   return NextResponse.json(data);
 }
@@ -223,6 +228,10 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     targetTable: 'custom_properties', targetId: id, targetName: existing.title,
     diff: { before: existing, soft: true }, request: req,
   });
+
+  if (existing.is_approved) {
+    revalidatePath('/sitemap.xml');
+  }
 
   return NextResponse.json({ success: true, soft: true });
 }
